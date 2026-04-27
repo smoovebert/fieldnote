@@ -1005,27 +1005,20 @@ function App() {
           </div>
         </div>
 
-        <button className="project-switcher" type="button" onClick={returnToProjects} title="Back to project home">
-          <FolderOpen size={16} aria-hidden="true" />
-          {projectTitle}
-        </button>
-
         <div className="header-tools">
           <div className="sync-box">
             <Cloud size={16} aria-hidden="true" />
             <span>{saveStatus}</span>
           </div>
-          <div className="user-box">
-            <span>{session.user.email}</span>
-            <button type="button" onClick={signOut}>
-              <LogOut size={15} aria-hidden="true" />
-              Sign out
-            </button>
-          </div>
         </div>
       </header>
 
       <aside className="workspace-sidebar" aria-label="Workspace sidebar">
+        <button className="project-switcher project-nav-link" type="button" onClick={returnToProjects} title="Back to project home">
+          <FolderOpen size={16} aria-hidden="true" />
+          {projectTitle}
+        </button>
+
         <nav className="mode-switcher" aria-label="Research modes">
           {modeItems.map((mode) => (
             <button key={mode.id} className={activeView === mode.id ? 'active' : ''} type="button" title={mode.description} onClick={() => selectView(mode.id)}>
@@ -1100,6 +1093,16 @@ function App() {
             }}
           />
         </section>
+
+        <div className="sidebar-account">
+          <div className="user-box">
+            <span>{session.user.email}</span>
+            <button type="button" onClick={signOut}>
+              <LogOut size={15} aria-hidden="true" />
+              Sign out
+            </button>
+          </div>
+        </div>
       </aside>
 
       <section className="detail-view" id="sources">

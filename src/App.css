@@ -204,20 +204,22 @@ button {
 
 .header-tools {
   gap: 10px;
+  margin-left: auto;
 }
 
 .project-switcher {
   max-width: 240px;
   height: 36px;
   gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 7px;
-  padding: 0 11px;
-  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 5px;
+  padding: 0;
+  background: transparent;
   color: #ffffff;
   cursor: pointer;
   font-size: 13px;
   font-weight: 760;
+  text-align: left;
 }
 
 .project-switcher {
@@ -231,7 +233,7 @@ button {
   flex: 0 0 auto;
   display: grid;
   gap: 4px;
-  padding: 12px;
+  padding: 8px 12px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: var(--shell);
 }
@@ -298,13 +300,14 @@ button {
 
 .app-header .sync-box,
 .app-header .user-box {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+  background: transparent;
   color: #d8e5f5;
 }
 
 .sync-box {
-  width: 210px;
+  width: auto;
+  justify-content: flex-end;
   font-size: 12px;
 }
 
@@ -610,7 +613,21 @@ button {
   color: #ffffff;
 }
 
+.project-nav-link {
+  width: calc(100% - 24px);
+  max-width: none;
+  flex: 0 0 auto;
+  margin: 12px 12px 4px;
+  color: #ffffff;
+}
+
+.project-nav-link:hover {
+  color: #d8e5f5;
+}
+
 .folder-pane {
+  flex: 0 1 auto;
+  max-height: 36vh;
   padding: 14px;
   overflow: auto;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -702,6 +719,38 @@ button {
   overflow: auto;
   border-right: 0;
   background: var(--shell-deep);
+}
+
+.sidebar-account {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--shell-deep);
+}
+
+.workspace-sidebar .user-box {
+  max-width: none;
+  width: 100%;
+  height: auto;
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--shell-muted);
+}
+
+.workspace-sidebar .user-box span {
+  min-width: 0;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.workspace-sidebar .user-box button {
+  width: fit-content;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .list-item {
