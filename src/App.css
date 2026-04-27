@@ -578,8 +578,8 @@ button {
 .workspace-sidebar {
   grid-column: 1;
   grid-row: 2;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -668,6 +668,8 @@ button {
 }
 
 .list-view {
+  min-height: 0;
+  flex: 1;
   padding: 14px;
   overflow: auto;
   border-right: 0;

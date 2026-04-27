@@ -275,6 +275,7 @@ Implemented:
   - MVP: partial but useful surfaces
   - Soon: visible placeholder surfaces
 - Left navigation and object list were collapsed into one stacked sidebar.
+- Mode sidebar actions were audited: only Organize keeps a dedicated action/folder section. Code, Refine, Classify, Analyze, and Report now rely on their object list plus the center/right work surfaces to avoid redundant navigation furniture.
 - Removed the old ribbon from the main app flow.
 - Moved source import/source list into Organize mode.
 - Added Organize folder filtering and a fuller source register.

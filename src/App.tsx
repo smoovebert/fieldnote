@@ -566,19 +566,6 @@ function App() {
     setActiveCodeId(remainingCodes[0].id)
   }
 
-  function addMemo(linkedType: Memo['linkedType'] = activeView === 'refine' ? 'code' : activeView === 'code' ? 'source' : 'project') {
-    const memo: Memo = {
-      id: `memo-${Date.now()}`,
-      title: linkedType === 'code' ? `${activeCode.name} memo` : linkedType === 'source' ? `${activeSource.title} memo` : 'New project memo',
-      linkedType,
-      linkedId: linkedType === 'code' ? activeCode.id : linkedType === 'source' ? activeSource.id : undefined,
-      body: '',
-    }
-
-    setMemos((current) => [memo, ...current])
-    setActiveMemoId(memo.id)
-  }
-
   function toggleSelectedCode(codeId: string) {
     setSelectedCodeIds((current) => {
       if (current.includes(codeId)) return current.length === 1 ? current : current.filter((id) => id !== codeId)
@@ -1029,13 +1016,12 @@ function App() {
       </header>
 
       <aside className="workspace-sidebar" aria-label="Workspace sidebar">
-        <section className="folder-pane" aria-label="Mode actions">
-          <div className="pane-title">
-            <ListTree size={16} aria-hidden="true" />
-            <span>{modeItems.find((mode) => mode.id === activeView)?.label} Mode</span>
-          </div>
-          {activeView === 'organize' && (
-            <>
+        {activeView === 'organize' && (
+          <section className="folder-pane" aria-label="Source folders">
+            <div className="pane-title">
+              <ListTree size={16} aria-hidden="true" />
+              <span>Source folders</span>
+            </div>
               <label className="folder-row import-row">
                 <FilePlus2 size={16} aria-hidden="true" />
                 Import sources
@@ -1072,51 +1058,8 @@ function App() {
                   <Plus size={16} aria-hidden="true" />
                 </button>
               </div>
-            </>
-          )}
-          {activeView === 'refine' && (
-            <>
-              <button className="folder-row active" type="button">
-                <Tags size={16} aria-hidden="true" />
-                Codebook
-              </button>
-              <button className="folder-row" type="button" onClick={() => addMemo('code')}>
-                <MessageSquareText size={16} aria-hidden="true" />
-                Code memo
-              </button>
-            </>
-          )}
-          {activeView === 'classify' && (
-            <button className="folder-row active" type="button">
-              <Database size={16} aria-hidden="true" />
-              Cases and attributes
-            </button>
-          )}
-          {activeView === 'analyze' && (
-            <>
-              <button className="folder-row active" type="button">
-                <Search size={16} aria-hidden="true" />
-                Text search
-              </button>
-              <button className="folder-row" type="button">
-                <Rows3 size={16} aria-hidden="true" />
-                Matrix coding
-              </button>
-            </>
-          )}
-          {activeView === 'report' && (
-            <>
-              <button className="folder-row active" type="button" onClick={exportCsv}>
-                <Download size={16} aria-hidden="true" />
-                Coded excerpts
-              </button>
-              <button className="folder-row" type="button">
-                <FileText size={16} aria-hidden="true" />
-                Codebook export
-              </button>
-            </>
-          )}
-        </section>
+          </section>
+        )}
 
         <section className="list-view" aria-label="Objects">
           <ListView
