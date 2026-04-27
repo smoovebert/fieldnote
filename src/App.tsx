@@ -827,6 +827,26 @@ function App() {
     downloadCsv(rows, 'fieldnote-codebook.csv')
   }
 
+  function exportMemosCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const rows = [
+      ['Project', 'Memo title', 'Linked type', 'Linked item', 'Memo body'],
+      ...memos.map((memo) => {
+        const linkedItem =
+          memo.linkedType === 'source'
+            ? sources.find((source) => source.id === memo.linkedId)?.title
+            : memo.linkedType === 'code'
+              ? codes.find((code) => code.id === memo.linkedId)?.name
+              : projectTitle
+
+        return [projectTitle, memo.title, memo.linkedType, linkedItem ?? '', memo.body]
+      }),
+    ]
+
+    downloadCsv(rows, 'fieldnote-memos.csv')
+  }
+
   function downloadCsv(rows: string[][], filename: string) {
     const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -1282,9 +1302,16 @@ function App() {
                 <small>Code names, descriptions, counts, and example excerpts.</small>
               </span>
             </button>
+            <button className="report-card" type="button" onClick={exportMemosCsv}>
+              <MessageSquareText size={20} aria-hidden="true" />
+              <span>
+                <strong>Memos CSV</strong>
+                <small>Project, source, and code memos with their linked items.</small>
+              </span>
+            </button>
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
-              <span>Memo export, report preview, and formatted Word/PDF outputs.</span>
+              <span>Report preview and formatted Word/PDF outputs.</span>
             </div>
           </article>
         )}

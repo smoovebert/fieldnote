@@ -241,6 +241,7 @@ Typing in a missing context memo creates it automatically.
 
 - Coded excerpts CSV export includes project, source, folder, case, codes, code descriptions, excerpt text, and notes.
 - Codebook CSV export includes code names, descriptions, reference counts, and an example excerpt.
+- Memos CSV export includes project, memo title, linked type, linked source/code/project, and memo body.
 
 ## Current Known Issues
 
@@ -249,7 +250,7 @@ Typing in a missing context memo creates it automatically.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
 - Query/Analyze tools are not implemented.
-- Report mode is not implemented.
+- Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classifications/cases/attributes are not implemented.
 - Code hierarchy, merge, split, and parent-child nodes are not implemented.
 - Project sharing has database groundwork but no invite UI.
@@ -287,6 +288,7 @@ Implemented:
 - Moved close reading/coding into Code mode.
 - Moved code reference review into Refine mode.
 - Tightened the Code -> Refine -> Report MVP loop with duplicate-reference merging, better code editing, and stronger CSV exports.
+- Added memo export to complete the basic source/code/memo reporting loop.
 - Added initial Classify, Analyze, and Report work surfaces.
 - Moved CSV export into Report mode.
 
