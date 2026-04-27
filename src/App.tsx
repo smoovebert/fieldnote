@@ -180,13 +180,13 @@ const defaultProject: ProjectData = {
   excerpts: initialExcerpts,
 }
 
-const modeItems: Array<{ id: WorkspaceView; label: string; description: string }> = [
-  { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.' },
-  { id: 'code', label: 'Code', description: 'Close-read sources and code selected passages.' },
-  { id: 'refine', label: 'Refine', description: 'Clean the codebook and review code references.' },
-  { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.' },
-  { id: 'analyze', label: 'Analyze', description: 'Run searches, matrices, and comparisons.' },
-  { id: 'report', label: 'Report', description: 'Export excerpts, memos, and codebooks.' },
+const modeItems: Array<{ id: WorkspaceView; label: string; description: string; status: 'ready' | 'partial' | 'soon' }> = [
+  { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.', status: 'ready' },
+  { id: 'code', label: 'Code', description: 'Close-read sources and code selected passages.', status: 'ready' },
+  { id: 'refine', label: 'Refine', description: 'Clean the codebook and review code references.', status: 'partial' },
+  { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.', status: 'soon' },
+  { id: 'analyze', label: 'Analyze', description: 'Run searches, matrices, and comparisons.', status: 'partial' },
+  { id: 'report', label: 'Report', description: 'Export excerpts, memos, and codebooks.', status: 'partial' },
 ]
 
 function normalizeProject(project: ProjectRow): ProjectData {
@@ -893,7 +893,8 @@ function App() {
         <nav className="mode-switcher" aria-label="Research modes">
           {modeItems.map((mode) => (
             <button key={mode.id} className={activeView === mode.id ? 'active' : ''} type="button" title={mode.description} onClick={() => selectView(mode.id)}>
-              {mode.label}
+              <span>{mode.label}</span>
+              <small className={`mode-badge ${mode.status}`}>{mode.status === 'ready' ? 'Now' : mode.status === 'partial' ? 'MVP' : 'Soon'}</small>
             </button>
           ))}
         </nav>
@@ -1155,14 +1156,23 @@ function App() {
               onChange={(event) => setCodes((current) => current.map((code) => (code.id === activeCode.id ? { ...code, description: event.target.value } : code)))}
             />
             <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} />
+            <div className="coming-soon-strip">
+              <strong>Coming soon</strong>
+              <span>Parent/child codes, merge, split, and codebook cleanup tools.</span>
+            </div>
           </article>
         )}
 
         {activeView === 'classify' && (
           <article className="detail-card mode-placeholder">
             <p className="detail-kicker">Cases and attributes</p>
-            <h2>Classify sources into cases</h2>
-            <p>Use this mode to create participants, assign sources to cases, and add attributes like cohort, role, site, or demographic fields.</p>
+            <h2>Classify is reserved for the next MVP pass</h2>
+            <p>Source-level case names already exist in Organize. This mode will turn those into a real case table with attributes.</p>
+            <div className="placeholder-list">
+              <span>Case table</span>
+              <span>Attribute columns</span>
+              <span>Source-to-case review</span>
+            </div>
           </article>
         )}
 
@@ -1174,6 +1184,10 @@ function App() {
               <input value={searchTerm} placeholder="Search coded excerpts" aria-label="Search coded excerpts" onChange={(event) => setSearchTerm(event.target.value)} />
             </div>
             <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} />
+            <div className="coming-soon-strip">
+              <strong>Coming soon</strong>
+              <span>Matrix coding, co-occurrence, word frequency, and saved queries.</span>
+            </div>
           </article>
         )}
 
@@ -1187,11 +1201,11 @@ function App() {
                 <small>Source, codes, excerpt text, and notes.</small>
               </span>
             </button>
-            <button className="report-card" type="button">
+            <button className="report-card disabled-card" type="button" disabled>
               <FileText size={20} aria-hidden="true" />
               <span>
                 <strong>Codebook</strong>
-                <small>Code names, descriptions, counts, and examples. Not implemented yet.</small>
+                <small>Coming soon: code names, descriptions, counts, and examples.</small>
               </span>
             </button>
           </article>

@@ -16,6 +16,20 @@ That plan is now the source of truth for the next design and implementation phas
 
 ## Core Product Correction
 
+Fieldnote should use the full workflow map with MVP depth:
+
+```text
+Project Home -> Organize -> Code -> Refine -> Classify -> Analyze -> Report
+```
+
+The whole map should stay visible because it makes the product direction legible. Only the critical MVP path needs to be fully usable right now:
+
+```text
+import sources -> code selections with multiple codes -> review/refine references -> memo -> export coded excerpts
+```
+
+Anything outside that path should appear as an honest placeholder or partial mode, not as a hidden future feature and not as a rushed full implementation.
+
 The first prototype copied too much of NVivo's visible anatomy:
 
 - ribbon
@@ -230,6 +244,10 @@ Implemented:
   - Classify
   - Analyze
   - Report
+- Mode switcher now labels depth:
+  - Now: usable MVP surfaces
+  - MVP: partial but useful surfaces
+  - Soon: visible placeholder surfaces
 - Removed the old ribbon from the main app flow.
 - Moved source import/source list into Organize mode.
 - Added Organize folder filtering and a fuller source register.
@@ -247,6 +265,7 @@ Still needed:
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, richer source previews, and real case/classification sheets.
 - Refine mode needs hierarchy/merge/split tools.
 - Classify, Analyze, and Report are only first-pass shells.
+- Classify and advanced Analyze/Report features are intentionally placeholders for MVP.
 
 ## Required Next Step
 

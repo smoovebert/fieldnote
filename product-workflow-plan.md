@@ -16,6 +16,22 @@ The next work should not add more panels or buttons. It should restructure the a
 
 ## Product Principle
 
+The MVP strategy is **full map, MVP depth**.
+
+Fieldnote should show the full qualitative workflow now:
+
+```text
+Project Home -> Organize -> Code -> Refine -> Classify -> Analyze -> Report
+```
+
+But only the critical loop must be deep for MVP:
+
+```text
+Import sources -> code excerpts with multiple codes -> review/refine references -> memo -> export
+```
+
+Classify, advanced Analyze, and fuller Report features should remain visible as clear placeholders until the core loop is reliable.
+
 Each mode should answer one question:
 
 ```text
