@@ -191,8 +191,11 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 
 - Users can select source text and code it.
 - One excerpt can have multiple codes.
+- Coding the same exact source passage again now merges new codes into the existing reference instead of creating a duplicate.
 - Codes can be created from the right rail.
 - Clicking Codes shows references for a selected code.
+- Refine mode lets users edit code name, color, and description.
+- Codes can be deleted with an in-app confirmation; linked references are cleaned up or removed if no codes remain.
 
 ### Memos
 
@@ -215,6 +218,11 @@ Typing in a missing context memo creates it automatically.
 
 - Autosaves to Supabase.
 - Production deployment is on Vercel.
+
+### Report/Export
+
+- Coded excerpts CSV export includes project, source, folder, case, codes, code descriptions, excerpt text, and notes.
+- Codebook CSV export includes code names, descriptions, reference counts, and an example excerpt.
 
 ## Current Known Issues
 
@@ -255,6 +263,7 @@ Implemented:
 - Added multi-source import, custom source folders, archive/restore/delete controls, and first-pass source-to-case setup.
 - Moved close reading/coding into Code mode.
 - Moved code reference review into Refine mode.
+- Tightened the Code -> Refine -> Report MVP loop with duplicate-reference merging, better code editing, and stronger CSV exports.
 - Added initial Classify, Analyze, and Report work surfaces.
 - Moved CSV export into Report mode.
 

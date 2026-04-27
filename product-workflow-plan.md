@@ -32,6 +32,12 @@ Import sources -> code excerpts with multiple codes -> review/refine references 
 
 Classify, advanced Analyze, and fuller Report features should remain visible as clear placeholders until the core loop is reliable.
 
+Current MVP loop target:
+
+- Code mode should avoid duplicate references when the same passage is coded again.
+- Refine mode should let users edit code names, colors, descriptions, and reference notes.
+- Report mode should produce useful coded-excerpt and codebook CSV files before richer Word/PDF reporting exists.
+
 Each mode should answer one question:
 
 ```text

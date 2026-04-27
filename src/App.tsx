@@ -521,6 +521,37 @@ function App() {
     setNewCodeName('')
   }
 
+  function updateCode(codeId: string, patch: Partial<Code>) {
+    setCodes((current) => current.map((code) => (code.id === codeId ? { ...code, ...patch } : code)))
+  }
+
+  function deleteActiveCode() {
+    const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id)).length
+    const shouldDelete = window.confirm(
+      `Delete "${activeCode.name}"? It will be removed from ${references} coded reference${references === 1 ? '' : 's'}.`
+    )
+    if (!shouldDelete) return
+
+    const remainingCodes = codes.filter((code) => code.id !== activeCode.id)
+    if (!remainingCodes.length) {
+      setSelectionHint('Keep at least one code in the codebook.')
+      return
+    }
+
+    setCodes(remainingCodes)
+    setExcerpts((current) =>
+      current
+        .map((excerpt) => ({ ...excerpt, codeIds: excerpt.codeIds.filter((codeId) => codeId !== activeCode.id) }))
+        .filter((excerpt) => excerpt.codeIds.length)
+    )
+    setMemos((current) => current.filter((memo) => !(memo.linkedType === 'code' && memo.linkedId === activeCode.id)))
+    setSelectedCodeIds((current) => {
+      const next = current.filter((codeId) => codeId !== activeCode.id)
+      return next.length ? next : [remainingCodes[0].id]
+    })
+    setActiveCodeId(remainingCodes[0].id)
+  }
+
   function addMemo(linkedType: Memo['linkedType'] = activeView === 'refine' ? 'code' : activeView === 'code' ? 'source' : 'project') {
     const memo: Memo = {
       id: `memo-${Date.now()}`,
@@ -565,18 +596,35 @@ function App() {
       return
     }
 
-    setExcerpts((current) => [
-      {
-        id: `excerpt-${Date.now()}`,
-        codeIds: selectedCodes.map((code) => code.id),
-        sourceId: activeSource.id,
-        sourceTitle: activeSource.title,
-        text: selectedText,
-        note: '',
-      },
-      ...current,
-    ])
-    setSelectionHint(`Coded selection as ${selectedCodeNames}.`)
+    let mergedExistingReference = false
+
+    setExcerpts((current) => {
+      const existingReference = current.find((excerpt) => excerpt.sourceId === activeSource.id && excerpt.text === selectedText)
+      if (existingReference) {
+        mergedExistingReference = true
+        return current.map((excerpt) =>
+          excerpt.id === existingReference.id
+            ? {
+                ...excerpt,
+                codeIds: Array.from(new Set([...excerpt.codeIds, ...selectedCodes.map((code) => code.id)])),
+              }
+            : excerpt
+        )
+      }
+
+      return [
+        {
+          id: `excerpt-${Date.now()}`,
+          codeIds: selectedCodes.map((code) => code.id),
+          sourceId: activeSource.id,
+          sourceTitle: activeSource.title,
+          text: selectedText,
+          note: '',
+        },
+        ...current,
+      ]
+    })
+    setSelectionHint(`${mergedExistingReference ? 'Added codes to existing reference' : 'Coded selection'} as ${selectedCodeNames}.`)
     window.getSelection()?.removeAllRanges()
   }
 
@@ -716,24 +764,47 @@ function App() {
     event.preventDefault()
 
     const rows = [
-      ['Source', 'Codes', 'Excerpt', 'Note'],
-      ...excerpts.map((excerpt) => [
-        excerpt.sourceTitle,
-        codes
-          .filter((code) => excerpt.codeIds.includes(code.id))
-          .map((code) => code.name)
-          .join('; '),
-        excerpt.text,
-        excerpt.note,
-      ]),
+      ['Project', 'Source', 'Source folder', 'Case', 'Codes', 'Code descriptions', 'Excerpt', 'Note'],
+      ...excerpts.map((excerpt) => {
+        const source = sources.find((item) => item.id === excerpt.sourceId)
+        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
+        return [
+          projectTitle,
+          excerpt.sourceTitle,
+          source?.folder ?? '',
+          source?.caseName ?? '',
+          excerptCodes.map((code) => code.name).join('; '),
+          excerptCodes.map((code) => code.description).join('; '),
+          excerpt.text,
+          excerpt.note,
+        ]
+      }),
     ]
 
+    downloadCsv(rows, 'fieldnote-coded-excerpts.csv')
+  }
+
+  function exportCodebookCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const rows = [
+      ['Project', 'Code', 'Description', 'References', 'Example excerpt'],
+      ...codes.map((code) => {
+        const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id))
+        return [projectTitle, code.name, code.description, String(references.length), references[0]?.text ?? '']
+      }),
+    ]
+
+    downloadCsv(rows, 'fieldnote-codebook.csv')
+  }
+
+  function downloadCsv(rows: string[][], filename: string) {
     const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'fieldnote-coded-excerpts.csv'
+    link.download = filename
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -1147,14 +1218,44 @@ function App() {
         )}
 
         {activeView === 'refine' && (
-          <article className="detail-card">
-            <p className="detail-kicker">Node references</p>
-            <textarea
-              className="code-description"
-              value={activeCode.description}
-              aria-label="Code description"
-              onChange={(event) => setCodes((current) => current.map((code) => (code.id === activeCode.id ? { ...code, description: event.target.value } : code)))}
-            />
+          <article className="detail-card refine-surface">
+            <div className="refine-header">
+              <div>
+                <p className="detail-kicker">Code definition</p>
+                <h2>{activeCode.name}</h2>
+              </div>
+              <span className="reference-count">{codeExcerpts.length} references</span>
+            </div>
+
+            <div className="code-definition-grid">
+              <label className="property-field">
+                <span>Name</span>
+                <input value={activeCode.name} onChange={(event) => updateCode(activeCode.id, { name: event.target.value })} />
+              </label>
+              <label className="property-field color-field">
+                <span>Color</span>
+                <input type="color" value={activeCode.color} onChange={(event) => updateCode(activeCode.id, { color: event.target.value })} />
+              </label>
+            </div>
+
+            <label className="property-field">
+              <span>Description</span>
+              <textarea
+                className="code-description"
+                value={activeCode.description}
+                aria-label="Code description"
+                onChange={(event) => updateCode(activeCode.id, { description: event.target.value })}
+              />
+            </label>
+
+            <div className="reference-toolbar">
+              <p className="detail-kicker">References</p>
+              <button className="danger-text-button" type="button" onClick={deleteActiveCode}>
+                <Trash2 size={15} aria-hidden="true" />
+                Delete code
+              </button>
+            </div>
+
             <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} />
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
@@ -1201,13 +1302,17 @@ function App() {
                 <small>Source, codes, excerpt text, and notes.</small>
               </span>
             </button>
-            <button className="report-card disabled-card" type="button" disabled>
+            <button className="report-card" type="button" onClick={exportCodebookCsv}>
               <FileText size={20} aria-hidden="true" />
               <span>
-                <strong>Codebook</strong>
-                <small>Coming soon: code names, descriptions, counts, and examples.</small>
+                <strong>Codebook CSV</strong>
+                <small>Code names, descriptions, counts, and example excerpts.</small>
               </span>
             </button>
+            <div className="coming-soon-strip">
+              <strong>Coming soon</strong>
+              <span>Memo export, report preview, and formatted Word/PDF outputs.</span>
+            </div>
           </article>
         )}
       </section>
@@ -1485,7 +1590,7 @@ function ListView({
             <FileText size={17} aria-hidden="true" />
             <div>
               <strong>Codebook</strong>
-              <span>Not implemented yet</span>
+              <span>CSV export available</span>
             </div>
           </button>
         </>
