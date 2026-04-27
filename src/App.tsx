@@ -1,17 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import {
+  BarChart3,
   BookOpenText,
   Cloud,
+  Database,
   Download,
   FilePlus2,
+  FileText,
+  FolderOpen,
+  GitBranch,
   Highlighter,
+  Home,
+  ListTree,
   KeyRound,
   Layers3,
   MessageSquareText,
+  Network,
+  Rows3,
   Plus,
   Search,
   Sparkles,
+  Tags,
 } from 'lucide-react'
 import './App.css'
 
@@ -114,6 +124,8 @@ function App() {
 
   const selectedCodes = codes.filter((code) => selectedCodeIds.includes(code.id))
   const selectedCodeNames = selectedCodes.map((code) => code.name).join(', ')
+  const accessCode = codes.find((code) => code.id === 'access')
+  const trustCode = codes.find((code) => code.id === 'trust')
   const projectData = useMemo<ProjectData>(
     () => ({ sourceTitle, transcript, memo, codes, excerpts }),
     [codes, excerpts, memo, sourceTitle, transcript]
@@ -327,7 +339,7 @@ function App() {
 
   return (
     <main className="app-shell">
-      <aside className="project-rail" aria-label="Project navigation">
+      <header className="app-header">
         <div className="brand-block">
           <div className="brand-mark">F</div>
           <div>
@@ -336,13 +348,126 @@ function App() {
           </div>
         </div>
 
-        <label className="import-button">
-          <FilePlus2 size={18} aria-hidden="true" />
-          <span>Import transcript</span>
-          <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
-        </label>
+        <div className="header-tools">
+          <div className="sync-box">
+            <Cloud size={16} aria-hidden="true" />
+            <span>{saveStatus}</span>
+          </div>
+          <div className="access-box">
+            <KeyRound size={16} aria-hidden="true" />
+            <input
+              value={accessKey}
+              placeholder="Access key"
+              aria-label="Fieldnote access key"
+              type="password"
+              onChange={(event) => {
+                setAccessKey(event.target.value)
+                if (!event.target.value) setSaveStatus('Demo mode. Add key to sync.')
+              }}
+            />
+            {accessKey && (
+              <button type="button" onClick={forgetAccessKey}>
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
 
-        <nav className="rail-nav" aria-label="Workspace sections">
+      <section className="ribbon" aria-label="Command ribbon">
+        <nav className="ribbon-tabs" aria-label="Ribbon tabs">
+          <button className="active" type="button">
+            <Home size={16} aria-hidden="true" />
+            Home
+          </button>
+          <button type="button">
+            <Plus size={16} aria-hidden="true" />
+            Create
+          </button>
+          <button type="button">
+            <Database size={16} aria-hidden="true" />
+            Data
+          </button>
+          <button type="button">
+            <Search size={16} aria-hidden="true" />
+            Query
+          </button>
+          <button type="button">
+            <Download size={16} aria-hidden="true" />
+            Share
+          </button>
+        </nav>
+
+        <div className="ribbon-groups">
+          <div className="ribbon-group">
+            <label className="ribbon-command primary-command">
+              <FilePlus2 size={18} aria-hidden="true" />
+              <span>Import</span>
+              <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
+            </label>
+            <button className="ribbon-command" type="button" onClick={exportCsv}>
+              <Download size={18} aria-hidden="true" />
+              <span>Export</span>
+            </button>
+          </div>
+
+          <div className="ribbon-group">
+            <button className="ribbon-command" type="button" onClick={codeSelection}>
+              <Highlighter size={18} aria-hidden="true" />
+              <span>Code</span>
+            </button>
+            <button className="ribbon-command" type="button">
+              <MessageSquareText size={18} aria-hidden="true" />
+              <span>Memo</span>
+            </button>
+            <button className="ribbon-command" type="button">
+              <Sparkles size={18} aria-hidden="true" />
+              <span>Suggest</span>
+            </button>
+          </div>
+
+          <div className="ribbon-group">
+            <button className="ribbon-command" type="button">
+              <Rows3 size={18} aria-hidden="true" />
+              <span>Matrix</span>
+            </button>
+            <button className="ribbon-command" type="button">
+              <BarChart3 size={18} aria-hidden="true" />
+              <span>Chart</span>
+            </button>
+            <button className="ribbon-command" type="button">
+              <Network size={18} aria-hidden="true" />
+              <span>Map</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside className="navigation-view" aria-label="Navigation view">
+        <div className="folder-pane">
+          <div className="pane-title">
+            <ListTree size={16} aria-hidden="true" />
+            <span>Navigation View</span>
+          </div>
+          <button className="folder-row active" type="button">
+            <FolderOpen size={16} aria-hidden="true" />
+            Internals
+          </button>
+          <button className="folder-row" type="button">
+            <MessageSquareText size={16} aria-hidden="true" />
+            Memos
+          </button>
+          <button className="folder-row" type="button">
+            <Tags size={16} aria-hidden="true" />
+            Codes
+          </button>
+          <button className="folder-row" type="button">
+            <GitBranch size={16} aria-hidden="true" />
+            Relationships
+          </button>
+        </div>
+
+        <nav className="section-switcher" aria-label="Project areas">
           <a className="active" href="#sources">
             <BookOpenText size={18} aria-hidden="true" />
             Sources
@@ -360,18 +485,42 @@ function App() {
             AI draft
           </a>
         </nav>
-
-        <div className="project-card">
-          <span>Active project</span>
-          <strong>Student Access Study</strong>
-          <small>{excerpts.length} coded excerpts across {codes.length} codes</small>
-        </div>
       </aside>
 
-      <section className="workspace" id="sources">
-        <header className="topbar">
+      <section className="list-view" aria-label="List view">
+        <div className="pane-title">
+          <FileText size={16} aria-hidden="true" />
+          <span>List View</span>
+        </div>
+        <article className="list-item active">
+          <FileText size={17} aria-hidden="true" />
           <div>
-            <p className="eyebrow">Source document</p>
+            <strong>{sourceTitle}</strong>
+            <span>Transcript - {excerpts.length} references</span>
+          </div>
+        </article>
+        <article className="list-item">
+          <MessageSquareText size={17} aria-hidden="true" />
+          <div>
+            <strong>Project memo</strong>
+            <span>Analytic notes</span>
+          </div>
+        </article>
+        {codes.map((code) => (
+          <article className="list-item" key={code.id}>
+            <span className="code-dot" style={{ background: code.color }} />
+            <div>
+              <strong>{code.name}</strong>
+              <span>{excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length} references</span>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="detail-view" id="sources">
+        <header className="detail-toolbar">
+          <div>
+            <p className="eyebrow">Detail View</p>
             <input
               className="title-input"
               value={sourceTitle}
@@ -380,75 +529,16 @@ function App() {
             />
           </div>
 
-          <div className="topbar-actions">
-            <div className="sync-box">
-              <Cloud size={16} aria-hidden="true" />
-              <span>{saveStatus}</span>
-            </div>
-            <div className="access-box">
-              <KeyRound size={16} aria-hidden="true" />
-              <input
-                value={accessKey}
-                placeholder="Access key"
-                aria-label="Fieldnote access key"
-                type="password"
-                onChange={(event) => {
-                  setAccessKey(event.target.value)
-                  if (!event.target.value) setSaveStatus('Demo mode. Add key to sync.')
-                }}
-              />
-              {accessKey && (
-                <button type="button" onClick={forgetAccessKey}>
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="search-box">
-              <Search size={17} aria-hidden="true" />
-              <input
-                value={searchTerm}
-                placeholder="Search coded work"
-                aria-label="Search coded work"
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-            </div>
-            <button className="icon-button" type="button" onClick={exportCsv} aria-label="Export coded excerpts">
-              <Download size={18} aria-hidden="true" />
-            </button>
+          <div className="search-box">
+            <Search size={17} aria-hidden="true" />
+            <input
+              value={searchTerm}
+              placeholder="Find coded work"
+              aria-label="Search coded work"
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
           </div>
         </header>
-
-        <div className="coding-toolbar" id="codes">
-          <div className="code-picker">
-            {codes.map((code) => (
-              <button
-                key={code.id}
-                className={selectedCodeIds.includes(code.id) ? 'selected' : ''}
-                type="button"
-                aria-pressed={selectedCodeIds.includes(code.id)}
-                onClick={() => toggleSelectedCode(code.id)}
-              >
-                <span style={{ background: code.color }} />
-                {code.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="new-code">
-            <input
-              value={newCodeName}
-              placeholder="New code"
-              aria-label="New code name"
-              onChange={(event) => setNewCodeName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') addCode()
-              }}
-            />
-            <button className="icon-button" type="button" onClick={addCode} aria-label="Add code">
-              <Plus size={18} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
 
         <article className="document-panel">
           <div className="document-actions">
@@ -488,7 +578,68 @@ function App() {
         </article>
       </section>
 
-      <aside className="inspector">
+      <aside className="properties-view">
+        <section className="panel" id="codes">
+          <div className="panel-heading">
+            <Tags size={18} aria-hidden="true" />
+            <h2>Active Codes</h2>
+          </div>
+          <div className="code-picker">
+            {codes.map((code) => (
+              <button
+                key={code.id}
+                className={selectedCodeIds.includes(code.id) ? 'selected' : ''}
+                type="button"
+                aria-pressed={selectedCodeIds.includes(code.id)}
+                onClick={() => toggleSelectedCode(code.id)}
+              >
+                <span style={{ background: code.color }} />
+                {code.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="new-code">
+            <input
+              value={newCodeName}
+              placeholder="New code"
+              aria-label="New code name"
+              onChange={(event) => setNewCodeName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') addCode()
+              }}
+            />
+            <button className="icon-button" type="button" onClick={addCode} aria-label="Add code">
+              <Plus size={18} aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <Database size={18} aria-hidden="true" />
+            <h2>Item Properties</h2>
+          </div>
+          <dl className="properties-list">
+            <div>
+              <dt>Project</dt>
+              <dd>Student Access Study</dd>
+            </div>
+            <div>
+              <dt>Source type</dt>
+              <dd>Interview transcript</dd>
+            </div>
+            <div>
+              <dt>Codes</dt>
+              <dd>{codes.length}</dd>
+            </div>
+            <div>
+              <dt>References</dt>
+              <dd>{excerpts.length}</dd>
+            </div>
+          </dl>
+        </section>
+
         <section className="panel" id="memo">
           <div className="panel-heading">
             <MessageSquareText size={18} aria-hidden="true" />
@@ -505,6 +656,10 @@ function App() {
           <p className="ai-note">
             Early theme: participants describe access as emotional labor, not just administrative difficulty.
           </p>
+          <div className="theme-pair">
+            {accessCode && <span style={{ borderColor: accessCode.color }}>{accessCode.name}</span>}
+            {trustCode && <span style={{ borderColor: trustCode.color }}>{trustCode.name}</span>}
+          </div>
           <button type="button" className="secondary-button">
             Suggest child codes
           </button>
