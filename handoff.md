@@ -4,7 +4,7 @@
 
 Fieldnote is a qualitative research coding app inspired by NVivo. It has a working prototype foundation, but the product direction has been corrected.
 
-Important: the UI has started moving from pane-based to mode-based, but it should still be treated as **provisional**.
+Important: the UI has started moving from pane-based to project-first, mode-based workflow, but it should still be treated as **provisional**.
 
 The app should not keep evolving as an always-visible dashboard. The next major pass should follow the mode-based workflow in:
 
@@ -36,6 +36,7 @@ That was not enough. The better interpretation is that NVivo supports staged res
 Fieldnote should now move toward modes:
 
 ```text
+Project Home
 Organize
 Code
 Refine
@@ -45,6 +46,8 @@ Report
 ```
 
 Each mode should have its own focused interface. Do not keep adding controls to the current right rail.
+
+Project Home sits above the modes. A user can have multiple projects, and each project contains its own sources, codebook, memos, excerpts, and eventually cases/reports.
 
 ## Live Links
 
@@ -146,8 +149,16 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 ### Authentication
 
 - Supabase email/password sign up and sign in.
-- Each user gets their own project.
+- Each user can have multiple projects.
 - Row level security is enabled.
+
+### Projects
+
+- Signed-in users now land on Project Home instead of being dropped directly into the workspace.
+- Project Home lists existing projects.
+- Users can create a new project.
+- Opening a project takes the user into the mode-based workspace.
+- The project switcher in the app header returns to Project Home.
 
 ### Sources
 
@@ -203,6 +214,8 @@ Milestone 1 has been started.
 
 Implemented:
 
+- Project Home above all work modes.
+- Multiple projects per signed-in user.
 - Top-level mode switcher:
   - Organize
   - Code
@@ -219,6 +232,7 @@ Implemented:
 
 Still needed:
 
+- Project rename/delete/share controls.
 - Mode-specific right rails need another design pass.
 - Organize mode needs real folder/source-table behavior.
 - Refine mode needs hierarchy/merge/split tools.
@@ -231,7 +245,7 @@ Do **not** add more one-off UI panels.
 Next implementation should continue Milestone 1 cleanup and then move into Milestone 2:
 
 ```text
-Milestone 1 cleanup: tighten mode-specific right rails
+Milestone 1 cleanup: finish Project Home polish and tighten mode-specific right rails
 Milestone 2: Organize Mode
 ```
 

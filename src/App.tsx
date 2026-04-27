@@ -69,6 +69,7 @@ type ProjectData = {
 type ProjectRow = {
   id: string
   title: string
+  updated_at?: string | null
   active_source_id?: string | null
   sources?: Source[] | null
   source_title?: string | null
@@ -221,6 +222,10 @@ function App() {
   const [password, setPassword] = useState('')
   const [authStatus, setAuthStatus] = useState('Sign in to sync your research workspace.')
   const [projectId, setProjectId] = useState<string | null>(null)
+  const [projectTitle, setProjectTitle] = useState('Student Access Study')
+  const [projectRows, setProjectRows] = useState<ProjectRow[]>([])
+  const [newProjectTitle, setNewProjectTitle] = useState('')
+  const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [activeView, setActiveView] = useState<WorkspaceView>('organize')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
@@ -262,6 +267,78 @@ function App() {
     [activeSourceId, codes, excerpts, memos, sources]
   )
 
+  function applyProject(project: ProjectRow) {
+    const nextProject = normalizeProject(project)
+
+    setProjectId(project.id)
+    setProjectTitle(project.title || 'Untitled project')
+    setActiveView('organize')
+    setActiveSourceId(nextProject.activeSourceId)
+    setSources(nextProject.sources)
+    setCodes(nextProject.codes)
+    setMemos(nextProject.memos)
+    setExcerpts(nextProject.excerpts)
+    setActiveCodeId(nextProject.codes[0]?.id ?? initialCodes[0].id)
+    setActiveMemoId(nextProject.memos[0]?.id ?? initialMemos[0].id)
+    setSelectedCodeIds(nextProject.codes[0]?.id ? [nextProject.codes[0].id] : [initialCodes[0].id])
+    hasLoadedRemoteProject.current = true
+    setSaveStatus('Project open.')
+  }
+
+  async function loadProjectRows() {
+    const { data, error } = await supabase
+      .from('fieldnote_projects')
+      .select('*')
+      .order('updated_at', { ascending: false })
+
+    if (error) throw error
+    setProjectRows((data ?? []) as ProjectRow[])
+  }
+
+  function returnToProjects() {
+    hasLoadedRemoteProject.current = false
+    setProjectId(null)
+    setSaveStatus('Choose or create a project.')
+    void loadProjectRows().catch((error: Error) => setSaveStatus(error.message))
+  }
+
+  async function createProject() {
+    if (!session?.user || isCreatingProject) return
+
+    const title = newProjectTitle.trim() || 'Untitled research project'
+    setIsCreatingProject(true)
+    setSaveStatus('Creating project...')
+
+    try {
+      const { data: createdProject, error } = await supabase
+        .from('fieldnote_projects')
+        .insert({
+          owner_id: session.user.id,
+          title,
+          active_source_id: defaultProject.activeSourceId,
+          source_title: defaultProject.sources[0].title,
+          transcript: defaultProject.sources[0].content,
+          memo: defaultProject.memos[0].body,
+          sources: defaultProject.sources,
+          codes: defaultProject.codes,
+          memos: defaultProject.memos,
+          excerpts: defaultProject.excerpts,
+        })
+        .select('*')
+        .single()
+
+      if (error) throw error
+      const nextProject = createdProject as ProjectRow
+      setProjectRows((current) => [nextProject, ...current])
+      setNewProjectTitle('')
+      applyProject(nextProject)
+    } catch (error) {
+      setSaveStatus(error instanceof Error ? error.message : 'Could not create project.')
+    } finally {
+      setIsCreatingProject(false)
+    }
+  }
+
   useEffect(() => {
     if (!isSupabaseConfigured) return
 
@@ -278,6 +355,7 @@ function App() {
       hasLoadedRemoteProject.current = false
       queueMicrotask(() => {
         setProjectId(null)
+        setProjectRows([])
         setSaveStatus('Sign in to sync.')
       })
       return
@@ -285,59 +363,26 @@ function App() {
 
     let isCurrent = true
     hasLoadedRemoteProject.current = false
-    queueMicrotask(() => setSaveStatus('Loading your project...'))
+    queueMicrotask(() => {
+      setProjectId(null)
+      setSaveStatus('Loading projects...')
+    })
 
-    async function loadProject() {
-      const userId = session?.user.id
-      if (!userId) return
-
-      const { data: existingProject, error: loadError } = await supabase
+    async function loadProjectsForUser() {
+      const { data, error } = await supabase
         .from('fieldnote_projects')
         .select('*')
         .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
 
-      if (loadError) throw loadError
-      if (existingProject) return existingProject as ProjectRow
-
-      const { data: createdProject, error: createError } = await supabase
-        .from('fieldnote_projects')
-        .insert({
-          owner_id: userId,
-          title: 'Student Access Study',
-          active_source_id: defaultProject.activeSourceId,
-          source_title: defaultProject.sources[0].title,
-          transcript: defaultProject.sources[0].content,
-          memo: defaultProject.memos[0].body,
-          sources: defaultProject.sources,
-          codes: defaultProject.codes,
-          memos: defaultProject.memos,
-          excerpts: defaultProject.excerpts,
-        })
-        .select('*')
-        .single()
-
-      if (createError) throw createError
-      return createdProject as ProjectRow
+      if (error) throw error
+      return (data ?? []) as ProjectRow[]
     }
 
-    loadProject()
-      .then((project) => {
-        if (!isCurrent || !project) return
-        const nextProject = normalizeProject(project)
-
-        setProjectId(project.id)
-        setActiveSourceId(nextProject.activeSourceId)
-        setSources(nextProject.sources)
-        setCodes(nextProject.codes)
-        setMemos(nextProject.memos)
-        setExcerpts(nextProject.excerpts)
-        setActiveCodeId(nextProject.codes[0]?.id ?? initialCodes[0].id)
-        setActiveMemoId(nextProject.memos[0]?.id ?? initialMemos[0].id)
-        setSelectedCodeIds(nextProject.codes[0]?.id ? [nextProject.codes[0].id] : [initialCodes[0].id])
-        hasLoadedRemoteProject.current = true
-        setSaveStatus('Synced with Supabase.')
+    loadProjectsForUser()
+      .then((projects) => {
+        if (!isCurrent) return
+        setProjectRows(projects)
+        setSaveStatus('Choose or create a project.')
       })
       .catch((error: Error) => {
         if (!isCurrent) return
@@ -360,6 +405,7 @@ function App() {
             .from('fieldnote_projects')
             .update({
               active_source_id: projectData.activeSourceId,
+              title: projectTitle,
               source_title: activeSource.title,
               transcript: activeSource.content,
               memo: projectMemo.body,
@@ -371,6 +417,24 @@ function App() {
             .eq('id', projectId)
 
           if (error) throw error
+          setProjectRows((current) =>
+            current.map((project) =>
+              project.id === projectId
+                ? {
+                    ...project,
+                    title: projectTitle,
+                    active_source_id: projectData.activeSourceId,
+                    source_title: activeSource.title,
+                    transcript: activeSource.content,
+                    memo: projectMemo.body,
+                    sources: projectData.sources,
+                    codes: projectData.codes,
+                    memos: projectData.memos,
+                    excerpts: projectData.excerpts,
+                  }
+                : project
+            )
+          )
           setSaveStatus('Saved to Supabase.')
         } catch (error) {
           setSaveStatus(error instanceof Error ? error.message : 'Save failed.')
@@ -381,7 +445,7 @@ function App() {
     }, 700)
 
     return () => window.clearTimeout(timeout)
-  }, [activeSource.content, activeSource.title, projectData, projectId, projectMemo.body, session])
+  }, [activeSource.content, activeSource.title, projectData, projectId, projectMemo.body, projectTitle, session])
 
   const visibleExcerpts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -634,6 +698,100 @@ function App() {
     )
   }
 
+  if (!projectId) {
+    return (
+      <main className="project-home-shell">
+        <header className="project-home-header">
+          <div className="brand-block">
+            <div className="brand-mark">F</div>
+            <div>
+              <p className="eyebrow">Qualitative workspace</p>
+              <h1>Fieldnote</h1>
+            </div>
+          </div>
+
+          <div className="header-tools">
+            <div className="sync-box">
+              <Cloud size={16} aria-hidden="true" />
+              <span>{saveStatus}</span>
+            </div>
+            <div className="user-box">
+              <span>{session.user.email}</span>
+              <button type="button" onClick={signOut}>
+                <LogOut size={15} aria-hidden="true" />
+                Sign out
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <section className="project-home">
+          <div className="project-home-copy">
+            <p className="eyebrow">Project Home</p>
+            <h2>Choose a study before you organize, code, refine, or analyze.</h2>
+            <p>Each project keeps its own sources, codebook, memos, excerpts, and later its own cases and reports.</p>
+          </div>
+
+          <section className="project-create-card">
+            <div>
+              <h2>New project</h2>
+              <p>Start a separate workspace for another study, class, grant, dissertation, or paper.</p>
+            </div>
+            <div className="new-project-row">
+              <input
+                value={newProjectTitle}
+                placeholder="Project title"
+                aria-label="Project title"
+                onChange={(event) => setNewProjectTitle(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void createProject()
+                }}
+              />
+              <button type="button" onClick={createProject} disabled={isCreatingProject}>
+                <Plus size={18} aria-hidden="true" />
+                Create
+              </button>
+            </div>
+          </section>
+
+          <section className="project-list-card">
+            <div className="project-list-heading">
+              <h2>Projects</h2>
+              <button type="button" onClick={() => void loadProjectRows()}>
+                Refresh
+              </button>
+            </div>
+
+            {projectRows.length ? (
+              <div className="project-list">
+                {projectRows.map((project) => (
+                  <button key={project.id} className="project-tile" type="button" onClick={() => applyProject(project)}>
+                    <span className="project-tile-icon">
+                      <FolderOpen size={19} aria-hidden="true" />
+                    </span>
+                    <span>
+                      <strong>{project.title || 'Untitled project'}</strong>
+                      <small>
+                        {(project.sources?.length ?? 0) || 1} sources - {(project.codes?.length ?? 0) || defaultProject.codes.length} codes -{' '}
+                        {(project.excerpts?.length ?? 0) || 0} references
+                      </small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <article className="empty-project-state">
+                <Database size={22} aria-hidden="true" />
+                <strong>No projects yet</strong>
+                <span>Create the first one here, then Fieldnote will take you into the workspace.</span>
+              </article>
+            )}
+          </section>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -644,6 +802,11 @@ function App() {
             <h1>Fieldnote</h1>
           </div>
         </div>
+
+        <button className="project-switcher" type="button" onClick={returnToProjects} title="Back to project home">
+          <FolderOpen size={16} aria-hidden="true" />
+          {projectTitle}
+        </button>
 
         <nav className="mode-switcher" aria-label="Research modes">
           {modeItems.map((mode) => (
@@ -931,7 +1094,7 @@ function App() {
           <dl className="properties-list">
             <div>
               <dt>Project</dt>
-              <dd>Student Access Study</dd>
+              <dd>{projectTitle}</dd>
             </div>
             <div>
               <dt>Sources</dt>

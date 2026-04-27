@@ -26,6 +26,7 @@ If something does not help that mode, hide it or move it to another mode.
 
 Fieldnote should feel like a set of focused workspaces:
 
+- Choose the project.
 - Organize the material.
 - Code the material.
 - Refine the codebook.
@@ -129,6 +130,10 @@ In Fieldnote, this belongs in Report mode.
 
 ## Proposed Modes
 
+Before the six work modes, Fieldnote needs a Project Home.
+
+Project Home is where a signed-in researcher chooses or creates a project. A professor may have separate projects for a grant, a dissertation committee, a class study, a paper, or a service assessment. Those projects should not be mixed inside Organize mode.
+
 The app should have six primary modes:
 
 ```text
@@ -147,6 +152,9 @@ The mode switcher should be the main app navigation. The current ribbon can eith
 Recommended shell:
 
 ```text
+Project Home: project list, create project, account controls
+
+Inside a project:
 Top: Project name, save status, mode switcher, account controls
 Left: Mode-specific object list / navigation
 Center: Main work surface
@@ -154,6 +162,44 @@ Right: Context panel, only when useful
 ```
 
 The right rail should not be a permanent junk drawer. It should change by mode.
+
+## Project Home
+
+### Purpose
+
+Choose which research project is active before entering the analysis workspace.
+
+### User Jobs
+
+- Create a project.
+- Open an existing project.
+- Later: rename, duplicate, archive, delete, and share projects.
+- Later: see project metadata such as owner, collaborators, last updated, source count, and reference count.
+
+### Visible UI
+
+Center:
+
+- project list/cards
+- create project form
+- project summaries
+
+Header:
+
+- Fieldnote brand
+- sync/status text
+- signed-in account
+
+### Hidden Here
+
+- source coding controls
+- codebook refinement tools
+- query tools
+- reports
+
+### Current App Gap
+
+Project Home now exists, but it is still basic. It needs rename/delete/share, better summaries, and eventually project templates.
 
 ## Mode 1: Organize
 
