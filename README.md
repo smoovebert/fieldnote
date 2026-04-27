@@ -1,13 +1,13 @@
 # Fieldnote
 
-Fieldnote is a modern qualitative coding workspace built with React, Vite, Vercel serverless functions, and Supabase.
+Fieldnote is a modern qualitative coding workspace built with React, Vite, Vercel, Supabase Auth, and Supabase Postgres.
 
 ## What Is Wired Up
 
 - React/Vite frontend for coding transcripts.
-- Vercel API route at `api/project.ts`.
+- Supabase email/password sign up and sign in.
 - Supabase table schema in `supabase/schema.sql`.
-- Simple private access key gate before the app can load or save Supabase data.
+- Row level security so users only see projects they own or have been invited to.
 - Debounced autosave after project edits.
 
 ## Supabase Setup
@@ -15,10 +15,11 @@ Fieldnote is a modern qualitative coding workspace built with React, Vite, Verce
 1. Create a Supabase project.
 2. Open the Supabase SQL editor.
 3. Run the SQL in `supabase/schema.sql`.
-4. Copy your Supabase project URL.
-5. Copy your Supabase `service_role` key.
+4. In Supabase, go to Authentication and make sure Email signups are enabled.
+5. Copy your Supabase project URL.
+6. Copy your Supabase anon public key.
 
-The table has row level security enabled and no public policies. The browser cannot talk to the table directly; only the Vercel API can.
+The table has row level security enabled. The browser can use the anon key, but Supabase only allows each signed-in user to access their own rows.
 
 ## Environment Variables
 
@@ -31,29 +32,19 @@ cp .env.example .env.local
 Fill in:
 
 ```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-FIELDNOTE_ACCESS_KEY=make-a-long-private-password
-FIELDNOTE_PROJECT_ID=student-access-study
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-public-key
 ```
 
 Add the same variables in Vercel Project Settings under Environment Variables.
 
 ## Development
 
-For frontend-only work:
-
 ```bash
 npm run dev
 ```
 
-For Supabase/API work:
-
-```bash
-npm run dev:vercel
-```
-
-Then open the local URL Vercel prints and enter your `FIELDNOTE_ACCESS_KEY` in the app.
+Then open the local URL Vite prints and sign up or sign in.
 
 ## Checks
 

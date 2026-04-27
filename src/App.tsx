@@ -13,8 +13,9 @@ import {
   Highlighter,
   Home,
   ListTree,
-  KeyRound,
   Layers3,
+  LogIn,
+  LogOut,
   MessageSquareText,
   Network,
   Rows3,
@@ -22,7 +23,10 @@ import {
   Search,
   Sparkles,
   Tags,
+  UserPlus,
 } from 'lucide-react'
+import type { Session } from '@supabase/supabase-js'
+import { isSupabaseConfigured, supabase } from './lib/supabase'
 import './App.css'
 
 type Code = {
@@ -42,6 +46,16 @@ type Excerpt = {
 
 type ProjectData = {
   sourceTitle: string
+  transcript: string
+  memo: string
+  codes: Code[]
+  excerpts: Excerpt[]
+}
+
+type ProjectRow = {
+  id: string
+  title: string
+  source_title: string
   transcript: string
   memo: string
   codes: Code[]
@@ -106,9 +120,13 @@ const defaultProject: ProjectData = {
   excerpts: initialExcerpts,
 }
 
-const savedAccessKey = localStorage.getItem('fieldnote-access-key') ?? ''
-
 function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authStatus, setAuthStatus] = useState('Sign in to sync your research workspace.')
+  const [projectId, setProjectId] = useState<string | null>(null)
   const [sourceTitle, setSourceTitle] = useState(defaultProject.sourceTitle)
   const [transcript, setTranscript] = useState(defaultProject.transcript)
   const [codes, setCodes] = useState(defaultProject.codes)
@@ -118,8 +136,7 @@ function App() {
   const [memo, setMemo] = useState(defaultProject.memo)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectionHint, setSelectionHint] = useState('Select text in the transcript, then click Code selection.')
-  const [accessKey, setAccessKey] = useState(savedAccessKey)
-  const [saveStatus, setSaveStatus] = useState(savedAccessKey ? 'Connecting to Supabase...' : 'Demo mode. Add key to sync.')
+  const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
 
   const selectedCodes = codes.filter((code) => selectedCodeIds.includes(code.id))
@@ -132,74 +149,117 @@ function App() {
   )
 
   useEffect(() => {
-    if (!accessKey) {
+    if (!isSupabaseConfigured) return
+
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession))
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!session?.user) {
       hasLoadedRemoteProject.current = false
+      queueMicrotask(() => {
+        setProjectId(null)
+        setSaveStatus('Sign in to sync.')
+      })
       return
     }
 
-    const controller = new AbortController()
+    let isCurrent = true
     hasLoadedRemoteProject.current = false
-    localStorage.setItem('fieldnote-access-key', accessKey)
-    queueMicrotask(() => setSaveStatus('Loading from Supabase...'))
+    queueMicrotask(() => setSaveStatus('Loading your project...'))
 
-    fetch('/api/project', {
-      headers: { 'x-fieldnote-key': accessKey },
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (response.status === 404) {
-          hasLoadedRemoteProject.current = true
-          setSaveStatus('No saved project yet. First edit will save.')
-          return
-        }
+    async function loadProject() {
+      const userId = session?.user.id
+      if (!userId) return
 
-        if (!response.ok) {
-          throw new Error(response.status === 401 ? 'Access key rejected.' : 'Could not load project.')
-        }
+      const { data: existingProject, error: loadError } = await supabase
+        .from('fieldnote_projects')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-        const remoteProject = (await response.json()) as ProjectData
-        setSourceTitle(remoteProject.sourceTitle || defaultProject.sourceTitle)
-        setTranscript(remoteProject.transcript || '')
-        setMemo(remoteProject.memo || '')
-        setCodes(remoteProject.codes?.length ? remoteProject.codes : defaultProject.codes)
-        setExcerpts(remoteProject.excerpts ?? [])
-        setSelectedCodeIds(remoteProject.codes?.[0]?.id ? [remoteProject.codes[0].id] : [initialCodes[0].id])
+      if (loadError) throw loadError
+
+      if (existingProject) return existingProject as ProjectRow
+
+      const { data: createdProject, error: createError } = await supabase
+        .from('fieldnote_projects')
+        .insert({
+          owner_id: userId,
+          title: 'Student Access Study',
+          source_title: defaultProject.sourceTitle,
+          transcript: defaultProject.transcript,
+          memo: defaultProject.memo,
+          codes: defaultProject.codes,
+          excerpts: defaultProject.excerpts,
+        })
+        .select('*')
+        .single()
+
+      if (createError) throw createError
+      return createdProject as ProjectRow
+    }
+
+    loadProject()
+      .then((project) => {
+        if (!isCurrent || !project) return
+
+        setProjectId(project.id)
+        setSourceTitle(project.source_title || defaultProject.sourceTitle)
+        setTranscript(project.transcript || '')
+        setMemo(project.memo || '')
+        setCodes(project.codes?.length ? project.codes : defaultProject.codes)
+        setExcerpts(project.excerpts ?? [])
+        setSelectedCodeIds(project.codes?.[0]?.id ? [project.codes[0].id] : [initialCodes[0].id])
         hasLoadedRemoteProject.current = true
         setSaveStatus('Synced with Supabase.')
       })
       .catch((error: Error) => {
-        if (controller.signal.aborted) return
+        if (!isCurrent) return
         setSaveStatus(error.message)
       })
 
-    return () => controller.abort()
-  }, [accessKey])
+    return () => {
+      isCurrent = false
+    }
+  }, [session])
 
   useEffect(() => {
-    if (!accessKey || !hasLoadedRemoteProject.current) return
+    if (!session?.user || !projectId || !hasLoadedRemoteProject.current) return
 
     setSaveStatus('Saving...')
     const timeout = window.setTimeout(() => {
-      fetch('/api/project', {
-        method: 'PUT',
-        headers: {
-          'content-type': 'application/json',
-          'x-fieldnote-key': accessKey,
-        },
-        body: JSON.stringify(projectData),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(response.status === 401 ? 'Access key rejected.' : 'Save failed.')
-          }
+      async function saveProject() {
+        try {
+          const { error } = await supabase
+            .from('fieldnote_projects')
+            .update({
+              source_title: projectData.sourceTitle,
+              transcript: projectData.transcript,
+              memo: projectData.memo,
+              codes: projectData.codes,
+              excerpts: projectData.excerpts,
+            })
+            .eq('id', projectId)
 
+          if (error) throw error
           setSaveStatus('Saved to Supabase.')
-        })
-        .catch((error: Error) => setSaveStatus(error.message))
+        } catch (error) {
+          setSaveStatus(error instanceof Error ? error.message : 'Save failed.')
+        }
+      }
+
+      void saveProject()
     }, 700)
 
     return () => window.clearTimeout(timeout)
-  }, [accessKey, projectData])
+  }, [projectData, projectId, session])
 
   const visibleExcerpts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -304,9 +364,32 @@ function App() {
     reader.readAsText(file)
   }
 
-  function forgetAccessKey() {
-    localStorage.removeItem('fieldnote-access-key')
-    setAccessKey('')
+  async function submitAuth(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    if (!isSupabaseConfigured) {
+      setAuthStatus('Supabase env variables are missing.')
+      return
+    }
+
+    setAuthStatus(authMode === 'sign-in' ? 'Signing in...' : 'Creating account...')
+    const credentials = { email, password }
+    const { error } =
+      authMode === 'sign-in'
+        ? await supabase.auth.signInWithPassword(credentials)
+        : await supabase.auth.signUp(credentials)
+
+    if (error) {
+      setAuthStatus(error.message)
+      return
+    }
+
+    setAuthStatus(authMode === 'sign-in' ? 'Signed in.' : 'Account created. Check email confirmation settings if needed.')
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut()
+    setSaveStatus('Sign in to sync.')
   }
 
   function exportCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -337,6 +420,52 @@ function App() {
     URL.revokeObjectURL(url)
   }
 
+  if (!session) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card">
+          <div className="brand-block">
+            <div className="brand-mark">F</div>
+            <div>
+              <p className="eyebrow">Qualitative workspace</p>
+              <h1>Fieldnote</h1>
+            </div>
+          </div>
+
+          <div className="auth-copy">
+            <h2>{authMode === 'sign-in' ? 'Sign in' : 'Create account'}</h2>
+            <p>Use an account so each researcher has their own synced project. Sharing can build on this next.</p>
+          </div>
+
+          <label className="auth-field">
+            <span>Email</span>
+            <input value={email} type="email" onChange={(event) => setEmail(event.target.value)} />
+          </label>
+
+          <label className="auth-field">
+            <span>Password</span>
+            <input value={password} type="password" onChange={(event) => setPassword(event.target.value)} />
+          </label>
+
+          <button className="auth-submit" type="button" onClick={submitAuth} disabled={!isSupabaseConfigured}>
+            {authMode === 'sign-in' ? <LogIn size={18} aria-hidden="true" /> : <UserPlus size={18} aria-hidden="true" />}
+            {authMode === 'sign-in' ? 'Sign in' : 'Create account'}
+          </button>
+
+          <button
+            className="auth-switch"
+            type="button"
+            onClick={() => setAuthMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'))}
+          >
+            {authMode === 'sign-in' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
+          </button>
+
+          <p className="auth-status">{isSupabaseConfigured ? authStatus : 'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.'}</p>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -353,23 +482,12 @@ function App() {
             <Cloud size={16} aria-hidden="true" />
             <span>{saveStatus}</span>
           </div>
-          <div className="access-box">
-            <KeyRound size={16} aria-hidden="true" />
-            <input
-              value={accessKey}
-              placeholder="Access key"
-              aria-label="Fieldnote access key"
-              type="password"
-              onChange={(event) => {
-                setAccessKey(event.target.value)
-                if (!event.target.value) setSaveStatus('Demo mode. Add key to sync.')
-              }}
-            />
-            {accessKey && (
-              <button type="button" onClick={forgetAccessKey}>
-                Clear
-              </button>
-            )}
+          <div className="user-box">
+            <span>{session.user.email}</span>
+            <button type="button" onClick={signOut}>
+              <LogOut size={15} aria-hidden="true" />
+              Sign out
+            </button>
           </div>
         </div>
       </header>
