@@ -1,18 +1,50 @@
 # Fieldnote Handoff
 
-## What This Is
+## Current Status
 
-Fieldnote is a web app for qualitative research coding, inspired by NVivo’s workflow but with a cleaner modern interface.
+Fieldnote is a qualitative research coding app inspired by NVivo. It has a working prototype foundation, but the product direction has been corrected.
 
-It is built for researchers who need to:
+Important: the current UI should be treated as **provisional**.
 
-- Import interview transcripts or text documents.
-- Organize sources.
-- Highlight passages.
-- Apply one or more codes.
-- View all references for a code.
-- Write project/source/code memos.
-- Save work per user account.
+The app should not keep evolving as an always-visible dashboard. The next major pass should follow the mode-based workflow in:
+
+```bash
+product-workflow-plan.md
+```
+
+That plan is now the source of truth for the next design and implementation phase.
+
+## Core Product Correction
+
+The first prototype copied too much of NVivo's visible anatomy:
+
+- ribbon
+- Navigation View
+- List View
+- Detail View
+- right rail
+
+That was not enough. The better interpretation is that NVivo supports staged research passes:
+
+- organizing sources
+- coding sources
+- refining codes/nodes
+- classifying cases and attributes
+- analyzing/querying
+- reporting/exporting
+
+Fieldnote should now move toward modes:
+
+```text
+Organize
+Code
+Refine
+Classify
+Analyze
+Report
+```
+
+Each mode should have its own focused interface. Do not keep adding controls to the current right rail.
 
 ## Live Links
 
@@ -21,7 +53,13 @@ It is built for researchers who need to:
 - Vercel project: `behemoth-agency/fieldnote`
 - Supabase project: `Fieldnote`
 
-## Current Tech Stack
+## Local Project Path
+
+```bash
+/Users/smoovebert/Projects/fieldnote
+```
+
+## Tech Stack
 
 - React
 - TypeScript
@@ -30,12 +68,6 @@ It is built for researchers who need to:
 - Supabase Postgres
 - Vercel
 - `lucide-react` icons
-
-## Local Project Path
-
-```bash
-/Users/smoovebert/Projects/fieldnote
-```
 
 ## Local Development
 
@@ -51,7 +83,7 @@ Then open:
 http://127.0.0.1:5173/
 ```
 
-Check the app before committing:
+Run checks:
 
 ```bash
 npm run lint
@@ -75,20 +107,20 @@ These are already set in:
 
 Do not commit `.env.local`.
 
-## Supabase Database
+## Database
 
-The app uses these tables:
+Supabase tables currently used:
 
 - `fieldnote_projects`
 - `fieldnote_project_members`
 
-The schema lives in:
+Schema:
 
 ```bash
 supabase/schema.sql
 ```
 
-Migrations live in:
+Migrations:
 
 ```bash
 supabase/migrations/
@@ -99,65 +131,7 @@ Applied migrations:
 - `20260427202944_fieldnote_auth_schema.sql`
 - `20260427203844_add_sources_and_memos_to_projects.sql`
 
-Row level security is enabled. Users should only see projects they own or have been added to as members.
-
-## Current Product Behavior
-
-### Authentication
-
-Users sign up or sign in with Supabase email/password auth.
-
-Each signed-in user gets their own project.
-
-### Main Workspace
-
-The app now has a more NVivo-like flow:
-
-- Left Navigation View changes the active workspace mode.
-- List View changes based on the selected workspace mode.
-- Detail View shows the selected source, code, memo, or relationship map.
-- Right rail shows active codes, item properties, context memo, AI draft, and coded excerpts.
-
-### Sources
-
-Sources are stored inside the project JSON as `sources`.
-
-Importing a `.txt`, `.md`, or `.csv` file creates a new source rather than replacing the current one.
-
-Clicking a source in List View opens it in Detail View.
-
-### Coding
-
-Users can select text in a source and code it with one or more active codes.
-
-Codes behave more like NVivo nodes now:
-
-- Click **Codes** in Navigation View.
-- Select a code in List View.
-- Detail View shows that code’s references.
-
-### Memos
-
-There are multiple memo types:
-
-- Project memo
-- Source memo
-- Code memo
-
-The right rail memo is context-aware:
-
-- Source open: source memo
-- Code open: code memo
-- Memo view: selected memo
-- Other context: project memo
-
-If the context memo does not exist yet, typing into the memo box creates and links it automatically.
-
-### Saving
-
-The app autosaves to Supabase after edits.
-
-Project data is currently stored mostly as JSON columns on `fieldnote_projects`:
+Current project data is still mostly JSON on `fieldnote_projects`:
 
 - `sources`
 - `codes`
@@ -165,46 +139,102 @@ Project data is currently stored mostly as JSON columns on `fieldnote_projects`:
 - `excerpts`
 - `active_source_id`
 
-This is good for prototype speed, but later should be normalized into separate tables.
+This is acceptable for the prototype, but the plan recommends normalizing later.
 
-## Recent Commits
+## Current Implemented Behavior
 
-- `254523b` Make right rail memo context aware
-- `71e7c7e` Make research workspace flow functional
-- `3cf63ab` Add Supabase auth schema migration
-- `61690a6` Replace access key with Supabase auth
+### Authentication
+
+- Supabase email/password sign up and sign in.
+- Each user gets their own project.
+- Row level security is enabled.
+
+### Sources
+
+- Multiple text sources are supported.
+- Importing `.txt`, `.md`, or `.csv` creates a new source.
+- Clicking a source opens it.
+
+### Coding
+
+- Users can select source text and code it.
+- One excerpt can have multiple codes.
+- Codes can be created from the right rail.
+- Clicking Codes shows references for a selected code.
+
+### Memos
+
+Supported memo types:
+
+- project memo
+- source memo
+- code memo
+
+The right rail memo is context-aware:
+
+- source open: source memo
+- code open: code memo
+- memo view: selected memo
+- fallback: project memo
+
+Typing in a missing context memo creates it automatically.
+
+### Saving
+
+- Autosaves to Supabase.
+- Production deployment is on Vercel.
 
 ## Current Known Issues
 
+- Current UI is still too dashboard-like.
+- Right rail still contains too many unrelated concepts.
+- Relationships view is only a placeholder.
+- AI draft panel is only a placeholder.
+- Query/Analyze tools are not implemented.
+- Report mode is not implemented.
+- Classifications/cases/attributes are not implemented.
+- Code hierarchy, merge, split, and parent-child nodes are not implemented.
+- Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
-- Project sharing has database support started, but no invite/share UI yet.
-- Relationships view is a placeholder.
-- AI draft panel is a placeholder.
-- Queries are not implemented yet.
-- PDF/audio/video coding are not implemented yet.
-- Code hierarchy/parent-child nodes are not implemented yet.
-- Sources/codes/memos are still stored as JSON inside one project row.
 
-## Recommended Next Steps
+## Required Next Step
 
-1. Add project sharing UI.
-2. Add code hierarchy and code editing controls.
-3. Add real query tools:
-   - text search
-   - word frequency
-   - coding query
-   - matrix coding
-4. Normalize database tables:
-   - projects
-   - project_members
-   - sources
-   - codes
-   - excerpts
-   - memos
-5. Add source folders under Internals.
-6. Add deletion/rename/merge flows.
-7. Add export reports beyond CSV.
-8. Add PDF support.
+Do **not** add more one-off UI panels.
+
+Next implementation should be:
+
+```text
+Milestone 1: Mode Shell
+```
+
+From `product-workflow-plan.md`:
+
+- Add `mode` state:
+  - `organize`
+  - `code`
+  - `refine`
+  - `classify`
+  - `analyze`
+  - `report`
+- Replace the current ribbon-first mental model with a mode switcher.
+- Move the current source coding screen into Code mode.
+- Move code reference review into Refine mode.
+- Move import/source management into Organize mode.
+- Move export into Report mode.
+- Hide AI and relationship placeholders unless they belong to the active mode.
+
+## Design Direction
+
+Fieldnote should feel calmer and more intentional than NVivo.
+
+Guiding rule:
+
+```text
+Show the tools for the research pass the user is doing now.
+Hide everything else.
+```
+
+Do not treat NVivo as a visual skin. Treat it as a research workflow reference.
 
 ## Deployment
 
@@ -220,14 +250,10 @@ Current production alias:
 https://fieldnote-seven.vercel.app
 ```
 
-## Design Direction
+## Recent Commits
 
-Keep the NVivo-inspired workflow:
-
-- Ribbon
-- Navigation View
-- List View
-- Detail View
-- Right properties/memo rail
-
-But avoid copying NVivo branding or exact proprietary UI. Fieldnote should feel calmer, more modern, and easier for a non-technical researcher.
+- `5589edd` Add handoff and enlarge memo rail
+- `254523b` Make right rail memo context aware
+- `71e7c7e` Make research workspace flow functional
+- `3cf63ab` Add Supabase auth schema migration
+- `61690a6` Replace access key with Supabase auth
