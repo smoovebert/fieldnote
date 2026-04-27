@@ -12,14 +12,14 @@ import {
   GitBranch,
   Highlighter,
   Home,
-  ListTree,
   Layers3,
+  ListTree,
   LogIn,
   LogOut,
   MessageSquareText,
   Network,
-  Rows3,
   Plus,
+  Rows3,
   Search,
   Sparkles,
   Tags,
@@ -29,6 +29,8 @@ import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import './App.css'
 
+type WorkspaceView = 'sources' | 'codes' | 'memos' | 'relationships'
+
 type Code = {
   id: string
   name: string
@@ -36,31 +38,71 @@ type Code = {
   description: string
 }
 
+type Source = {
+  id: string
+  title: string
+  kind: 'Transcript' | 'Document'
+  folder: 'Internals' | 'Externals'
+  content: string
+}
+
+type Memo = {
+  id: string
+  title: string
+  body: string
+  linkedType: 'project' | 'source' | 'code'
+  linkedId?: string
+}
+
 type Excerpt = {
   id: string
   codeIds: string[]
+  sourceId: string
   sourceTitle: string
   text: string
   note: string
 }
 
 type ProjectData = {
-  sourceTitle: string
-  transcript: string
-  memo: string
+  activeSourceId: string
+  sources: Source[]
   codes: Code[]
+  memos: Memo[]
   excerpts: Excerpt[]
 }
 
 type ProjectRow = {
   id: string
   title: string
-  source_title: string
-  transcript: string
-  memo: string
+  active_source_id?: string | null
+  sources?: Source[] | null
+  source_title?: string | null
+  transcript?: string | null
+  memo?: string | null
   codes: Code[]
+  memos?: Memo[] | null
   excerpts: Excerpt[]
 }
+
+const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
+
+Participant: It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else. After a while it felt like the system was testing whether I would give up.
+
+Interviewer: What helped you keep going?
+
+Participant: The campus advisor. She explained the steps in plain language and wrote down what to bring next time. That made me feel like I was not doing something wrong.
+
+Interviewer: Did the process affect how you thought about the university?
+
+Participant: Yes. I wanted to trust it, but the process made the university feel far away from people like me. Once I met someone who listened, it changed. But it should not depend on finding one helpful person.`
+
+const followUpTranscript = `Interviewer: What would have made the process feel more welcoming?
+
+Participant: A checklist would have helped, but not a generic one. I needed to know what applied to my situation. The hard part was not knowing which rule mattered.
+
+Interviewer: Did anyone explain the rules clearly?
+
+Participant: Eventually, yes. Another student told me which office had the real answer. That made me trust students more than the official instructions.`
 
 const initialCodes: Code[] = [
   {
@@ -83,22 +125,37 @@ const initialCodes: Code[] = [
   },
 ]
 
-const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
+const initialSources: Source[] = [
+  {
+    id: 'interview-03',
+    title: 'Interview 03',
+    kind: 'Transcript',
+    folder: 'Internals',
+    content: sampleTranscript,
+  },
+  {
+    id: 'interview-07',
+    title: 'Interview 07',
+    kind: 'Transcript',
+    folder: 'Internals',
+    content: followUpTranscript,
+  },
+]
 
-Participant: It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else. After a while it felt like the system was testing whether I would give up.
-
-Interviewer: What helped you keep going?
-
-Participant: The campus advisor. She explained the steps in plain language and wrote down what to bring next time. That made me feel like I was not doing something wrong.
-
-Interviewer: Did the process affect how you thought about the university?
-
-Participant: Yes. I wanted to trust it, but the process made the university feel far away from people like me. Once I met someone who listened, it changed. But it should not depend on finding one helpful person.`
+const initialMemos: Memo[] = [
+  {
+    id: 'project-memo',
+    title: 'Project memo',
+    linkedType: 'project',
+    body: 'The clearest early pattern is not simple dissatisfaction. Participants describe systems that feel illegible until a specific person translates them.',
+  },
+]
 
 const initialExcerpts: Excerpt[] = [
   {
     id: 'excerpt-1',
     codeIds: ['access', 'trust'],
+    sourceId: 'interview-03',
     sourceTitle: 'Interview 03',
     text: 'every office told me to call someone else. After a while it felt like the system was testing whether I would give up.',
     note: 'Strong quote for bureaucratic exhaustion.',
@@ -106,6 +163,7 @@ const initialExcerpts: Excerpt[] = [
   {
     id: 'excerpt-2',
     codeIds: ['trust', 'identity'],
+    sourceId: 'interview-03',
     sourceTitle: 'Interview 03',
     text: 'Once I met someone who listened, it changed. But it should not depend on finding one helpful person.',
     note: 'Useful for the contrast between institution and individual care.',
@@ -113,11 +171,43 @@ const initialExcerpts: Excerpt[] = [
 ]
 
 const defaultProject: ProjectData = {
-  sourceTitle: 'Interview 03',
-  transcript: sampleTranscript,
-  memo: 'The clearest early pattern is not simple dissatisfaction. Participants describe systems that feel illegible until a specific person translates them.',
+  activeSourceId: initialSources[0].id,
+  sources: initialSources,
   codes: initialCodes,
+  memos: initialMemos,
   excerpts: initialExcerpts,
+}
+
+function normalizeProject(project: ProjectRow): ProjectData {
+  const fallbackSource: Source = {
+    id: 'interview-03',
+    title: project.source_title || 'Interview 03',
+    kind: 'Transcript',
+    folder: 'Internals',
+    content: project.transcript || sampleTranscript,
+  }
+  const sources = project.sources?.length ? project.sources : [fallbackSource]
+  const memos = project.memos?.length
+    ? project.memos
+    : [
+        {
+          id: 'project-memo',
+          title: 'Project memo',
+          linkedType: 'project' as const,
+          body: project.memo || defaultProject.memos[0].body,
+        },
+      ]
+
+  return {
+    activeSourceId: project.active_source_id || sources[0].id,
+    sources,
+    codes: project.codes?.length ? project.codes : defaultProject.codes,
+    memos,
+    excerpts: (project.excerpts ?? []).map((excerpt) => ({
+      ...excerpt,
+      sourceId: excerpt.sourceId || sources.find((source) => source.title === excerpt.sourceTitle)?.id || sources[0].id,
+    })),
+  }
 }
 
 function App() {
@@ -127,25 +217,32 @@ function App() {
   const [password, setPassword] = useState('')
   const [authStatus, setAuthStatus] = useState('Sign in to sync your research workspace.')
   const [projectId, setProjectId] = useState<string | null>(null)
-  const [sourceTitle, setSourceTitle] = useState(defaultProject.sourceTitle)
-  const [transcript, setTranscript] = useState(defaultProject.transcript)
+  const [activeView, setActiveView] = useState<WorkspaceView>('sources')
+  const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
+  const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
+  const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
+  const [sources, setSources] = useState(defaultProject.sources)
   const [codes, setCodes] = useState(defaultProject.codes)
+  const [memos, setMemos] = useState(defaultProject.memos)
   const [excerpts, setExcerpts] = useState(defaultProject.excerpts)
   const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([initialCodes[0].id])
   const [newCodeName, setNewCodeName] = useState('')
-  const [memo, setMemo] = useState(defaultProject.memo)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectionHint, setSelectionHint] = useState('Select text in the transcript, then click Code selection.')
+  const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
 
+  const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0]
+  const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
+  const activeMemo = memos.find((memo) => memo.id === activeMemoId) ?? memos[0]
   const selectedCodes = codes.filter((code) => selectedCodeIds.includes(code.id))
   const selectedCodeNames = selectedCodes.map((code) => code.name).join(', ')
-  const accessCode = codes.find((code) => code.id === 'access')
-  const trustCode = codes.find((code) => code.id === 'trust')
+  const sourceExcerpts = excerpts.filter((excerpt) => excerpt.sourceId === activeSource.id)
+  const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id))
+  const projectMemo = memos.find((memo) => memo.linkedType === 'project') ?? activeMemo
   const projectData = useMemo<ProjectData>(
-    () => ({ sourceTitle, transcript, memo, codes, excerpts }),
-    [codes, excerpts, memo, sourceTitle, transcript]
+    () => ({ activeSourceId, sources, codes, memos, excerpts }),
+    [activeSourceId, codes, excerpts, memos, sources]
   )
 
   useEffect(() => {
@@ -185,7 +282,6 @@ function App() {
         .maybeSingle()
 
       if (loadError) throw loadError
-
       if (existingProject) return existingProject as ProjectRow
 
       const { data: createdProject, error: createError } = await supabase
@@ -193,10 +289,13 @@ function App() {
         .insert({
           owner_id: userId,
           title: 'Student Access Study',
-          source_title: defaultProject.sourceTitle,
-          transcript: defaultProject.transcript,
-          memo: defaultProject.memo,
+          active_source_id: defaultProject.activeSourceId,
+          source_title: defaultProject.sources[0].title,
+          transcript: defaultProject.sources[0].content,
+          memo: defaultProject.memos[0].body,
+          sources: defaultProject.sources,
           codes: defaultProject.codes,
+          memos: defaultProject.memos,
           excerpts: defaultProject.excerpts,
         })
         .select('*')
@@ -209,14 +308,17 @@ function App() {
     loadProject()
       .then((project) => {
         if (!isCurrent || !project) return
+        const nextProject = normalizeProject(project)
 
         setProjectId(project.id)
-        setSourceTitle(project.source_title || defaultProject.sourceTitle)
-        setTranscript(project.transcript || '')
-        setMemo(project.memo || '')
-        setCodes(project.codes?.length ? project.codes : defaultProject.codes)
-        setExcerpts(project.excerpts ?? [])
-        setSelectedCodeIds(project.codes?.[0]?.id ? [project.codes[0].id] : [initialCodes[0].id])
+        setActiveSourceId(nextProject.activeSourceId)
+        setSources(nextProject.sources)
+        setCodes(nextProject.codes)
+        setMemos(nextProject.memos)
+        setExcerpts(nextProject.excerpts)
+        setActiveCodeId(nextProject.codes[0]?.id ?? initialCodes[0].id)
+        setActiveMemoId(nextProject.memos[0]?.id ?? initialMemos[0].id)
+        setSelectedCodeIds(nextProject.codes[0]?.id ? [nextProject.codes[0].id] : [initialCodes[0].id])
         hasLoadedRemoteProject.current = true
         setSaveStatus('Synced with Supabase.')
       })
@@ -240,10 +342,13 @@ function App() {
           const { error } = await supabase
             .from('fieldnote_projects')
             .update({
-              source_title: projectData.sourceTitle,
-              transcript: projectData.transcript,
-              memo: projectData.memo,
+              active_source_id: projectData.activeSourceId,
+              source_title: activeSource.title,
+              transcript: activeSource.content,
+              memo: projectMemo.body,
+              sources: projectData.sources,
               codes: projectData.codes,
+              memos: projectData.memos,
               excerpts: projectData.excerpts,
             })
             .eq('id', projectId)
@@ -259,25 +364,23 @@ function App() {
     }, 700)
 
     return () => window.clearTimeout(timeout)
-  }, [projectData, projectId, session])
+  }, [activeSource.content, activeSource.title, projectData, projectId, projectMemo.body, session])
 
   const visibleExcerpts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
-    if (!term) return excerpts
+    const list = activeView === 'codes' ? codeExcerpts : activeView === 'sources' ? sourceExcerpts : excerpts
+    if (!term) return list
 
-    return excerpts.filter((excerpt) => {
+    return list.filter((excerpt) => {
       const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id)).map((code) => code.name)
-      return [excerpt.text, excerpt.note, excerpt.sourceTitle, ...excerptCodes]
-        .join(' ')
-        .toLowerCase()
-        .includes(term)
+      return [excerpt.text, excerpt.note, excerpt.sourceTitle, ...excerptCodes].join(' ').toLowerCase().includes(term)
     })
-  }, [codes, excerpts, searchTerm])
+  }, [activeView, codeExcerpts, codes, excerpts, searchTerm, sourceExcerpts])
 
   const highlightedTranscript = useMemo(() => {
-    let pieces: Array<{ text: string; codes?: Code[] }> = [{ text: transcript }]
+    let pieces: Array<{ text: string; codes?: Code[] }> = [{ text: activeSource.content }]
 
-    excerpts.forEach((excerpt) => {
+    sourceExcerpts.forEach((excerpt) => {
       const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id))
       if (!excerptCodes.length || !excerpt.text.trim()) return
 
@@ -296,7 +399,7 @@ function App() {
     })
 
     return pieces
-  }, [codes, excerpts, transcript])
+  }, [activeSource.content, codes, sourceExcerpts])
 
   function addCode() {
     const name = newCodeName.trim()
@@ -312,24 +415,43 @@ function App() {
 
     setCodes((current) => [...current, code])
     setSelectedCodeIds((current) => [...current, code.id])
+    setActiveCodeId(code.id)
+    setActiveView('codes')
     setNewCodeName('')
+  }
+
+  function addMemo(linkedType: Memo['linkedType'] = activeView === 'codes' ? 'code' : activeView === 'sources' ? 'source' : 'project') {
+    const memo: Memo = {
+      id: `memo-${Date.now()}`,
+      title: linkedType === 'code' ? `${activeCode.name} memo` : linkedType === 'source' ? `${activeSource.title} memo` : 'New project memo',
+      linkedType,
+      linkedId: linkedType === 'code' ? activeCode.id : linkedType === 'source' ? activeSource.id : undefined,
+      body: '',
+    }
+
+    setMemos((current) => [memo, ...current])
+    setActiveMemoId(memo.id)
+    setActiveView('memos')
   }
 
   function toggleSelectedCode(codeId: string) {
     setSelectedCodeIds((current) => {
-      if (current.includes(codeId)) {
-        return current.length === 1 ? current : current.filter((id) => id !== codeId)
-      }
-
+      if (current.includes(codeId)) return current.length === 1 ? current : current.filter((id) => id !== codeId)
       return [...current, codeId]
     })
+  }
+
+  function selectView(view: WorkspaceView) {
+    setActiveView(view)
+    if (view === 'codes') setActiveCodeId(codes[0]?.id ?? '')
+    if (view === 'memos') setActiveMemoId(memos[0]?.id ?? '')
   }
 
   function codeSelection() {
     const selectedText = window.getSelection()?.toString().trim()
 
-    if (!selectedText) {
-      setSelectionHint('No text is selected yet. Drag across a phrase or paragraph first.')
+    if (!selectedText || activeView !== 'sources') {
+      setSelectionHint(activeView === 'sources' ? 'No text is selected yet. Drag across a phrase or paragraph first.' : 'Open a source before coding text.')
       return
     }
 
@@ -337,7 +459,8 @@ function App() {
       {
         id: `excerpt-${Date.now()}`,
         codeIds: selectedCodes.map((code) => code.id),
-        sourceTitle,
+        sourceId: activeSource.id,
+        sourceTitle: activeSource.title,
         text: selectedText,
         note: '',
       },
@@ -345,6 +468,17 @@ function App() {
     ])
     setSelectionHint(`Coded selection as ${selectedCodeNames}.`)
     window.getSelection()?.removeAllRanges()
+  }
+
+  function updateSource(sourceId: string, patch: Partial<Source>) {
+    setSources((current) => current.map((source) => (source.id === sourceId ? { ...source, ...patch } : source)))
+    if (patch.title) {
+      setExcerpts((current) => current.map((excerpt) => (excerpt.sourceId === sourceId ? { ...excerpt, sourceTitle: patch.title ?? excerpt.sourceTitle } : excerpt)))
+    }
+  }
+
+  function updateMemo(memoId: string, patch: Partial<Memo>) {
+    setMemos((current) => current.map((memo) => (memo.id === memoId ? { ...memo, ...patch } : memo)))
   }
 
   function updateExcerptNote(id: string, note: string) {
@@ -357,9 +491,18 @@ function App() {
 
     const reader = new FileReader()
     reader.onload = () => {
-      setTranscript(String(reader.result ?? ''))
-      setSourceTitle(file.name.replace(/\.[^.]+$/, ''))
-      setSelectionHint('Transcript imported. Select a passage to begin coding.')
+      const source: Source = {
+        id: `source-${Date.now()}`,
+        title: file.name.replace(/\.[^.]+$/, ''),
+        kind: 'Transcript',
+        folder: 'Internals',
+        content: String(reader.result ?? ''),
+      }
+      setSources((current) => [source, ...current])
+      setActiveSourceId(source.id)
+      setActiveView('sources')
+      setSelectionHint('Source imported. Select a passage to begin coding.')
+      event.target.value = ''
     }
     reader.readAsText(file)
   }
@@ -375,9 +518,7 @@ function App() {
     setAuthStatus(authMode === 'sign-in' ? 'Signing in...' : 'Creating account...')
     const credentials = { email, password }
     const { error } =
-      authMode === 'sign-in'
-        ? await supabase.auth.signInWithPassword(credentials)
-        : await supabase.auth.signUp(credentials)
+      authMode === 'sign-in' ? await supabase.auth.signInWithPassword(credentials) : await supabase.auth.signUp(credentials)
 
     if (error) {
       setAuthStatus(error.message)
@@ -408,9 +549,7 @@ function App() {
       ]),
     ]
 
-    const csv = rows
-      .map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(','))
-      .join('\n')
+    const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -452,11 +591,7 @@ function App() {
             {authMode === 'sign-in' ? 'Sign in' : 'Create account'}
           </button>
 
-          <button
-            className="auth-switch"
-            type="button"
-            onClick={() => setAuthMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'))}
-          >
+          <button className="auth-switch" type="button" onClick={() => setAuthMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'))}>
             {authMode === 'sign-in' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
           </button>
 
@@ -494,26 +629,18 @@ function App() {
 
       <section className="ribbon" aria-label="Command ribbon">
         <nav className="ribbon-tabs" aria-label="Ribbon tabs">
-          <button className="active" type="button">
-            <Home size={16} aria-hidden="true" />
-            Home
-          </button>
-          <button type="button">
-            <Plus size={16} aria-hidden="true" />
-            Create
-          </button>
-          <button type="button">
-            <Database size={16} aria-hidden="true" />
-            Data
-          </button>
-          <button type="button">
-            <Search size={16} aria-hidden="true" />
-            Query
-          </button>
-          <button type="button">
-            <Download size={16} aria-hidden="true" />
-            Share
-          </button>
+          {[
+            ['Home', Home],
+            ['Create', Plus],
+            ['Data', Database],
+            ['Query', Search],
+            ['Share', Download],
+          ].map(([label, Icon], index) => (
+            <button className={index === 0 ? 'active' : ''} type="button" key={String(label)}>
+              <Icon size={16} aria-hidden="true" />
+              {String(label)}
+            </button>
+          ))}
         </nav>
 
         <div className="ribbon-groups">
@@ -534,7 +661,7 @@ function App() {
               <Highlighter size={18} aria-hidden="true" />
               <span>Code</span>
             </button>
-            <button className="ribbon-command" type="button">
+            <button className="ribbon-command" type="button" onClick={() => addMemo()}>
               <MessageSquareText size={18} aria-hidden="true" />
               <span>Memo</span>
             </button>
@@ -545,7 +672,7 @@ function App() {
           </div>
 
           <div className="ribbon-group">
-            <button className="ribbon-command" type="button">
+            <button className="ribbon-command" type="button" onClick={() => selectView('codes')}>
               <Rows3 size={18} aria-hidden="true" />
               <span>Matrix</span>
             </button>
@@ -553,7 +680,7 @@ function App() {
               <BarChart3 size={18} aria-hidden="true" />
               <span>Chart</span>
             </button>
-            <button className="ribbon-command" type="button">
+            <button className="ribbon-command" type="button" onClick={() => selectView('relationships')}>
               <Network size={18} aria-hidden="true" />
               <span>Map</span>
             </button>
@@ -567,133 +694,153 @@ function App() {
             <ListTree size={16} aria-hidden="true" />
             <span>Navigation View</span>
           </div>
-          <button className="folder-row active" type="button">
+          <button className={activeView === 'sources' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('sources')}>
             <FolderOpen size={16} aria-hidden="true" />
             Internals
           </button>
-          <button className="folder-row" type="button">
+          <button className={activeView === 'memos' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('memos')}>
             <MessageSquareText size={16} aria-hidden="true" />
             Memos
           </button>
-          <button className="folder-row" type="button">
+          <button className={activeView === 'codes' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('codes')}>
             <Tags size={16} aria-hidden="true" />
             Codes
           </button>
-          <button className="folder-row" type="button">
+          <button className={activeView === 'relationships' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('relationships')}>
             <GitBranch size={16} aria-hidden="true" />
             Relationships
           </button>
         </div>
 
         <nav className="section-switcher" aria-label="Project areas">
-          <a className="active" href="#sources">
-            <BookOpenText size={18} aria-hidden="true" />
-            Sources
-          </a>
-          <a href="#codes">
-            <Layers3 size={18} aria-hidden="true" />
-            Codes
-          </a>
-          <a href="#memo">
-            <MessageSquareText size={18} aria-hidden="true" />
-            Memos
-          </a>
-          <a href="#assistant">
-            <Sparkles size={18} aria-hidden="true" />
-            AI draft
-          </a>
+          {[
+            ['sources', BookOpenText, 'Sources'],
+            ['codes', Layers3, 'Codes'],
+            ['memos', MessageSquareText, 'Memos'],
+            ['relationships', Sparkles, 'Maps'],
+          ].map(([view, Icon, label]) => (
+            <button key={String(view)} className={activeView === view ? 'active' : ''} type="button" onClick={() => selectView(view as WorkspaceView)}>
+              <Icon size={18} aria-hidden="true" />
+              {String(label)}
+            </button>
+          ))}
         </nav>
       </aside>
 
       <section className="list-view" aria-label="List view">
-        <div className="pane-title">
-          <FileText size={16} aria-hidden="true" />
-          <span>List View</span>
-        </div>
-        <article className="list-item active">
-          <FileText size={17} aria-hidden="true" />
-          <div>
-            <strong>{sourceTitle}</strong>
-            <span>Transcript - {excerpts.length} references</span>
-          </div>
-        </article>
-        <article className="list-item">
-          <MessageSquareText size={17} aria-hidden="true" />
-          <div>
-            <strong>Project memo</strong>
-            <span>Analytic notes</span>
-          </div>
-        </article>
-        {codes.map((code) => (
-          <article className="list-item" key={code.id}>
-            <span className="code-dot" style={{ background: code.color }} />
-            <div>
-              <strong>{code.name}</strong>
-              <span>{excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length} references</span>
-            </div>
-          </article>
-        ))}
+        <ListView
+          activeView={activeView}
+          activeSourceId={activeSource.id}
+          activeCodeId={activeCode.id}
+          activeMemoId={activeMemo.id}
+          sources={sources}
+          codes={codes}
+          memos={memos}
+          excerpts={excerpts}
+          onSelectSource={(id) => {
+            setActiveSourceId(id)
+            setActiveView('sources')
+          }}
+          onSelectCode={(id) => {
+            setActiveCodeId(id)
+            setActiveView('codes')
+          }}
+          onSelectMemo={(id) => {
+            setActiveMemoId(id)
+            setActiveView('memos')
+          }}
+        />
       </section>
 
       <section className="detail-view" id="sources">
         <header className="detail-toolbar">
           <div>
             <p className="eyebrow">Detail View</p>
-            <input
-              className="title-input"
-              value={sourceTitle}
-              aria-label="Source title"
-              onChange={(event) => setSourceTitle(event.target.value)}
+            <DetailTitle
+              activeView={activeView}
+              activeSource={activeSource}
+              activeCode={activeCode}
+              activeMemo={activeMemo}
+              onSourceTitleChange={(title) => updateSource(activeSource.id, { title })}
+              onCodeNameChange={(name) => setCodes((current) => current.map((code) => (code.id === activeCode.id ? { ...code, name } : code)))}
+              onMemoTitleChange={(title) => updateMemo(activeMemo.id, { title })}
             />
           </div>
 
           <div className="search-box">
             <Search size={17} aria-hidden="true" />
-            <input
-              value={searchTerm}
-              placeholder="Find coded work"
-              aria-label="Search coded work"
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
+            <input value={searchTerm} placeholder="Find coded work" aria-label="Search coded work" onChange={(event) => setSearchTerm(event.target.value)} />
           </div>
         </header>
 
-        <article className="document-panel">
-          <div className="document-actions">
-            <div>
-              <strong>{selectedCodeNames}</strong>
-              <p>{selectionHint} Active codes can be combined.</p>
+        {activeView === 'sources' && (
+          <article className="document-panel">
+            <div className="document-actions">
+              <div>
+                <strong>{selectedCodeNames}</strong>
+                <p>{selectionHint} Active codes can be combined.</p>
+              </div>
+              <button type="button" className="primary-button" onClick={codeSelection}>
+                <Highlighter size={18} aria-hidden="true" />
+                Code selection
+              </button>
             </div>
-            <button type="button" className="primary-button" onClick={codeSelection}>
-              <Highlighter size={18} aria-hidden="true" />
-              Code selection
-            </button>
-          </div>
 
-          <div className="transcript" aria-label="Transcript text">
-            {highlightedTranscript.map((piece, index) =>
-              piece.codes ? (
-                <mark
-                  key={`${piece.text}-${index}`}
-                  className="multi-code-mark"
-                  style={{
-                    backgroundColor: `${piece.codes[0].color}28`,
-                    borderColor: piece.codes[0].color,
-                    boxShadow: piece.codes
-                      .slice(1, 4)
-                      .map((code, shadowIndex) => `inset 0 ${-2 - shadowIndex * 3}px 0 ${code.color}70`)
-                      .join(', '),
-                  }}
-                  title={piece.codes.map((code) => code.name).join(', ')}
-                >
-                  {piece.text}
-                </mark>
-              ) : (
-                <span key={`${piece.text}-${index}`}>{piece.text}</span>
-              )
-            )}
-          </div>
-        </article>
+            <div className="transcript" aria-label="Source text">
+              {highlightedTranscript.map((piece, index) =>
+                piece.codes ? (
+                  <mark
+                    key={`${piece.text}-${index}`}
+                    className="multi-code-mark"
+                    style={{
+                      backgroundColor: `${piece.codes[0].color}28`,
+                      borderColor: piece.codes[0].color,
+                      boxShadow: piece.codes
+                        .slice(1, 4)
+                        .map((code, shadowIndex) => `inset 0 ${-2 - shadowIndex * 3}px 0 ${code.color}70`)
+                        .join(', '),
+                    }}
+                    title={piece.codes.map((code) => code.name).join(', ')}
+                  >
+                    {piece.text}
+                  </mark>
+                ) : (
+                  <span key={`${piece.text}-${index}`}>{piece.text}</span>
+                )
+              )}
+            </div>
+          </article>
+        )}
+
+        {activeView === 'codes' && (
+          <article className="detail-card">
+            <p className="detail-kicker">Node references</p>
+            <textarea
+              className="code-description"
+              value={activeCode.description}
+              aria-label="Code description"
+              onChange={(event) => setCodes((current) => current.map((code) => (code.id === activeCode.id ? { ...code, description: event.target.value } : code)))}
+            />
+            <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} />
+          </article>
+        )}
+
+        {activeView === 'memos' && (
+          <article className="detail-card">
+            <p className="detail-kicker">Linked memo</p>
+            <textarea className="memo-editor" value={activeMemo.body} aria-label="Memo body" onChange={(event) => updateMemo(activeMemo.id, { body: event.target.value })} />
+          </article>
+        )}
+
+        {activeView === 'relationships' && (
+          <article className="detail-card relationship-map">
+            <p className="detail-kicker">Relationship map</p>
+            <div className="map-node source-node">{activeSource.title}</div>
+            <div className="map-line" />
+            <div className="map-node code-node">{activeCode.name}</div>
+            <p className="map-caption">Relationships are tracked as a workspace mode now. The next pass can make these editable links between cases, sources, and codes.</p>
+          </article>
+        )}
       </section>
 
       <aside className="properties-view">
@@ -704,13 +851,7 @@ function App() {
           </div>
           <div className="code-picker">
             {codes.map((code) => (
-              <button
-                key={code.id}
-                className={selectedCodeIds.includes(code.id) ? 'selected' : ''}
-                type="button"
-                aria-pressed={selectedCodeIds.includes(code.id)}
-                onClick={() => toggleSelectedCode(code.id)}
-              >
+              <button key={code.id} className={selectedCodeIds.includes(code.id) ? 'selected' : ''} type="button" aria-pressed={selectedCodeIds.includes(code.id)} onClick={() => toggleSelectedCode(code.id)}>
                 <span style={{ background: code.color }} />
                 {code.name}
               </button>
@@ -744,8 +885,8 @@ function App() {
               <dd>Student Access Study</dd>
             </div>
             <div>
-              <dt>Source type</dt>
-              <dd>Interview transcript</dd>
+              <dt>Sources</dt>
+              <dd>{sources.length}</dd>
             </div>
             <div>
               <dt>Codes</dt>
@@ -763,7 +904,7 @@ function App() {
             <MessageSquareText size={18} aria-hidden="true" />
             <h2>Project memo</h2>
           </div>
-          <textarea value={memo} onChange={(event) => setMemo(event.target.value)} aria-label="Project memo" />
+          <textarea value={projectMemo.body} onChange={(event) => updateMemo(projectMemo.id, { body: event.target.value })} aria-label="Project memo" />
         </section>
 
         <section className="panel" id="assistant">
@@ -771,12 +912,13 @@ function App() {
             <Sparkles size={18} aria-hidden="true" />
             <h2>AI draft</h2>
           </div>
-          <p className="ai-note">
-            Early theme: participants describe access as emotional labor, not just administrative difficulty.
-          </p>
+          <p className="ai-note">Early theme: participants describe access as emotional labor, not just administrative difficulty.</p>
           <div className="theme-pair">
-            {accessCode && <span style={{ borderColor: accessCode.color }}>{accessCode.name}</span>}
-            {trustCode && <span style={{ borderColor: trustCode.color }}>{trustCode.name}</span>}
+            {codes.slice(0, 2).map((code) => (
+              <span key={code.id} style={{ borderColor: code.color }}>
+                {code.name}
+              </span>
+            ))}
           </div>
           <button type="button" className="secondary-button">
             Suggest child codes
@@ -788,34 +930,152 @@ function App() {
             <Highlighter size={18} aria-hidden="true" />
             <h2>Coded excerpts</h2>
           </div>
-          <div className="excerpt-list">
-            {visibleExcerpts.map((excerpt) => {
-              const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id))
-              return (
-                <article className="excerpt-card" key={excerpt.id}>
-                  <div className="excerpt-meta">
-                    <div className="code-stack" aria-hidden="true">
-                      {excerptCodes.map((code) => (
-                        <span key={code.id} style={{ background: code.color }} />
-                      ))}
-                    </div>
-                    <strong>{excerptCodes.map((code) => code.name).join(', ') || 'Unknown code'}</strong>
-                    <small>{excerpt.sourceTitle}</small>
-                  </div>
-                  <p>{excerpt.text}</p>
-                  <input
-                    value={excerpt.note}
-                    placeholder="Add note"
-                    aria-label={`Note for ${excerptCodes.map((code) => code.name).join(', ') || 'excerpt'}`}
-                    onChange={(event) => updateExcerptNote(excerpt.id, event.target.value)}
-                  />
-                </article>
-              )
-            })}
-          </div>
+          <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} compact />
         </section>
       </aside>
     </main>
+  )
+}
+
+function ListView({
+  activeView,
+  activeSourceId,
+  activeCodeId,
+  activeMemoId,
+  sources,
+  codes,
+  memos,
+  excerpts,
+  onSelectSource,
+  onSelectCode,
+  onSelectMemo,
+}: {
+  activeView: WorkspaceView
+  activeSourceId: string
+  activeCodeId: string
+  activeMemoId: string
+  sources: Source[]
+  codes: Code[]
+  memos: Memo[]
+  excerpts: Excerpt[]
+  onSelectSource: (id: string) => void
+  onSelectCode: (id: string) => void
+  onSelectMemo: (id: string) => void
+}) {
+  return (
+    <>
+      <div className="pane-title">
+        <FileText size={16} aria-hidden="true" />
+        <span>List View</span>
+      </div>
+      {activeView === 'sources' &&
+        sources.map((source) => (
+          <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
+            <FileText size={17} aria-hidden="true" />
+            <div>
+              <strong>{source.title}</strong>
+              <span>
+                {source.kind} - {excerpts.filter((excerpt) => excerpt.sourceId === source.id).length} references
+              </span>
+            </div>
+          </button>
+        ))}
+      {activeView === 'codes' &&
+        codes.map((code) => (
+          <button className={code.id === activeCodeId ? 'list-item active' : 'list-item'} key={code.id} type="button" onClick={() => onSelectCode(code.id)}>
+            <span className="code-dot" style={{ background: code.color }} />
+            <div>
+              <strong>{code.name}</strong>
+              <span>{excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length} references</span>
+            </div>
+          </button>
+        ))}
+      {activeView === 'memos' &&
+        memos.map((memo) => (
+          <button className={memo.id === activeMemoId ? 'list-item active' : 'list-item'} key={memo.id} type="button" onClick={() => onSelectMemo(memo.id)}>
+            <MessageSquareText size={17} aria-hidden="true" />
+            <div>
+              <strong>{memo.title}</strong>
+              <span>{memo.linkedType} memo</span>
+            </div>
+          </button>
+        ))}
+      {activeView === 'relationships' && (
+        <article className="empty-list-state">
+          <GitBranch size={20} aria-hidden="true" />
+          <strong>No relationships yet</strong>
+          <span>Use this area for future case, code, and source links.</span>
+        </article>
+      )}
+    </>
+  )
+}
+
+function DetailTitle({
+  activeView,
+  activeSource,
+  activeCode,
+  activeMemo,
+  onSourceTitleChange,
+  onCodeNameChange,
+  onMemoTitleChange,
+}: {
+  activeView: WorkspaceView
+  activeSource: Source
+  activeCode: Code
+  activeMemo: Memo
+  onSourceTitleChange: (title: string) => void
+  onCodeNameChange: (name: string) => void
+  onMemoTitleChange: (title: string) => void
+}) {
+  if (activeView === 'codes') {
+    return <input className="title-input" value={activeCode.name} aria-label="Code name" onChange={(event) => onCodeNameChange(event.target.value)} />
+  }
+  if (activeView === 'memos') {
+    return <input className="title-input" value={activeMemo.title} aria-label="Memo title" onChange={(event) => onMemoTitleChange(event.target.value)} />
+  }
+  if (activeView === 'relationships') {
+    return <h2 className="static-detail-title">Relationships</h2>
+  }
+  return <input className="title-input" value={activeSource.title} aria-label="Source title" onChange={(event) => onSourceTitleChange(event.target.value)} />
+}
+
+function ReferenceList({
+  excerpts,
+  codes,
+  onNoteChange,
+  compact = false,
+}: {
+  excerpts: Excerpt[]
+  codes: Code[]
+  onNoteChange: (id: string, note: string) => void
+  compact?: boolean
+}) {
+  if (!excerpts.length) {
+    return <p className="empty-reference-state">No coded references in this view yet.</p>
+  }
+
+  return (
+    <div className={compact ? 'excerpt-list compact' : 'excerpt-list'}>
+      {excerpts.map((excerpt) => {
+        const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id))
+        return (
+          <article className="excerpt-card" key={excerpt.id}>
+            <div className="excerpt-meta">
+              <div className="code-stack" aria-hidden="true">
+                {excerptCodes.map((code) => (
+                  <span key={code.id} style={{ background: code.color }} />
+                ))}
+              </div>
+              <strong>{excerptCodes.map((code) => code.name).join(', ') || 'Unknown code'}</strong>
+              <small>{excerpt.sourceTitle}</small>
+            </div>
+            <p>{excerpt.text}</p>
+            <input value={excerpt.note} placeholder="Add note" aria-label="Reference note" onChange={(event) => onNoteChange(excerpt.id, event.target.value)} />
+          </article>
+        )
+      })}
+    </div>
   )
 }
 
