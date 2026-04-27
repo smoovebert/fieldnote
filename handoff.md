@@ -70,6 +70,16 @@ Project Home sits above the modes. A user can have multiple projects, and each p
 - Vercel project: `behemoth-agency/fieldnote`
 - Supabase project: `Fieldnote`
 
+## Deployment / Testing Rule
+
+Use the production URL for normal testing:
+
+```text
+https://fieldnote-seven.vercel.app
+```
+
+Vercel has the required `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` variables in Production and Development. Preview deployments from the production branch do not automatically receive those variables, so ad hoc preview links may show the missing-env message unless deployed with explicit build env values or created from a non-production preview branch.
+
 ## Local Project Path
 
 ```bash
