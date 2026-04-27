@@ -221,6 +221,12 @@ function normalizeProject(project: ProjectRow): ProjectData {
   }
 }
 
+function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message
+  return fallback
+}
+
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in')
@@ -330,10 +336,18 @@ function App() {
     setSaveStatus('Creating project...')
 
     try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError) throw userError
+      if (!user) throw new Error('Your sign-in expired. Sign out and sign back in, then create the project again.')
+
       const { data: createdProject, error } = await supabase
         .from('fieldnote_projects')
         .insert({
-          owner_id: session.user.id,
+          owner_id: user.id,
           title,
           active_source_id: defaultProject.activeSourceId,
           source_title: defaultProject.sources[0].title,
@@ -353,7 +367,7 @@ function App() {
       setNewProjectTitle('')
       applyProject(nextProject)
     } catch (error) {
-      setSaveStatus(error instanceof Error ? error.message : 'Could not create project.')
+      setSaveStatus(errorMessage(error, 'Could not create project.'))
     } finally {
       setIsCreatingProject(false)
     }
@@ -406,7 +420,7 @@ function App() {
       })
       .catch((error: Error) => {
         if (!isCurrent) return
-        setSaveStatus(error.message)
+        setSaveStatus(errorMessage(error, 'Could not load projects.'))
       })
 
     return () => {
@@ -457,7 +471,7 @@ function App() {
           )
           setSaveStatus('Saved to Supabase.')
         } catch (error) {
-          setSaveStatus(error instanceof Error ? error.message : 'Save failed.')
+          setSaveStatus(errorMessage(error, 'Save failed.'))
         }
       }
 
