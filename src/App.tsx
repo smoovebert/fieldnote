@@ -1028,8 +1028,8 @@ function App() {
         </div>
       </header>
 
-      <aside className="navigation-view" aria-label="Navigation view">
-        <div className="folder-pane">
+      <aside className="workspace-sidebar" aria-label="Workspace sidebar">
+        <section className="folder-pane" aria-label="Mode actions">
           <div className="pane-title">
             <ListTree size={16} aria-hidden="true" />
             <span>{modeItems.find((mode) => mode.id === activeView)?.label} Mode</span>
@@ -1076,10 +1076,6 @@ function App() {
           )}
           {activeView === 'code' && (
             <>
-              <button className="folder-row active" type="button">
-                <BookOpenText size={16} aria-hidden="true" />
-                Open source
-              </button>
               <button className="folder-row" type="button" onClick={() => addMemo('source')}>
                 <MessageSquareText size={16} aria-hidden="true" />
                 Source memo
@@ -1124,33 +1120,33 @@ function App() {
               </button>
               <button className="folder-row" type="button">
                 <FileText size={16} aria-hidden="true" />
-                Codebook
+                Codebook export
               </button>
             </>
           )}
-        </div>
-      </aside>
+        </section>
 
-      <section className="list-view" aria-label="List view">
-        <ListView
-          activeView={activeView}
-          activeSourceId={activeSource.id}
-          activeCodeId={activeCode.id}
-          sources={activeSources}
-          visibleSources={activeView === 'organize' ? visibleSources : sources}
-          codes={codes}
-          excerpts={excerpts}
-          onSelectSource={(id) => {
-            setActiveSourceId(id)
-            if (activeView === 'organize') return
-            setActiveView('code')
-          }}
-          onSelectCode={(id) => {
-            setActiveCodeId(id)
-            setActiveView('refine')
-          }}
-        />
-      </section>
+        <section className="list-view" aria-label="Objects">
+          <ListView
+            activeView={activeView}
+            activeSourceId={activeSource.id}
+            activeCodeId={activeCode.id}
+            sources={activeSources}
+            visibleSources={activeView === 'organize' ? visibleSources : sources}
+            codes={codes}
+            excerpts={excerpts}
+            onSelectSource={(id) => {
+              setActiveSourceId(id)
+              if (activeView === 'organize') return
+              setActiveView('code')
+            }}
+            onSelectCode={(id) => {
+              setActiveCodeId(id)
+              setActiveView('refine')
+            }}
+          />
+        </section>
+      </aside>
 
       <section className="detail-view" id="sources">
         <header className="detail-toolbar">

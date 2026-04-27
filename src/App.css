@@ -1,7 +1,7 @@
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 230px 260px minmax(460px, 1fr) 420px;
+  grid-template-columns: 320px minmax(500px, 1fr) 420px;
   grid-template-rows: 68px minmax(0, 1fr);
   background: var(--canvas);
   color: var(--ink);
@@ -565,7 +565,7 @@ button {
   display: none;
 }
 
-.navigation-view,
+.workspace-sidebar,
 .list-view,
 .detail-view,
 .properties-view {
@@ -575,16 +575,18 @@ button {
   background: var(--surface);
 }
 
-.navigation-view {
+.workspace-sidebar {
   grid-column: 1;
   grid-row: 2;
   display: grid;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .folder-pane {
   padding: 14px;
   overflow: auto;
+  border-bottom: 1px solid var(--line);
 }
 
 .pane-title {
@@ -666,10 +668,9 @@ button {
 }
 
 .list-view {
-  grid-column: 2;
-  grid-row: 2;
   padding: 14px;
   overflow: auto;
+  border-right: 0;
 }
 
 .list-item {
@@ -736,7 +737,7 @@ button {
 }
 
 .detail-view {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 2;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -1075,7 +1076,7 @@ mark {
 }
 
 .properties-view {
-  grid-column: 4;
+  grid-column: 3;
   grid-row: 2;
   padding: 14px;
   display: flex;
@@ -1381,7 +1382,7 @@ textarea {
 
 @media (max-width: 1260px) {
   .app-shell {
-    grid-template-columns: 210px 230px minmax(420px, 1fr);
+    grid-template-columns: 300px minmax(420px, 1fr);
   }
 
   .properties-view {
@@ -1425,7 +1426,7 @@ textarea {
     max-width: none;
   }
 
-  .navigation-view,
+  .workspace-sidebar,
   .list-view,
   .detail-view,
   .properties-view {

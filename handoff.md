@@ -63,6 +63,12 @@ Each mode should have its own focused interface. Do not keep adding controls to 
 
 Project Home sits above the modes. A user can have multiple projects, and each project contains its own sources, codebook, memos, excerpts, and eventually cases/reports.
 
+Workspace layout is now three columns:
+
+- stacked left sidebar for mode actions plus object lists
+- center detail/work surface
+- right context rail for properties, memos, and mode-specific panels
+
 ## Live Links
 
 - Production app: https://fieldnote-seven.vercel.app
@@ -268,6 +274,7 @@ Implemented:
   - Now: usable MVP surfaces
   - MVP: partial but useful surfaces
   - Soon: visible placeholder surfaces
+- Left navigation and object list were collapsed into one stacked sidebar.
 - Removed the old ribbon from the main app flow.
 - Moved source import/source list into Organize mode.
 - Added Organize folder filtering and a fuller source register.
