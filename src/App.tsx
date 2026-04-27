@@ -1531,22 +1531,11 @@ function ListView({
         </>
       )}
       {activeView === 'report' && (
-        <>
-          <button className="list-item active" type="button">
-            <Download size={17} aria-hidden="true" />
-            <div>
-              <strong>Coded excerpts</strong>
-              <span>CSV export available</span>
-            </div>
-          </button>
-          <button className="list-item" type="button">
-            <FileText size={17} aria-hidden="true" />
-            <div>
-              <strong>Codebook</strong>
-              <span>CSV export available</span>
-            </div>
-          </button>
-        </>
+        <article className="empty-list-state">
+          <Download size={20} aria-hidden="true" />
+          <strong>Exports are in the Report panel</strong>
+          <span>Use the center workspace to download coded excerpts or the codebook.</span>
+        </article>
       )}
     </>
   )
