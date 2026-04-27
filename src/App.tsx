@@ -7,6 +7,7 @@ import {
   Download,
   FilePlus2,
   FileText,
+  FolderInput,
   FolderOpen,
   Highlighter,
   ListTree,
@@ -25,6 +26,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
+type SourceFolderFilter = 'All' | Source['folder']
 
 type Code = {
   id: string
@@ -227,6 +229,7 @@ function App() {
   const [newProjectTitle, setNewProjectTitle] = useState('')
   const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [activeView, setActiveView] = useState<WorkspaceView>('organize')
+  const [sourceFolderFilter, setSourceFolderFilter] = useState<SourceFolderFilter>('All')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
   const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
@@ -248,6 +251,9 @@ function App() {
   const selectedCodeNames = selectedCodes.map((code) => code.name).join(', ')
   const sourceExcerpts = excerpts.filter((excerpt) => excerpt.sourceId === activeSource.id)
   const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id))
+  const visibleSources = sourceFolderFilter === 'All' ? sources : sources.filter((source) => source.folder === sourceFolderFilter)
+  const activeSourceMemo = memos.find((memo) => memo.linkedType === 'source' && memo.linkedId === activeSource.id)
+  const activeSourceWords = activeSource.content.trim() ? activeSource.content.trim().split(/\s+/).length : 0
   const projectMemo = memos.find((memo) => memo.linkedType === 'project') ?? activeMemo
   const contextualMemo =
     activeView === 'code' || activeView === 'organize'
@@ -281,6 +287,7 @@ function App() {
     setActiveCodeId(nextProject.codes[0]?.id ?? initialCodes[0].id)
     setActiveMemoId(nextProject.memos[0]?.id ?? initialMemos[0].id)
     setSelectedCodeIds(nextProject.codes[0]?.id ? [nextProject.codes[0].id] : [initialCodes[0].id])
+    setSourceFolderFilter('All')
     hasLoadedRemoteProject.current = true
     setSaveStatus('Project open.')
   }
@@ -526,6 +533,12 @@ function App() {
     if (view === 'refine') setActiveCodeId(activeCodeId || codes[0]?.id || '')
   }
 
+  function selectSourceFolder(folder: SourceFolderFilter) {
+    setSourceFolderFilter(folder)
+    const firstVisibleSource = folder === 'All' ? sources[0] : sources.find((source) => source.folder === folder)
+    if (firstVisibleSource) setActiveSourceId(firstVisibleSource.id)
+  }
+
   function codeSelection() {
     const selectedText = window.getSelection()?.toString().trim()
 
@@ -554,6 +567,10 @@ function App() {
     if (patch.title) {
       setExcerpts((current) => current.map((excerpt) => (excerpt.sourceId === sourceId ? { ...excerpt, sourceTitle: patch.title ?? excerpt.sourceTitle } : excerpt)))
     }
+  }
+
+  function updateProjectTitle(title: string) {
+    setProjectTitle(title)
   }
 
   function updateMemo(memoId: string, patch: Partial<Memo>) {
@@ -597,6 +614,7 @@ function App() {
       }
       setSources((current) => [source, ...current])
       setActiveSourceId(source.id)
+      setSourceFolderFilter('All')
       setActiveView('organize')
       setSelectionHint('Source imported. Select a passage to begin coding.')
       event.target.value = ''
@@ -844,9 +862,20 @@ function App() {
                 Import source
                 <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
               </label>
-              <button className="folder-row active" type="button">
+              <button className={sourceFolderFilter === 'All' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('All')}>
                 <FolderOpen size={16} aria-hidden="true" />
+                All sources
+                <span>{sources.length}</span>
+              </button>
+              <button className={sourceFolderFilter === 'Internals' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('Internals')}>
+                <FolderInput size={16} aria-hidden="true" />
                 Internals
+                <span>{sources.filter((source) => source.folder === 'Internals').length}</span>
+              </button>
+              <button className={sourceFolderFilter === 'Externals' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('Externals')}>
+                <FolderOpen size={16} aria-hidden="true" />
+                Externals
+                <span>{sources.filter((source) => source.folder === 'Externals').length}</span>
               </button>
             </>
           )}
@@ -913,6 +942,7 @@ function App() {
           activeSourceId={activeSource.id}
           activeCodeId={activeCode.id}
           sources={sources}
+          visibleSources={activeView === 'organize' ? visibleSources : sources}
           codes={codes}
           excerpts={excerpts}
           onSelectSource={(id) => {
@@ -935,6 +965,8 @@ function App() {
               activeView={activeView}
               activeSource={activeSource}
               activeCode={activeCode}
+              projectTitle={projectTitle}
+              onProjectTitleChange={updateProjectTitle}
               onSourceTitleChange={(title) => updateSource(activeSource.id, { title })}
               onCodeNameChange={(name) => setCodes((current) => current.map((code) => (code.id === activeCode.id ? { ...code, name } : code)))}
             />
@@ -948,15 +980,46 @@ function App() {
 
         {activeView === 'organize' && (
           <article className="detail-card organize-surface">
-            <p className="detail-kicker">Sources</p>
-            <div className="source-table">
-              {sources.map((source) => (
-                <button key={source.id} className={source.id === activeSource.id ? 'source-row active' : 'source-row'} type="button" onClick={() => setActiveSourceId(source.id)}>
-                  <span>{source.title}</span>
-                  <small>{source.kind}</small>
-                  <small>{excerpts.filter((excerpt) => excerpt.sourceId === source.id).length} references</small>
-                </button>
-              ))}
+            <div className="source-register-heading">
+              <div>
+                <p className="detail-kicker">Source register</p>
+                <h2>{sourceFolderFilter === 'All' ? 'All sources' : sourceFolderFilter}</h2>
+              </div>
+              <label className="secondary-button import-inline">
+                <FilePlus2 size={17} aria-hidden="true" />
+                Import
+                <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
+              </label>
+            </div>
+            <div className="source-table" role="table" aria-label="Project sources">
+              <div className="source-row source-row-head" role="row">
+                <span>Title</span>
+                <small>Type</small>
+                <small>Folder</small>
+                <small>References</small>
+                <small>Memo</small>
+              </div>
+              {visibleSources.map((source) => {
+                const referenceCount = excerpts.filter((excerpt) => excerpt.sourceId === source.id).length
+                const hasMemo = memos.some((memo) => memo.linkedType === 'source' && memo.linkedId === source.id && memo.body.trim())
+
+                return (
+                  <button key={source.id} className={source.id === activeSource.id ? 'source-row active' : 'source-row'} type="button" onClick={() => setActiveSourceId(source.id)}>
+                    <span>{source.title}</span>
+                    <small>{source.kind}</small>
+                    <small>{source.folder}</small>
+                    <small>{referenceCount}</small>
+                    <small>{hasMemo ? 'Yes' : 'No'}</small>
+                  </button>
+                )
+              })}
+              {!visibleSources.length && (
+                <article className="empty-list-state">
+                  <FileText size={20} aria-hidden="true" />
+                  <strong>No sources in this folder</strong>
+                  <span>Import a text file or move an existing source here from the properties rail.</span>
+                </article>
+              )}
             </div>
           </article>
         )}
@@ -1054,6 +1117,56 @@ function App() {
       </section>
 
       <aside className="properties-view">
+        {activeView === 'organize' && (
+          <section className="panel source-properties-panel">
+            <div className="panel-heading">
+              <Database size={18} aria-hidden="true" />
+              <h2>Source Properties</h2>
+            </div>
+
+            <label className="property-field">
+              <span>Title</span>
+              <input value={activeSource.title} onChange={(event) => updateSource(activeSource.id, { title: event.target.value })} />
+            </label>
+
+            <label className="property-field">
+              <span>Type</span>
+              <select value={activeSource.kind} onChange={(event) => updateSource(activeSource.id, { kind: event.target.value as Source['kind'] })}>
+                <option value="Transcript">Transcript</option>
+                <option value="Document">Document</option>
+              </select>
+            </label>
+
+            <label className="property-field">
+              <span>Folder</span>
+              <select value={activeSource.folder} onChange={(event) => updateSource(activeSource.id, { folder: event.target.value as Source['folder'] })}>
+                <option value="Internals">Internals</option>
+                <option value="Externals">Externals</option>
+              </select>
+            </label>
+
+            <dl className="properties-list compact-properties">
+              <div>
+                <dt>Words</dt>
+                <dd>{activeSourceWords}</dd>
+              </div>
+              <div>
+                <dt>References</dt>
+                <dd>{sourceExcerpts.length}</dd>
+              </div>
+              <div>
+                <dt>Memo</dt>
+                <dd>{activeSourceMemo?.body.trim() ? 'Started' : 'Blank'}</dd>
+              </div>
+            </dl>
+
+            <button className="secondary-button" type="button" onClick={() => setActiveView('code')}>
+              <BookOpenText size={17} aria-hidden="true" />
+              Open for coding
+            </button>
+          </section>
+        )}
+
         {activeView === 'code' && (
           <section className="panel" id="codes">
             <div className="panel-heading">
@@ -1159,6 +1272,7 @@ function ListView({
   activeSourceId,
   activeCodeId,
   sources,
+  visibleSources,
   codes,
   excerpts,
   onSelectSource,
@@ -1168,6 +1282,7 @@ function ListView({
   activeSourceId: string
   activeCodeId: string
   sources: Source[]
+  visibleSources: Source[]
   codes: Code[]
   excerpts: Excerpt[]
   onSelectSource: (id: string) => void
@@ -1180,7 +1295,7 @@ function ListView({
         <span>{activeView === 'organize' || activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Queries' : 'Exports'}</span>
       </div>
       {(activeView === 'organize' || activeView === 'code') &&
-        sources.map((source) => (
+        (activeView === 'organize' ? visibleSources : sources).map((source) => (
           <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
             <FileText size={17} aria-hidden="true" />
             <div>
@@ -1252,12 +1367,16 @@ function DetailTitle({
   activeView,
   activeSource,
   activeCode,
+  projectTitle,
+  onProjectTitleChange,
   onSourceTitleChange,
   onCodeNameChange,
 }: {
   activeView: WorkspaceView
   activeSource: Source
   activeCode: Code
+  projectTitle: string
+  onProjectTitleChange: (title: string) => void
   onSourceTitleChange: (title: string) => void
   onCodeNameChange: (name: string) => void
 }) {
@@ -1274,7 +1393,7 @@ function DetailTitle({
     return <h2 className="static-detail-title">Report</h2>
   }
   if (activeView === 'organize') {
-    return <input className="title-input" value={activeSource.title} aria-label="Source title" onChange={(event) => onSourceTitleChange(event.target.value)} />
+    return <input className="title-input" value={projectTitle} aria-label="Project title" onChange={(event) => onProjectTitleChange(event.target.value)} />
   }
   return <input className="title-input" value={activeSource.title} aria-label="Source title" onChange={(event) => onSourceTitleChange(event.target.value)} />
 }

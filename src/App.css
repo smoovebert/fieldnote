@@ -582,6 +582,12 @@ button {
   text-align: left;
 }
 
+.folder-row span {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .import-row input {
   display: none;
 }
@@ -741,11 +747,34 @@ button {
   gap: 10px;
 }
 
+.source-register-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.source-register-heading h2 {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.import-inline {
+  width: auto;
+  margin: 0;
+  padding: 0 13px;
+}
+
+.import-inline input {
+  display: none;
+}
+
 .source-row,
 .report-card {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(76px, auto) minmax(84px, auto) minmax(84px, auto) minmax(60px, auto);
   align-items: center;
   gap: 12px;
   border: 1px solid var(--line);
@@ -760,6 +789,17 @@ button {
 .source-row.active {
   border-color: #c8d8d8;
   background: #eef6f5;
+}
+
+.source-row-head {
+  min-height: 32px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: default;
+  font-size: 12px;
+  font-weight: 760;
+  text-transform: uppercase;
 }
 
 .source-row span,
@@ -838,6 +878,11 @@ button {
   font-weight: 720;
 }
 
+.source-register-heading .import-inline {
+  width: auto;
+  margin: 0;
+}
+
 .icon-button {
   width: 36px;
   background: var(--surface);
@@ -878,6 +923,11 @@ mark {
 
 .panel {
   padding: 14px;
+}
+
+.source-properties-panel {
+  display: grid;
+  gap: 12px;
 }
 
 .panel-heading {
@@ -940,6 +990,32 @@ mark {
   display: grid;
   gap: 8px;
   margin: 0;
+}
+
+.compact-properties {
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.property-field {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.property-field input,
+.property-field select {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 10px;
+  outline: none;
+  background: #fbfaf7;
+  color: var(--ink);
 }
 
 .properties-list div {

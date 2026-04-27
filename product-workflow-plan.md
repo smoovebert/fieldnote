@@ -254,7 +254,7 @@ Right:
 
 ### Current App Gap
 
-Current source handling is still shallow. Sources exist, but folders and source tables are not real yet.
+Source handling is now less shallow: Organize mode has folder filters, a source register, and source properties. It still needs custom folders, delete/archive, file metadata, source previews, batch import, and source-to-case setup.
 
 ## Mode 2: Code
 

@@ -165,6 +165,9 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 - Multiple text sources are supported.
 - Importing `.txt`, `.md`, or `.csv` creates a new source.
 - Clicking a source opens it.
+- Organize mode has folder filters for all sources, Internals, and Externals.
+- Organize mode has a source register with title, type, folder, references, and memo status.
+- The right rail in Organize mode now focuses on source properties and prep metadata.
 
 ### Coding
 
@@ -225,6 +228,8 @@ Implemented:
   - Report
 - Removed the old ribbon from the main app flow.
 - Moved source import/source list into Organize mode.
+- Added Organize folder filtering and a fuller source register.
+- Added source title/type/folder editing in the Organize right rail.
 - Moved close reading/coding into Code mode.
 - Moved code reference review into Refine mode.
 - Added initial Classify, Analyze, and Report work surfaces.
@@ -233,8 +238,8 @@ Implemented:
 Still needed:
 
 - Project rename/delete/share controls.
-- Mode-specific right rails need another design pass.
-- Organize mode needs real folder/source-table behavior.
+- Mode-specific right rails outside Organize need another design pass.
+- Organize mode still needs custom folders, source deletion, and richer import/prep workflows.
 - Refine mode needs hierarchy/merge/split tools.
 - Classify, Analyze, and Report are only first-pass shells.
 
