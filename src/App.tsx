@@ -1074,14 +1074,6 @@ function App() {
               </div>
             </>
           )}
-          {activeView === 'code' && (
-            <>
-              <button className="folder-row" type="button" onClick={() => addMemo('source')}>
-                <MessageSquareText size={16} aria-hidden="true" />
-                Source memo
-              </button>
-            </>
-          )}
           {activeView === 'refine' && (
             <>
               <button className="folder-row active" type="button">
