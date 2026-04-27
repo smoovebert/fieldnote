@@ -107,9 +107,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 0 18px;
-  background: #f9faf9;
-  border-bottom: 1px solid var(--line);
+  padding: 0 20px;
+  background: var(--shell);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .project-home-header {
@@ -155,14 +155,14 @@
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: #1f2a44;
-  color: #f7f2e8;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   font-weight: 760;
 }
 
 .eyebrow {
   margin: 0 0 4px;
-  color: var(--muted);
+  color: var(--shell-muted);
   font-size: 11px;
   font-weight: 760;
   letter-spacing: 0.08em;
@@ -179,6 +179,11 @@ h1 {
   font-size: 24px;
   line-height: 1;
   font-weight: 760;
+}
+
+.app-header h1,
+.project-home-header h1 {
+  color: #ffffff;
 }
 
 h2 {
@@ -205,11 +210,11 @@ button {
   max-width: 240px;
   height: 36px;
   gap: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 7px;
   padding: 0 11px;
-  background: var(--surface);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   cursor: pointer;
   font-size: 13px;
   font-weight: 760;
@@ -227,17 +232,17 @@ button {
   display: grid;
   gap: 4px;
   padding: 12px;
-  border-bottom: 1px solid var(--line);
-  background: #f9faf9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--shell);
 }
 
 .mode-switcher button {
   min-height: 36px;
   width: 100%;
   padding: 0 10px;
-  border-radius: 7px;
+  border-radius: 5px;
   background: transparent;
-  color: var(--muted);
+  color: var(--shell-muted);
   cursor: pointer;
   font-size: 13px;
   font-weight: 760;
@@ -252,8 +257,8 @@ button {
 
 .mode-switcher button.active,
 .mode-switcher button:hover {
-  background: var(--soft);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .mode-badge {
@@ -265,18 +270,18 @@ button {
 }
 
 .mode-badge.ready {
-  background: #dcefe8;
-  color: #2e6f5e;
+  background: rgba(33, 199, 183, 0.16);
+  color: #75f0e5;
 }
 
 .mode-badge.partial {
-  background: #ece7d8;
-  color: #7a5b22;
+  background: rgba(255, 255, 255, 0.12);
+  color: #d8e5f5;
 }
 
 .mode-badge.soon {
-  background: #ececf2;
-  color: #696b78;
+  background: rgba(255, 255, 255, 0.08);
+  color: #91a7c2;
 }
 
 .sync-box,
@@ -289,6 +294,13 @@ button {
   border-radius: 7px;
   background: var(--surface);
   color: var(--muted);
+}
+
+.app-header .sync-box,
+.app-header .user-box {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8e5f5;
 }
 
 .sync-box {
@@ -473,6 +485,10 @@ button {
   font-weight: 720;
 }
 
+.app-header .user-box span {
+  color: #ffffff;
+}
+
 .user-box button {
   height: 26px;
   display: inline-flex;
@@ -485,6 +501,11 @@ button {
   cursor: pointer;
   font-size: 12px;
   font-weight: 720;
+}
+
+.app-header .user-box button {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .search-box {
@@ -585,18 +606,21 @@ button {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--shell);
+  color: #ffffff;
 }
 
 .folder-pane {
   padding: 14px;
   overflow: auto;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--shell);
 }
 
 .pane-title {
   gap: 7px;
   margin-bottom: 10px;
-  color: var(--muted);
+  color: var(--shell-muted);
   font-size: 12px;
   font-weight: 760;
   text-transform: uppercase;
@@ -607,10 +631,10 @@ button {
   width: 100%;
   min-height: 36px;
   gap: 9px;
-  border-radius: 7px;
+  border-radius: 5px;
   padding: 0 9px;
   background: transparent;
-  color: var(--muted);
+  color: var(--shell-muted);
   cursor: pointer;
   text-decoration: none;
   font-size: 13px;
@@ -620,7 +644,7 @@ button {
 
 .folder-row span {
   margin-left: auto;
-  color: var(--muted);
+  color: var(--shell-muted);
   font-size: 12px;
 }
 
@@ -632,10 +656,10 @@ button {
   height: 36px;
   gap: 4px;
   margin-top: 10px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
   padding-left: 10px;
-  background: #fbfaf7;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .new-folder-row input {
@@ -644,14 +668,14 @@ button {
   border: 0;
   outline: none;
   background: transparent;
-  color: var(--ink);
+  color: #ffffff;
 }
 
 .new-folder-row .icon-button {
   width: 34px;
   height: 34px;
   border: 0;
-  border-left: 1px solid var(--line);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0 7px 7px 0;
 }
 
@@ -659,16 +683,16 @@ button {
 .folder-row:hover,
 .section-switcher button.active,
 .section-switcher button:hover {
-  background: var(--soft);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .section-switcher {
   display: grid;
   gap: 4px;
   padding: 12px;
-  border-top: 1px solid var(--line);
-  background: #fbfaf7;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--shell-deep);
 }
 
 .list-view {
@@ -677,6 +701,7 @@ button {
   padding: 14px;
   overflow: auto;
   border-right: 0;
+  background: var(--shell-deep);
 }
 
 .list-item {
@@ -686,7 +711,7 @@ button {
   gap: 10px;
   padding: 10px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 5px;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -694,8 +719,8 @@ button {
 }
 
 .list-item.active {
-  border-color: #c8d8d8;
-  background: #eef6f5;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .empty-list-state,
@@ -710,13 +735,13 @@ button {
 .empty-list-state {
   place-items: start;
   padding: 12px;
-  border: 1px dashed var(--line);
-  border-radius: 7px;
-  background: #fbfaf7;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .empty-list-state strong {
-  color: var(--ink);
+  color: #ffffff;
 }
 
 .list-item strong,
@@ -725,13 +750,13 @@ button {
 }
 
 .list-item strong {
-  color: var(--ink);
+  color: #ffffff;
   font-size: 13px;
 }
 
 .list-item span {
   margin-top: 2px;
-  color: var(--muted);
+  color: var(--shell-muted);
   font-size: 12px;
 }
 
@@ -747,14 +772,18 @@ button {
   grid-row: 2;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  padding: 14px;
-  gap: 12px;
-  background: var(--canvas);
+  padding: 0;
+  gap: 0;
+  background: var(--surface);
 }
 
 .detail-toolbar {
+  min-height: 72px;
   justify-content: space-between;
   gap: 16px;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc;
 }
 
 .title-input {
@@ -775,15 +804,15 @@ button {
 .document-panel,
 .panel,
 .detail-card {
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 0;
+  border-radius: 0;
   background: var(--surface);
 }
 
 .detail-card {
   min-height: 0;
   overflow: auto;
-  padding: 18px;
+  padding: 26px 28px;
 }
 
 .detail-kicker {
@@ -831,7 +860,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 5px 8px;
-  background: #fbfaf7;
+  background: #f8fafc;
   color: var(--muted);
   font-size: 12px;
   font-weight: 720;
@@ -897,18 +926,19 @@ button {
   grid-template-columns: minmax(0, 1fr) minmax(76px, auto) minmax(84px, auto) minmax(92px, auto) minmax(84px, auto) minmax(60px, auto);
   align-items: center;
   gap: 12px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 12px;
-  background: #fbfaf7;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 14px 12px;
+  background: transparent;
   color: var(--ink);
   cursor: pointer;
   text-align: left;
 }
 
 .source-row.active {
-  border-color: #c8d8d8;
-  background: #eef6f5;
+  border-color: var(--line);
+  background: #f3f8ff;
 }
 
 .case-row {
@@ -917,8 +947,8 @@ button {
 }
 
 .case-row.active {
-  border-color: #c8d8d8;
-  background: #eef6f5;
+  border-color: var(--line);
+  background: #f3f8ff;
 }
 
 .case-row input {
@@ -951,7 +981,7 @@ button {
 .source-row-head,
 .case-row-head {
   min-height: 32px;
-  border-color: transparent;
+  border-color: var(--line);
   background: transparent;
   color: var(--muted);
   cursor: default;
@@ -982,6 +1012,12 @@ button {
   grid-template-columns: auto minmax(0, 1fr);
 }
 
+.report-card:hover,
+.source-row:hover,
+.case-row:hover {
+  background: #f8fafc;
+}
+
 .disabled-card {
   cursor: not-allowed;
   opacity: 0.68;
@@ -996,10 +1032,11 @@ button {
   display: grid;
   gap: 4px;
   margin-top: 14px;
-  border: 1px dashed var(--line);
-  border-radius: 7px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
   padding: 12px;
-  background: #fbfaf7;
+  background: transparent;
 }
 
 .coming-soon-strip strong {
@@ -1045,9 +1082,9 @@ button {
 .document-actions {
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--line);
-  background: #fbfaf7;
+  background: #f8fafc;
 }
 
 .document-actions p {
@@ -1072,7 +1109,7 @@ button {
 .primary-button {
   min-width: 136px;
   padding: 0 13px;
-  background: #1f2a44;
+  background: var(--accent);
   color: white;
   font-weight: 720;
   white-space: nowrap;
@@ -1081,8 +1118,8 @@ button {
 .secondary-button {
   width: 100%;
   margin-top: 12px;
-  background: var(--soft);
-  color: var(--ink);
+  background: #eaf3ff;
+  color: #1558a8;
   font-weight: 720;
 }
 
@@ -1105,6 +1142,12 @@ button {
   background: var(--surface);
   border: 1px solid var(--line);
   color: var(--ink);
+}
+
+.workspace-sidebar .icon-button {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .transcript {
@@ -1131,15 +1174,18 @@ mark {
 .properties-view {
   grid-column: 3;
   grid-row: 2;
-  padding: 14px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
   overflow: auto;
+  background: #f8fafc;
 }
 
 .panel {
-  padding: 14px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc;
 }
 
 .source-properties-panel {
@@ -1286,10 +1332,11 @@ textarea {
 }
 
 .excerpt-card {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 11px;
-  background: #fbfaf7;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 12px 0;
+  background: transparent;
 }
 
 .excerpt-meta {

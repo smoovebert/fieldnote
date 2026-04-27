@@ -6,6 +6,8 @@ Fieldnote is a qualitative research coding app inspired by NVivo. It has a worki
 
 Important: the UI has started moving from pane-based to project-first, mode-based workflow, but it should still be treated as **provisional**.
 
+Current visual direction: dark persistent app/navigation shell with a light work area. Avoid adding more card-heavy surfaces; prefer flatter tables, rows, dividers, and direct work surfaces.
+
 The app should not keep evolving as an always-visible dashboard. The next major pass should follow the mode-based workflow in:
 
 ```bash
@@ -246,7 +248,7 @@ Typing in a missing context memo creates it automatically.
 
 ## Current Known Issues
 
-- Current UI is still too dashboard-like.
+- Current UI is still provisional and needs a later creative direction pass, but it has begun moving away from card-heavy dashboard styling.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
