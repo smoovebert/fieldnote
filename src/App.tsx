@@ -696,6 +696,35 @@ function App() {
     setExcerpts((current) => current.map((excerpt) => (excerpt.id === id ? { ...excerpt, note } : excerpt)))
   }
 
+  function deleteExcerpt(id: string) {
+    const excerpt = excerpts.find((item) => item.id === id)
+    if (!excerpt) return
+
+    const shouldDelete = window.confirm('Delete this coded reference? This removes the excerpt from all codes.')
+    if (!shouldDelete) return
+
+    setExcerpts((current) => current.filter((item) => item.id !== id))
+  }
+
+  function removeCodeFromExcerpt(excerptId: string, codeId: string) {
+    const excerpt = excerpts.find((item) => item.id === excerptId)
+    const code = codes.find((item) => item.id === codeId)
+    if (!excerpt || !code) return
+
+    const shouldRemove = window.confirm(
+      excerpt.codeIds.length === 1
+        ? `Remove "${code.name}"? This reference has no other codes, so the reference will be deleted.`
+        : `Remove "${code.name}" from this reference?`
+    )
+    if (!shouldRemove) return
+
+    setExcerpts((current) =>
+      current
+        .map((item) => (item.id === excerptId ? { ...item, codeIds: item.codeIds.filter((itemCodeId) => itemCodeId !== codeId) } : item))
+        .filter((item) => item.codeIds.length)
+    )
+  }
+
   function updateRailMemo(body: string) {
     if (contextualMemo) {
       updateMemo(contextualMemo.id, { body })
@@ -1270,7 +1299,7 @@ function App() {
               </button>
             </div>
 
-            <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} />
+            <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} />
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
               <span>Parent/child codes, merge, split, and codebook cleanup tools.</span>
@@ -1298,7 +1327,7 @@ function App() {
               <Search size={17} aria-hidden="true" />
               <input value={searchTerm} placeholder="Search coded excerpts" aria-label="Search coded excerpts" onChange={(event) => setSearchTerm(event.target.value)} />
             </div>
-            <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} />
+            <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} />
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
               <span>Matrix coding, co-occurrence, word frequency, and saved queries.</span>
@@ -1509,7 +1538,7 @@ function App() {
             <Highlighter size={18} aria-hidden="true" />
             <h2>Coded excerpts</h2>
           </div>
-          <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} compact />
+          <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} compact />
           </section>
         )}
       </aside>
@@ -1652,11 +1681,15 @@ function ReferenceList({
   excerpts,
   codes,
   onNoteChange,
+  onDelete,
+  onRemoveCode,
   compact = false,
 }: {
   excerpts: Excerpt[]
   codes: Code[]
   onNoteChange: (id: string, note: string) => void
+  onDelete: (id: string) => void
+  onRemoveCode: (excerptId: string, codeId: string) => void
   compact?: boolean
 }) {
   if (!excerpts.length) {
@@ -1670,16 +1703,24 @@ function ReferenceList({
         return (
           <article className="excerpt-card" key={excerpt.id}>
             <div className="excerpt-meta">
-              <div className="code-stack" aria-hidden="true">
+              <div className="code-stack">
                 {excerptCodes.map((code) => (
-                  <span key={code.id} style={{ background: code.color }} />
+                  <button key={code.id} type="button" style={{ borderColor: code.color }} onClick={() => onRemoveCode(excerpt.id, code.id)}>
+                    <span aria-hidden="true" style={{ background: code.color }} />
+                    {code.name}
+                  </button>
                 ))}
               </div>
-              <strong>{excerptCodes.map((code) => code.name).join(', ') || 'Unknown code'}</strong>
               <small>{excerpt.sourceTitle}</small>
             </div>
             <p>{excerpt.text}</p>
-            <input value={excerpt.note} placeholder="Add note" aria-label="Reference note" onChange={(event) => onNoteChange(excerpt.id, event.target.value)} />
+            <div className="reference-actions">
+              <input value={excerpt.note} placeholder="Add note" aria-label="Reference note" onChange={(event) => onNoteChange(excerpt.id, event.target.value)} />
+              <button type="button" onClick={() => onDelete(excerpt.id)}>
+                <Trash2 size={14} aria-hidden="true" />
+                Delete
+              </button>
+            </div>
           </article>
         )
       })}

@@ -206,6 +206,8 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 - Clicking Codes shows references for a selected code.
 - Refine mode lets users edit code name, color, and description.
 - Codes can be deleted with an in-app confirmation; linked references are cleaned up or removed if no codes remain.
+- Coded references can be deleted with confirmation.
+- Individual codes can be removed from a multi-coded reference with confirmation.
 
 ### Memos
 
