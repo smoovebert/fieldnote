@@ -1,7 +1,7 @@
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 230px 260px minmax(460px, 1fr) 360px;
+  grid-template-columns: 230px 260px minmax(460px, 1fr) 420px;
   grid-template-rows: 68px 104px minmax(0, 1fr);
   background: var(--canvas);
   color: var(--ink);
@@ -693,6 +693,10 @@ textarea {
   margin-top: 8px;
   color: var(--muted);
   font-size: 12px;
+}
+
+#memo textarea {
+  min-height: 240px;
 }
 
 .ai-note {
