@@ -16,6 +16,7 @@ dist-ssr
 .vercel
 .playwright-cli
 output
+supabase/.temp
 
 # Editor directories and files
 .vscode/*
