@@ -263,7 +263,7 @@ Implemented:
 
 - Project Home above all work modes.
 - Multiple projects per signed-in user.
-- Top-level mode switcher:
+- Left-rail mode switcher:
   - Organize
   - Code
   - Refine
@@ -274,6 +274,7 @@ Implemented:
   - Now: usable MVP surfaces
   - MVP: partial but useful surfaces
   - Soon: visible placeholder surfaces
+- Mode navigation moved out of the top header and into the left workspace sidebar so navigation, mode actions, and object lists live in one consolidated rail.
 - Left navigation and object list were collapsed into one stacked sidebar.
 - Mode sidebar actions were audited: only Organize keeps a dedicated action/folder section. Code, Refine, Classify, Analyze, and Report now rely on their object list plus the center/right work surfaces to avoid redundant navigation furniture.
 - Right rail was audited: universal item properties and the premature AI draft panel were removed. Memos show only in Organize/Code/Refine. Report shows an export summary. Analyze keeps coded excerpts only.

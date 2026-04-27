@@ -120,7 +120,6 @@
 
 .brand-block,
 .header-tools,
-.mode-switcher,
 .project-switcher,
 .ribbon-tabs,
 .ribbon-groups,
@@ -224,14 +223,18 @@ button {
 
 .mode-switcher {
   min-width: 0;
-  flex: 1 1 auto;
-  justify-content: center;
+  flex: 0 0 auto;
+  display: grid;
   gap: 4px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: #f9faf9;
 }
 
 .mode-switcher button {
   min-height: 36px;
-  padding: 0 12px;
+  width: 100%;
+  padding: 0 10px;
   border-radius: 7px;
   background: transparent;
   color: var(--muted);
@@ -241,8 +244,9 @@ button {
 }
 
 .mode-switcher button {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 7px;
 }
 

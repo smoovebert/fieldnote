@@ -990,15 +990,6 @@ function App() {
           {projectTitle}
         </button>
 
-        <nav className="mode-switcher" aria-label="Research modes">
-          {modeItems.map((mode) => (
-            <button key={mode.id} className={activeView === mode.id ? 'active' : ''} type="button" title={mode.description} onClick={() => selectView(mode.id)}>
-              <span>{mode.label}</span>
-              <small className={`mode-badge ${mode.status}`}>{mode.status === 'ready' ? 'Now' : mode.status === 'partial' ? 'MVP' : 'Soon'}</small>
-            </button>
-          ))}
-        </nav>
-
         <div className="header-tools">
           <div className="sync-box">
             <Cloud size={16} aria-hidden="true" />
@@ -1015,6 +1006,15 @@ function App() {
       </header>
 
       <aside className="workspace-sidebar" aria-label="Workspace sidebar">
+        <nav className="mode-switcher" aria-label="Research modes">
+          {modeItems.map((mode) => (
+            <button key={mode.id} className={activeView === mode.id ? 'active' : ''} type="button" title={mode.description} onClick={() => selectView(mode.id)}>
+              <span>{mode.label}</span>
+              <small className={`mode-badge ${mode.status}`}>{mode.status === 'ready' ? 'Now' : mode.status === 'partial' ? 'MVP' : 'Soon'}</small>
+            </button>
+          ))}
+        </nav>
+
         {activeView === 'organize' && (
           <section className="folder-pane" aria-label="Source folders">
             <div className="pane-title">
