@@ -17,7 +17,6 @@ import {
   Plus,
   Rows3,
   Search,
-  Sparkles,
   Tags,
   Trash2,
   UserPlus,
@@ -1405,61 +1404,41 @@ function App() {
           </section>
         )}
 
-        <section className="panel">
-          <div className="panel-heading">
-            <Database size={18} aria-hidden="true" />
-            <h2>Item Properties</h2>
-          </div>
-          <dl className="properties-list">
-            <div>
-              <dt>Project</dt>
-              <dd>{projectTitle}</dd>
+        {(activeView === 'organize' || activeView === 'code' || activeView === 'refine') && (
+          <section className="panel" id="memo">
+            <div className="panel-heading">
+              <MessageSquareText size={18} aria-hidden="true" />
+              <h2>{railMemoTitle}</h2>
             </div>
-            <div>
-              <dt>Sources</dt>
-              <dd>{activeSources.length}</dd>
-            </div>
-            <div>
-              <dt>Archived</dt>
-              <dd>{archivedSources.length}</dd>
-            </div>
-            <div>
-              <dt>Codes</dt>
-              <dd>{codes.length}</dd>
-            </div>
-            <div>
-              <dt>References</dt>
-              <dd>{excerpts.length}</dd>
-            </div>
-          </dl>
-        </section>
+            <textarea value={contextualMemo?.body ?? ''} placeholder={`Add notes for ${railMemoTitle.toLowerCase()}`} onChange={(event) => updateRailMemo(event.target.value)} aria-label={railMemoTitle} />
+            {railMemo.id !== projectMemo.id && <p className="memo-link-note">Linked to this {railMemo.linkedType}.</p>}
+          </section>
+        )}
 
-        <section className="panel" id="memo">
-          <div className="panel-heading">
-            <MessageSquareText size={18} aria-hidden="true" />
-            <h2>{railMemoTitle}</h2>
-          </div>
-          <textarea value={contextualMemo?.body ?? ''} placeholder={`Add notes for ${railMemoTitle.toLowerCase()}`} onChange={(event) => updateRailMemo(event.target.value)} aria-label={railMemoTitle} />
-          {railMemo.id !== projectMemo.id && <p className="memo-link-note">Linked to this {railMemo.linkedType}.</p>}
-        </section>
-
-        {activeView === 'analyze' && (
-          <section className="panel" id="assistant">
-          <div className="panel-heading">
-            <Sparkles size={18} aria-hidden="true" />
-            <h2>AI draft</h2>
-          </div>
-          <p className="ai-note">Early theme: participants describe access as emotional labor, not just administrative difficulty.</p>
-          <div className="theme-pair">
-            {codes.slice(0, 2).map((code) => (
-              <span key={code.id} style={{ borderColor: code.color }}>
-                {code.name}
-              </span>
-            ))}
-          </div>
-          <button type="button" className="secondary-button">
-            Suggest child codes
-          </button>
+        {activeView === 'report' && (
+          <section className="panel">
+            <div className="panel-heading">
+              <Database size={18} aria-hidden="true" />
+              <h2>Export Summary</h2>
+            </div>
+            <dl className="properties-list">
+              <div>
+                <dt>Project</dt>
+                <dd>{projectTitle}</dd>
+              </div>
+              <div>
+                <dt>Sources</dt>
+                <dd>{activeSources.length}</dd>
+              </div>
+              <div>
+                <dt>Codes</dt>
+                <dd>{codes.length}</dd>
+              </div>
+              <div>
+                <dt>References</dt>
+                <dd>{excerpts.length}</dd>
+              </div>
+            </dl>
           </section>
         )}
 

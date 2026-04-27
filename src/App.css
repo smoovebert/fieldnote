@@ -1225,28 +1225,6 @@ textarea {
   min-height: 240px;
 }
 
-.ai-note {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.theme-pair {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.theme-pair span {
-  border: 1px solid;
-  border-radius: 99px;
-  padding: 3px 8px;
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 720;
-}
-
 .excerpt-list {
   display: grid;
   gap: 10px;
