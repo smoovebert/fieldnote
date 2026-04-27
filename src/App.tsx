@@ -240,6 +240,23 @@ function App() {
   const sourceExcerpts = excerpts.filter((excerpt) => excerpt.sourceId === activeSource.id)
   const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id))
   const projectMemo = memos.find((memo) => memo.linkedType === 'project') ?? activeMemo
+  const contextualMemo =
+    activeView === 'sources'
+      ? memos.find((memo) => memo.linkedType === 'source' && memo.linkedId === activeSource.id)
+      : activeView === 'codes'
+        ? memos.find((memo) => memo.linkedType === 'code' && memo.linkedId === activeCode.id)
+        : activeView === 'memos'
+          ? activeMemo
+          : projectMemo
+  const railMemo = contextualMemo ?? projectMemo
+  const railMemoTitle =
+    activeView === 'sources'
+      ? `${activeSource.title} memo`
+      : activeView === 'codes'
+        ? `${activeCode.name} memo`
+        : activeView === 'memos'
+          ? activeMemo.title
+          : 'Project memo'
   const projectData = useMemo<ProjectData>(
     () => ({ activeSourceId, sources, codes, memos, excerpts }),
     [activeSourceId, codes, excerpts, memos, sources]
@@ -483,6 +500,24 @@ function App() {
 
   function updateExcerptNote(id: string, note: string) {
     setExcerpts((current) => current.map((excerpt) => (excerpt.id === id ? { ...excerpt, note } : excerpt)))
+  }
+
+  function updateRailMemo(body: string) {
+    if (contextualMemo) {
+      updateMemo(contextualMemo.id, { body })
+      return
+    }
+
+    const linkedType: Memo['linkedType'] = activeView === 'sources' ? 'source' : activeView === 'codes' ? 'code' : 'project'
+    const memo: Memo = {
+      id: `memo-${Date.now()}`,
+      title: railMemoTitle,
+      linkedType,
+      linkedId: linkedType === 'source' ? activeSource.id : linkedType === 'code' ? activeCode.id : undefined,
+      body,
+    }
+    setMemos((current) => [memo, ...current])
+    setActiveMemoId(memo.id)
   }
 
   function importTranscript(event: ChangeEvent<HTMLInputElement>) {
@@ -902,9 +937,10 @@ function App() {
         <section className="panel" id="memo">
           <div className="panel-heading">
             <MessageSquareText size={18} aria-hidden="true" />
-            <h2>Project memo</h2>
+            <h2>{railMemoTitle}</h2>
           </div>
-          <textarea value={projectMemo.body} onChange={(event) => updateMemo(projectMemo.id, { body: event.target.value })} aria-label="Project memo" />
+          <textarea value={contextualMemo?.body ?? ''} placeholder={`Add notes for ${railMemoTitle.toLowerCase()}`} onChange={(event) => updateRailMemo(event.target.value)} aria-label={railMemoTitle} />
+          {railMemo.id !== projectMemo.id && <p className="memo-link-note">Linked to this {railMemo.linkedType}.</p>}
         </section>
 
         <section className="panel" id="assistant">
