@@ -138,6 +138,7 @@
 .user-box,
 .search-box,
 .new-code,
+.new-folder-row,
 .new-project-row,
 .project-list-heading,
 .project-tile {
@@ -592,6 +593,33 @@ button {
   display: none;
 }
 
+.new-folder-row {
+  height: 36px;
+  gap: 4px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding-left: 10px;
+  background: #fbfaf7;
+}
+
+.new-folder-row input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+}
+
+.new-folder-row .icon-button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0 7px 7px 0;
+}
+
 .folder-row.active,
 .folder-row:hover,
 .section-switcher button.active,
@@ -774,7 +802,7 @@ button {
 .report-card {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(76px, auto) minmax(84px, auto) minmax(84px, auto) minmax(60px, auto);
+  grid-template-columns: minmax(0, 1fr) minmax(76px, auto) minmax(84px, auto) minmax(92px, auto) minmax(84px, auto) minmax(60px, auto);
   align-items: center;
   gap: 12px;
   border: 1px solid var(--line);
@@ -851,6 +879,7 @@ button {
 
 .primary-button,
 .secondary-button,
+.danger-button,
 .icon-button {
   height: 36px;
   display: inline-flex;
@@ -875,6 +904,15 @@ button {
   margin-top: 12px;
   background: var(--soft);
   color: var(--ink);
+  font-weight: 720;
+}
+
+.danger-button {
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid #efc4bd;
+  background: #fff4f2;
+  color: #9b352a;
   font-weight: 720;
 }
 

@@ -254,7 +254,7 @@ Right:
 
 ### Current App Gap
 
-Source handling is now less shallow: Organize mode has folder filters, a source register, and source properties. It still needs custom folders, delete/archive, file metadata, source previews, batch import, and source-to-case setup.
+Source handling is now less shallow: Organize mode has folder filters, source-driven custom folders, a source register, source properties, multi-file import, archive/restore/delete controls, and first-pass source-to-case setup. It still needs folder rename/delete, richer source previews, file metadata, and proper case/classification sheets.
 
 ## Mode 2: Code
 

@@ -168,6 +168,10 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 - Organize mode has folder filters for all sources, Internals, and Externals.
 - Organize mode has a source register with title, type, folder, references, and memo status.
 - The right rail in Organize mode now focuses on source properties and prep metadata.
+- Organize mode supports multi-file import.
+- Folders are now source-driven, so moving a source into a new folder creates that folder.
+- Sources can be archived/restored, or deleted after an in-app confirmation.
+- A source can be assigned a case name or turned into a case from the source properties rail.
 
 ### Coding
 
@@ -230,6 +234,7 @@ Implemented:
 - Moved source import/source list into Organize mode.
 - Added Organize folder filtering and a fuller source register.
 - Added source title/type/folder editing in the Organize right rail.
+- Added multi-source import, custom source folders, archive/restore/delete controls, and first-pass source-to-case setup.
 - Moved close reading/coding into Code mode.
 - Moved code reference review into Refine mode.
 - Added initial Classify, Analyze, and Report work surfaces.
@@ -239,7 +244,7 @@ Still needed:
 
 - Project rename/delete/share controls.
 - Mode-specific right rails outside Organize need another design pass.
-- Organize mode still needs custom folders, source deletion, and richer import/prep workflows.
+- Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, richer source previews, and real case/classification sheets.
 - Refine mode needs hierarchy/merge/split tools.
 - Classify, Analyze, and Report are only first-pass shells.
 

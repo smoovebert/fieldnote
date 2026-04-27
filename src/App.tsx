@@ -19,6 +19,7 @@ import {
   Search,
   Sparkles,
   Tags,
+  Trash2,
   UserPlus,
 } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
@@ -26,7 +27,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
-type SourceFolderFilter = 'All' | Source['folder']
+type SourceFolderFilter = 'All' | 'Archived' | string
 
 type Code = {
   id: string
@@ -39,8 +40,11 @@ type Source = {
   id: string
   title: string
   kind: 'Transcript' | 'Document'
-  folder: 'Internals' | 'Externals'
+  folder: string
   content: string
+  archived?: boolean
+  importedAt?: string
+  caseName?: string
 }
 
 type Memo = {
@@ -230,6 +234,7 @@ function App() {
   const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [activeView, setActiveView] = useState<WorkspaceView>('organize')
   const [sourceFolderFilter, setSourceFolderFilter] = useState<SourceFolderFilter>('All')
+  const [newFolderName, setNewFolderName] = useState('')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
   const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
@@ -244,14 +249,22 @@ function App() {
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
 
-  const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0]
+  const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
   const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
   const activeMemo = memos.find((memo) => memo.id === activeMemoId) ?? memos[0]
   const selectedCodes = codes.filter((code) => selectedCodeIds.includes(code.id))
   const selectedCodeNames = selectedCodes.map((code) => code.name).join(', ')
   const sourceExcerpts = excerpts.filter((excerpt) => excerpt.sourceId === activeSource.id)
   const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id))
-  const visibleSources = sourceFolderFilter === 'All' ? sources : sources.filter((source) => source.folder === sourceFolderFilter)
+  const activeSources = sources.filter((source) => !source.archived)
+  const archivedSources = sources.filter((source) => source.archived)
+  const sourceFolders = Array.from(new Set(['Internals', 'Externals', ...activeSources.map((source) => source.folder).filter(Boolean)]))
+  const visibleSources =
+    sourceFolderFilter === 'Archived'
+      ? archivedSources
+      : sourceFolderFilter === 'All'
+        ? activeSources
+        : activeSources.filter((source) => source.folder === sourceFolderFilter)
   const activeSourceMemo = memos.find((memo) => memo.linkedType === 'source' && memo.linkedId === activeSource.id)
   const activeSourceWords = activeSource.content.trim() ? activeSource.content.trim().split(/\s+/).length : 0
   const projectMemo = memos.find((memo) => memo.linkedType === 'project') ?? activeMemo
@@ -535,7 +548,12 @@ function App() {
 
   function selectSourceFolder(folder: SourceFolderFilter) {
     setSourceFolderFilter(folder)
-    const firstVisibleSource = folder === 'All' ? sources[0] : sources.find((source) => source.folder === folder)
+    const firstVisibleSource =
+      folder === 'Archived'
+        ? archivedSources[0]
+        : folder === 'All'
+          ? activeSources[0]
+          : activeSources.find((source) => source.folder === folder)
     if (firstVisibleSource) setActiveSourceId(firstVisibleSource.id)
   }
 
@@ -573,6 +591,41 @@ function App() {
     setProjectTitle(title)
   }
 
+  function moveActiveSourceToNewFolder() {
+    const folderName = newFolderName.trim()
+    if (!folderName) return
+
+    updateSource(activeSource.id, { folder: folderName, archived: false })
+    setSourceFolderFilter(folderName)
+    setNewFolderName('')
+  }
+
+  function createCaseFromSource() {
+    updateSource(activeSource.id, { caseName: activeSource.caseName?.trim() || activeSource.title })
+  }
+
+  function archiveActiveSource() {
+    updateSource(activeSource.id, { archived: true })
+    const nextSource = activeSources.find((source) => source.id !== activeSource.id) ?? sources.find((source) => source.id !== activeSource.id)
+    if (nextSource) setActiveSourceId(nextSource.id)
+  }
+
+  function restoreActiveSource() {
+    updateSource(activeSource.id, { archived: false })
+    setSourceFolderFilter(activeSource.folder || 'All')
+  }
+
+  function deleteActiveSource() {
+    const shouldDelete = window.confirm(`Delete "${activeSource.title}" and its linked excerpts and source memos? This cannot be undone.`)
+    if (!shouldDelete) return
+
+    setSources((current) => current.filter((source) => source.id !== activeSource.id))
+    setExcerpts((current) => current.filter((excerpt) => excerpt.sourceId !== activeSource.id))
+    setMemos((current) => current.filter((memo) => !(memo.linkedType === 'source' && memo.linkedId === activeSource.id)))
+    const nextSource = sources.find((source) => source.id !== activeSource.id)
+    if (nextSource) setActiveSourceId(nextSource.id)
+  }
+
   function updateMemo(memoId: string, patch: Partial<Memo>) {
     setMemos((current) => current.map((memo) => (memo.id === memoId ? { ...memo, ...patch } : memo)))
   }
@@ -600,26 +653,37 @@ function App() {
   }
 
   function importTranscript(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const files = Array.from(event.target.files ?? [])
+    if (!files.length) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      const source: Source = {
-        id: `source-${Date.now()}`,
-        title: file.name.replace(/\.[^.]+$/, ''),
-        kind: 'Transcript',
-        folder: 'Internals',
-        content: String(reader.result ?? ''),
-      }
-      setSources((current) => [source, ...current])
-      setActiveSourceId(source.id)
-      setSourceFolderFilter('All')
+    const targetFolder = sourceFolderFilter !== 'All' && sourceFolderFilter !== 'Archived' ? sourceFolderFilter : 'Internals'
+
+    Promise.all(
+      files.map(
+        (file, index) =>
+          new Promise<Source>((resolve) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              resolve({
+                id: `source-${Date.now()}-${index}`,
+                title: file.name.replace(/\.[^.]+$/, ''),
+                kind: file.name.toLowerCase().endsWith('.csv') ? 'Document' : 'Transcript',
+                folder: targetFolder,
+                content: String(reader.result ?? ''),
+                importedAt: new Date().toISOString(),
+              })
+            }
+            reader.readAsText(file)
+          })
+      )
+    ).then((newSources) => {
+      setSources((current) => [...newSources, ...current])
+      setActiveSourceId(newSources[0].id)
+      setSourceFolderFilter(targetFolder)
       setActiveView('organize')
-      setSelectionHint('Source imported. Select a passage to begin coding.')
+      setSelectionHint(`${newSources.length} source${newSources.length === 1 ? '' : 's'} imported.`)
       event.target.value = ''
-    }
-    reader.readAsText(file)
+    })
   }
 
   async function submitAuth(event: MouseEvent<HTMLButtonElement>) {
@@ -859,24 +923,40 @@ function App() {
             <>
               <label className="folder-row import-row">
                 <FilePlus2 size={16} aria-hidden="true" />
-                Import source
-                <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
+                Import sources
+                <input type="file" accept=".txt,.md,.csv" multiple onChange={importTranscript} />
               </label>
               <button className={sourceFolderFilter === 'All' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('All')}>
                 <FolderOpen size={16} aria-hidden="true" />
                 All sources
-                <span>{sources.length}</span>
+                <span>{activeSources.length}</span>
               </button>
-              <button className={sourceFolderFilter === 'Internals' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('Internals')}>
-                <FolderInput size={16} aria-hidden="true" />
-                Internals
-                <span>{sources.filter((source) => source.folder === 'Internals').length}</span>
-              </button>
-              <button className={sourceFolderFilter === 'Externals' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('Externals')}>
+              {sourceFolders.map((folder) => (
+                <button key={folder} className={sourceFolderFilter === folder ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder(folder)}>
+                  <FolderInput size={16} aria-hidden="true" />
+                  {folder}
+                  <span>{activeSources.filter((source) => source.folder === folder).length}</span>
+                </button>
+              ))}
+              <button className={sourceFolderFilter === 'Archived' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('Archived')}>
                 <FolderOpen size={16} aria-hidden="true" />
-                Externals
-                <span>{sources.filter((source) => source.folder === 'Externals').length}</span>
+                Archived
+                <span>{archivedSources.length}</span>
               </button>
+              <div className="new-folder-row">
+                <input
+                  value={newFolderName}
+                  placeholder="New folder"
+                  aria-label="New folder name"
+                  onChange={(event) => setNewFolderName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') moveActiveSourceToNewFolder()
+                  }}
+                />
+                <button className="icon-button" type="button" onClick={moveActiveSourceToNewFolder} aria-label="Move source to new folder">
+                  <Plus size={16} aria-hidden="true" />
+                </button>
+              </div>
             </>
           )}
           {activeView === 'code' && (
@@ -941,7 +1021,7 @@ function App() {
           activeView={activeView}
           activeSourceId={activeSource.id}
           activeCodeId={activeCode.id}
-          sources={sources}
+          sources={activeSources}
           visibleSources={activeView === 'organize' ? visibleSources : sources}
           codes={codes}
           excerpts={excerpts}
@@ -988,7 +1068,7 @@ function App() {
               <label className="secondary-button import-inline">
                 <FilePlus2 size={17} aria-hidden="true" />
                 Import
-                <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
+                <input type="file" accept=".txt,.md,.csv" multiple onChange={importTranscript} />
               </label>
             </div>
             <div className="source-table" role="table" aria-label="Project sources">
@@ -996,6 +1076,7 @@ function App() {
                 <span>Title</span>
                 <small>Type</small>
                 <small>Folder</small>
+                <small>Case</small>
                 <small>References</small>
                 <small>Memo</small>
               </div>
@@ -1008,6 +1089,7 @@ function App() {
                     <span>{source.title}</span>
                     <small>{source.kind}</small>
                     <small>{source.folder}</small>
+                    <small>{source.caseName || '-'}</small>
                     <small>{referenceCount}</small>
                     <small>{hasMemo ? 'Yes' : 'No'}</small>
                   </button>
@@ -1139,10 +1221,18 @@ function App() {
 
             <label className="property-field">
               <span>Folder</span>
-              <select value={activeSource.folder} onChange={(event) => updateSource(activeSource.id, { folder: event.target.value as Source['folder'] })}>
-                <option value="Internals">Internals</option>
-                <option value="Externals">Externals</option>
+              <select value={activeSource.folder} onChange={(event) => updateSource(activeSource.id, { folder: event.target.value })}>
+                {sourceFolders.map((folder) => (
+                  <option key={folder} value={folder}>
+                    {folder}
+                  </option>
+                ))}
               </select>
+            </label>
+
+            <label className="property-field">
+              <span>Case</span>
+              <input value={activeSource.caseName ?? ''} placeholder="No case assigned" onChange={(event) => updateSource(activeSource.id, { caseName: event.target.value })} />
             </label>
 
             <dl className="properties-list compact-properties">
@@ -1158,11 +1248,34 @@ function App() {
                 <dt>Memo</dt>
                 <dd>{activeSourceMemo?.body.trim() ? 'Started' : 'Blank'}</dd>
               </div>
+              <div>
+                <dt>Imported</dt>
+                <dd>{activeSource.importedAt ? new Date(activeSource.importedAt).toLocaleDateString() : 'Sample'}</dd>
+              </div>
             </dl>
 
+            <button className="secondary-button" type="button" onClick={createCaseFromSource}>
+              <Database size={17} aria-hidden="true" />
+              Create case from source
+            </button>
             <button className="secondary-button" type="button" onClick={() => setActiveView('code')}>
               <BookOpenText size={17} aria-hidden="true" />
               Open for coding
+            </button>
+            {activeSource.archived ? (
+              <button className="secondary-button" type="button" onClick={restoreActiveSource}>
+                <FolderInput size={17} aria-hidden="true" />
+                Restore source
+              </button>
+            ) : (
+              <button className="secondary-button" type="button" onClick={archiveActiveSource}>
+                <FolderOpen size={17} aria-hidden="true" />
+                Archive source
+              </button>
+            )}
+            <button className="danger-button" type="button" onClick={deleteActiveSource}>
+              <Trash2 size={17} aria-hidden="true" />
+              Delete source
             </button>
           </section>
         )}
@@ -1211,7 +1324,11 @@ function App() {
             </div>
             <div>
               <dt>Sources</dt>
-              <dd>{sources.length}</dd>
+              <dd>{activeSources.length}</dd>
+            </div>
+            <div>
+              <dt>Archived</dt>
+              <dd>{archivedSources.length}</dd>
             </div>
             <div>
               <dt>Codes</dt>
