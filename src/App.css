@@ -805,8 +805,10 @@ button {
 }
 
 .source-table,
+.case-table,
 .report-surface,
 .analyze-surface,
+.classify-surface,
 .refine-surface {
   display: grid;
   gap: 10px;
@@ -888,6 +890,7 @@ button {
 }
 
 .source-row,
+.case-row,
 .report-card {
   width: 100%;
   display: grid;
@@ -908,7 +911,45 @@ button {
   background: #eef6f5;
 }
 
-.source-row-head {
+.case-row {
+  grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.8fr) minmax(84px, auto) minmax(84px, auto);
+  cursor: default;
+}
+
+.case-row.active {
+  border-color: #c8d8d8;
+  background: #eef6f5;
+}
+
+.case-row input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 9px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.case-row button {
+  min-width: 0;
+  border-radius: 7px;
+  padding: 8px 9px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.case-row button:hover {
+  background: var(--soft);
+}
+
+.source-row-head,
+.case-row-head {
   min-height: 32px;
   border-color: transparent;
   background: transparent;
@@ -919,12 +960,18 @@ button {
   text-transform: uppercase;
 }
 
+.case-row-head {
+  padding: 0 12px;
+}
+
 .source-row span,
+.case-row span,
 .report-card strong {
   font-weight: 760;
 }
 
 .source-row small,
+.case-row small,
 .report-card small,
 .mode-placeholder p {
   color: var(--muted);

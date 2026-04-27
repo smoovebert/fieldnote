@@ -183,7 +183,7 @@ const modeItems: Array<{ id: WorkspaceView; label: string; description: string; 
   { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.', status: 'ready' },
   { id: 'code', label: 'Code', description: 'Close-read sources and code selected passages.', status: 'ready' },
   { id: 'refine', label: 'Refine', description: 'Clean the codebook and review code references.', status: 'partial' },
-  { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.', status: 'soon' },
+  { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.', status: 'partial' },
   { id: 'analyze', label: 'Analyze', description: 'Run searches, matrices, and comparisons.', status: 'partial' },
   { id: 'report', label: 'Report', description: 'Export excerpts, memos, and codebooks.', status: 'partial' },
 ]
@@ -1258,14 +1258,46 @@ function App() {
         )}
 
         {activeView === 'classify' && (
-          <article className="detail-card mode-placeholder">
-            <p className="detail-kicker">Cases and attributes</p>
-            <h2>Classify is reserved for the next MVP pass</h2>
-            <p>Source-level case names already exist in Organize. This mode will turn those into a real case table with attributes.</p>
-            <div className="placeholder-list">
-              <span>Case table</span>
-              <span>Attribute columns</span>
-              <span>Source-to-case review</span>
+          <article className="detail-card classify-surface">
+            <div className="source-register-heading">
+              <div>
+                <p className="detail-kicker">Case sheet</p>
+                <h2>Source classifications</h2>
+              </div>
+              <span className="reference-count">{sources.filter((source) => source.caseName?.trim()).length} assigned</span>
+            </div>
+
+            <div className="case-table" role="table" aria-label="Source classifications">
+              <div className="case-row case-row-head" role="row">
+                <span>Case</span>
+                <small>Source</small>
+                <small>Type</small>
+                <small>References</small>
+              </div>
+              {sources.map((source) => {
+                const referenceCount = excerpts.filter((excerpt) => excerpt.sourceId === source.id).length
+
+                return (
+                  <div key={source.id} className={source.id === activeSource.id ? 'case-row active' : 'case-row'} role="row">
+                    <input
+                      value={source.caseName ?? ''}
+                      placeholder={source.title}
+                      aria-label={`Case for ${source.title}`}
+                      onFocus={() => setActiveSourceId(source.id)}
+                      onChange={(event) => updateSource(source.id, { caseName: event.target.value })}
+                    />
+                    <button type="button" onClick={() => setActiveSourceId(source.id)}>
+                      {source.title}
+                    </button>
+                    <small>{source.kind}</small>
+                    <small>{referenceCount}</small>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="coming-soon-strip">
+              <strong>Coming soon</strong>
+              <span>Attribute columns, case groups, and spreadsheet-style filtering.</span>
             </div>
           </article>
         )}
@@ -1533,11 +1565,15 @@ function ListView({
           </button>
         ))}
       {activeView === 'classify' && (
-        <article className="empty-list-state">
-          <Database size={20} aria-hidden="true" />
-          <strong>Cases coming next</strong>
-          <span>Participants, attributes, and classification sheets will live here.</span>
-        </article>
+        sources.map((source) => (
+          <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
+            <Database size={17} aria-hidden="true" />
+            <div>
+              <strong>{source.caseName?.trim() || source.title}</strong>
+              <span>{source.title}</span>
+            </div>
+          </button>
+        ))
       )}
       {activeView === 'analyze' && (
         <>

@@ -202,6 +202,7 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 - Folders are now source-driven, so moving a source into a new folder creates that folder.
 - Sources can be archived/restored, or deleted after an in-app confirmation.
 - A source can be assigned a case name or turned into a case from the source properties rail.
+- Classify mode now has a basic source classification sheet for assigning/editing source-level case names.
 
 ### Coding
 
@@ -251,7 +252,7 @@ Typing in a missing context memo creates it automatically.
 - AI draft panel is only a placeholder.
 - Query/Analyze tools are not implemented.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
-- Classifications/cases/attributes are not implemented.
+- Classify mode has a basic source-level case sheet, but no real attribute columns or case groups yet.
 - Code hierarchy, merge, split, and parent-child nodes are not implemented.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
@@ -285,6 +286,7 @@ Implemented:
 - Added Organize folder filtering and a fuller source register.
 - Added source title/type/folder editing in the Organize right rail.
 - Added multi-source import, custom source folders, archive/restore/delete controls, and first-pass source-to-case setup.
+- Added a basic Classify case sheet for reviewing and editing source-level case assignments.
 - Moved close reading/coding into Code mode.
 - Moved code reference review into Refine mode.
 - Tightened the Code -> Refine -> Report MVP loop with duplicate-reference merging, better code editing, and stronger CSV exports.
