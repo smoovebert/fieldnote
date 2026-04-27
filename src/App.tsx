@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import {
-  BarChart3,
   BookOpenText,
   Cloud,
   Database,
@@ -9,15 +8,11 @@ import {
   FilePlus2,
   FileText,
   FolderOpen,
-  GitBranch,
   Highlighter,
-  Home,
-  Layers3,
   ListTree,
   LogIn,
   LogOut,
   MessageSquareText,
-  Network,
   Plus,
   Rows3,
   Search,
@@ -29,7 +24,7 @@ import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import './App.css'
 
-type WorkspaceView = 'sources' | 'codes' | 'memos' | 'relationships'
+type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 
 type Code = {
   id: string
@@ -178,6 +173,15 @@ const defaultProject: ProjectData = {
   excerpts: initialExcerpts,
 }
 
+const modeItems: Array<{ id: WorkspaceView; label: string; description: string }> = [
+  { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.' },
+  { id: 'code', label: 'Code', description: 'Close-read sources and code selected passages.' },
+  { id: 'refine', label: 'Refine', description: 'Clean the codebook and review code references.' },
+  { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.' },
+  { id: 'analyze', label: 'Analyze', description: 'Run searches, matrices, and comparisons.' },
+  { id: 'report', label: 'Report', description: 'Export excerpts, memos, and codebooks.' },
+]
+
 function normalizeProject(project: ProjectRow): ProjectData {
   const fallbackSource: Source = {
     id: 'interview-03',
@@ -217,7 +221,7 @@ function App() {
   const [password, setPassword] = useState('')
   const [authStatus, setAuthStatus] = useState('Sign in to sync your research workspace.')
   const [projectId, setProjectId] = useState<string | null>(null)
-  const [activeView, setActiveView] = useState<WorkspaceView>('sources')
+  const [activeView, setActiveView] = useState<WorkspaceView>('organize')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
   const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
@@ -241,22 +245,18 @@ function App() {
   const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id))
   const projectMemo = memos.find((memo) => memo.linkedType === 'project') ?? activeMemo
   const contextualMemo =
-    activeView === 'sources'
+    activeView === 'code' || activeView === 'organize'
       ? memos.find((memo) => memo.linkedType === 'source' && memo.linkedId === activeSource.id)
-      : activeView === 'codes'
+      : activeView === 'refine'
         ? memos.find((memo) => memo.linkedType === 'code' && memo.linkedId === activeCode.id)
-        : activeView === 'memos'
-          ? activeMemo
-          : projectMemo
+        : projectMemo
   const railMemo = contextualMemo ?? projectMemo
   const railMemoTitle =
-    activeView === 'sources'
+    activeView === 'code' || activeView === 'organize'
       ? `${activeSource.title} memo`
-      : activeView === 'codes'
+      : activeView === 'refine'
         ? `${activeCode.name} memo`
-        : activeView === 'memos'
-          ? activeMemo.title
-          : 'Project memo'
+        : 'Project memo'
   const projectData = useMemo<ProjectData>(
     () => ({ activeSourceId, sources, codes, memos, excerpts }),
     [activeSourceId, codes, excerpts, memos, sources]
@@ -385,7 +385,7 @@ function App() {
 
   const visibleExcerpts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
-    const list = activeView === 'codes' ? codeExcerpts : activeView === 'sources' ? sourceExcerpts : excerpts
+    const list = activeView === 'refine' ? codeExcerpts : activeView === 'code' ? sourceExcerpts : excerpts
     if (!term) return list
 
     return list.filter((excerpt) => {
@@ -433,11 +433,11 @@ function App() {
     setCodes((current) => [...current, code])
     setSelectedCodeIds((current) => [...current, code.id])
     setActiveCodeId(code.id)
-    setActiveView('codes')
+    setActiveView('refine')
     setNewCodeName('')
   }
 
-  function addMemo(linkedType: Memo['linkedType'] = activeView === 'codes' ? 'code' : activeView === 'sources' ? 'source' : 'project') {
+  function addMemo(linkedType: Memo['linkedType'] = activeView === 'refine' ? 'code' : activeView === 'code' ? 'source' : 'project') {
     const memo: Memo = {
       id: `memo-${Date.now()}`,
       title: linkedType === 'code' ? `${activeCode.name} memo` : linkedType === 'source' ? `${activeSource.title} memo` : 'New project memo',
@@ -448,7 +448,6 @@ function App() {
 
     setMemos((current) => [memo, ...current])
     setActiveMemoId(memo.id)
-    setActiveView('memos')
   }
 
   function toggleSelectedCode(codeId: string) {
@@ -460,15 +459,14 @@ function App() {
 
   function selectView(view: WorkspaceView) {
     setActiveView(view)
-    if (view === 'codes') setActiveCodeId(codes[0]?.id ?? '')
-    if (view === 'memos') setActiveMemoId(memos[0]?.id ?? '')
+    if (view === 'refine') setActiveCodeId(activeCodeId || codes[0]?.id || '')
   }
 
   function codeSelection() {
     const selectedText = window.getSelection()?.toString().trim()
 
-    if (!selectedText || activeView !== 'sources') {
-      setSelectionHint(activeView === 'sources' ? 'No text is selected yet. Drag across a phrase or paragraph first.' : 'Open a source before coding text.')
+    if (!selectedText || activeView !== 'code') {
+      setSelectionHint(activeView === 'code' ? 'No text is selected yet. Drag across a phrase or paragraph first.' : 'Switch to Code mode before coding text.')
       return
     }
 
@@ -508,7 +506,7 @@ function App() {
       return
     }
 
-    const linkedType: Memo['linkedType'] = activeView === 'sources' ? 'source' : activeView === 'codes' ? 'code' : 'project'
+    const linkedType: Memo['linkedType'] = activeView === 'code' || activeView === 'organize' ? 'source' : activeView === 'refine' ? 'code' : 'project'
     const memo: Memo = {
       id: `memo-${Date.now()}`,
       title: railMemoTitle,
@@ -535,7 +533,7 @@ function App() {
       }
       setSources((current) => [source, ...current])
       setActiveSourceId(source.id)
-      setActiveView('sources')
+      setActiveView('organize')
       setSelectionHint('Source imported. Select a passage to begin coding.')
       event.target.value = ''
     }
@@ -647,6 +645,14 @@ function App() {
           </div>
         </div>
 
+        <nav className="mode-switcher" aria-label="Research modes">
+          {modeItems.map((mode) => (
+            <button key={mode.id} className={activeView === mode.id ? 'active' : ''} type="button" title={mode.description} onClick={() => selectView(mode.id)}>
+              {mode.label}
+            </button>
+          ))}
+        </nav>
+
         <div className="header-tools">
           <div className="sync-box">
             <Cloud size={16} aria-hidden="true" />
@@ -662,104 +668,80 @@ function App() {
         </div>
       </header>
 
-      <section className="ribbon" aria-label="Command ribbon">
-        <nav className="ribbon-tabs" aria-label="Ribbon tabs">
-          {[
-            ['Home', Home],
-            ['Create', Plus],
-            ['Data', Database],
-            ['Query', Search],
-            ['Share', Download],
-          ].map(([label, Icon], index) => (
-            <button className={index === 0 ? 'active' : ''} type="button" key={String(label)}>
-              <Icon size={16} aria-hidden="true" />
-              {String(label)}
-            </button>
-          ))}
-        </nav>
-
-        <div className="ribbon-groups">
-          <div className="ribbon-group">
-            <label className="ribbon-command primary-command">
-              <FilePlus2 size={18} aria-hidden="true" />
-              <span>Import</span>
-              <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
-            </label>
-            <button className="ribbon-command" type="button" onClick={exportCsv}>
-              <Download size={18} aria-hidden="true" />
-              <span>Export</span>
-            </button>
-          </div>
-
-          <div className="ribbon-group">
-            <button className="ribbon-command" type="button" onClick={codeSelection}>
-              <Highlighter size={18} aria-hidden="true" />
-              <span>Code</span>
-            </button>
-            <button className="ribbon-command" type="button" onClick={() => addMemo()}>
-              <MessageSquareText size={18} aria-hidden="true" />
-              <span>Memo</span>
-            </button>
-            <button className="ribbon-command" type="button">
-              <Sparkles size={18} aria-hidden="true" />
-              <span>Suggest</span>
-            </button>
-          </div>
-
-          <div className="ribbon-group">
-            <button className="ribbon-command" type="button" onClick={() => selectView('codes')}>
-              <Rows3 size={18} aria-hidden="true" />
-              <span>Matrix</span>
-            </button>
-            <button className="ribbon-command" type="button">
-              <BarChart3 size={18} aria-hidden="true" />
-              <span>Chart</span>
-            </button>
-            <button className="ribbon-command" type="button" onClick={() => selectView('relationships')}>
-              <Network size={18} aria-hidden="true" />
-              <span>Map</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
       <aside className="navigation-view" aria-label="Navigation view">
         <div className="folder-pane">
           <div className="pane-title">
             <ListTree size={16} aria-hidden="true" />
-            <span>Navigation View</span>
+            <span>{modeItems.find((mode) => mode.id === activeView)?.label} Mode</span>
           </div>
-          <button className={activeView === 'sources' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('sources')}>
-            <FolderOpen size={16} aria-hidden="true" />
-            Internals
-          </button>
-          <button className={activeView === 'memos' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('memos')}>
-            <MessageSquareText size={16} aria-hidden="true" />
-            Memos
-          </button>
-          <button className={activeView === 'codes' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('codes')}>
-            <Tags size={16} aria-hidden="true" />
-            Codes
-          </button>
-          <button className={activeView === 'relationships' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectView('relationships')}>
-            <GitBranch size={16} aria-hidden="true" />
-            Relationships
-          </button>
-        </div>
-
-        <nav className="section-switcher" aria-label="Project areas">
-          {[
-            ['sources', BookOpenText, 'Sources'],
-            ['codes', Layers3, 'Codes'],
-            ['memos', MessageSquareText, 'Memos'],
-            ['relationships', Sparkles, 'Maps'],
-          ].map(([view, Icon, label]) => (
-            <button key={String(view)} className={activeView === view ? 'active' : ''} type="button" onClick={() => selectView(view as WorkspaceView)}>
-              <Icon size={18} aria-hidden="true" />
-              {String(label)}
+          {activeView === 'organize' && (
+            <>
+              <label className="folder-row import-row">
+                <FilePlus2 size={16} aria-hidden="true" />
+                Import source
+                <input type="file" accept=".txt,.md,.csv" onChange={importTranscript} />
+              </label>
+              <button className="folder-row active" type="button">
+                <FolderOpen size={16} aria-hidden="true" />
+                Internals
+              </button>
+            </>
+          )}
+          {activeView === 'code' && (
+            <>
+              <button className="folder-row active" type="button">
+                <BookOpenText size={16} aria-hidden="true" />
+                Open source
+              </button>
+              <button className="folder-row" type="button" onClick={() => addMemo('source')}>
+                <MessageSquareText size={16} aria-hidden="true" />
+                Source memo
+              </button>
+            </>
+          )}
+          {activeView === 'refine' && (
+            <>
+              <button className="folder-row active" type="button">
+                <Tags size={16} aria-hidden="true" />
+                Codebook
+              </button>
+              <button className="folder-row" type="button" onClick={() => addMemo('code')}>
+                <MessageSquareText size={16} aria-hidden="true" />
+                Code memo
+              </button>
+            </>
+          )}
+          {activeView === 'classify' && (
+            <button className="folder-row active" type="button">
+              <Database size={16} aria-hidden="true" />
+              Cases and attributes
             </button>
-          ))}
-        </nav>
+          )}
+          {activeView === 'analyze' && (
+            <>
+              <button className="folder-row active" type="button">
+                <Search size={16} aria-hidden="true" />
+                Text search
+              </button>
+              <button className="folder-row" type="button">
+                <Rows3 size={16} aria-hidden="true" />
+                Matrix coding
+              </button>
+            </>
+          )}
+          {activeView === 'report' && (
+            <>
+              <button className="folder-row active" type="button" onClick={exportCsv}>
+                <Download size={16} aria-hidden="true" />
+                Coded excerpts
+              </button>
+              <button className="folder-row" type="button">
+                <FileText size={16} aria-hidden="true" />
+                Codebook
+              </button>
+            </>
+          )}
+        </div>
       </aside>
 
       <section className="list-view" aria-label="List view">
@@ -767,22 +749,17 @@ function App() {
           activeView={activeView}
           activeSourceId={activeSource.id}
           activeCodeId={activeCode.id}
-          activeMemoId={activeMemo.id}
           sources={sources}
           codes={codes}
-          memos={memos}
           excerpts={excerpts}
           onSelectSource={(id) => {
             setActiveSourceId(id)
-            setActiveView('sources')
+            if (activeView === 'organize') return
+            setActiveView('code')
           }}
           onSelectCode={(id) => {
             setActiveCodeId(id)
-            setActiveView('codes')
-          }}
-          onSelectMemo={(id) => {
-            setActiveMemoId(id)
-            setActiveView('memos')
+            setActiveView('refine')
           }}
         />
       </section>
@@ -795,10 +772,8 @@ function App() {
               activeView={activeView}
               activeSource={activeSource}
               activeCode={activeCode}
-              activeMemo={activeMemo}
               onSourceTitleChange={(title) => updateSource(activeSource.id, { title })}
               onCodeNameChange={(name) => setCodes((current) => current.map((code) => (code.id === activeCode.id ? { ...code, name } : code)))}
-              onMemoTitleChange={(title) => updateMemo(activeMemo.id, { title })}
             />
           </div>
 
@@ -808,7 +783,22 @@ function App() {
           </div>
         </header>
 
-        {activeView === 'sources' && (
+        {activeView === 'organize' && (
+          <article className="detail-card organize-surface">
+            <p className="detail-kicker">Sources</p>
+            <div className="source-table">
+              {sources.map((source) => (
+                <button key={source.id} className={source.id === activeSource.id ? 'source-row active' : 'source-row'} type="button" onClick={() => setActiveSourceId(source.id)}>
+                  <span>{source.title}</span>
+                  <small>{source.kind}</small>
+                  <small>{excerpts.filter((excerpt) => excerpt.sourceId === source.id).length} references</small>
+                </button>
+              ))}
+            </div>
+          </article>
+        )}
+
+        {activeView === 'code' && (
           <article className="document-panel">
             <div className="document-actions">
               <div>
@@ -847,7 +837,7 @@ function App() {
           </article>
         )}
 
-        {activeView === 'codes' && (
+        {activeView === 'refine' && (
           <article className="detail-card">
             <p className="detail-kicker">Node references</p>
             <textarea
@@ -860,54 +850,78 @@ function App() {
           </article>
         )}
 
-        {activeView === 'memos' && (
-          <article className="detail-card">
-            <p className="detail-kicker">Linked memo</p>
-            <textarea className="memo-editor" value={activeMemo.body} aria-label="Memo body" onChange={(event) => updateMemo(activeMemo.id, { body: event.target.value })} />
+        {activeView === 'classify' && (
+          <article className="detail-card mode-placeholder">
+            <p className="detail-kicker">Cases and attributes</p>
+            <h2>Classify sources into cases</h2>
+            <p>Use this mode to create participants, assign sources to cases, and add attributes like cohort, role, site, or demographic fields.</p>
           </article>
         )}
 
-        {activeView === 'relationships' && (
-          <article className="detail-card relationship-map">
-            <p className="detail-kicker">Relationship map</p>
-            <div className="map-node source-node">{activeSource.title}</div>
-            <div className="map-line" />
-            <div className="map-node code-node">{activeCode.name}</div>
-            <p className="map-caption">Relationships are tracked as a workspace mode now. The next pass can make these editable links between cases, sources, and codes.</p>
+        {activeView === 'analyze' && (
+          <article className="detail-card analyze-surface">
+            <p className="detail-kicker">Query results</p>
+            <div className="search-box wide">
+              <Search size={17} aria-hidden="true" />
+              <input value={searchTerm} placeholder="Search coded excerpts" aria-label="Search coded excerpts" onChange={(event) => setSearchTerm(event.target.value)} />
+            </div>
+            <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} />
+          </article>
+        )}
+
+        {activeView === 'report' && (
+          <article className="detail-card report-surface">
+            <p className="detail-kicker">Exports</p>
+            <button className="report-card" type="button" onClick={exportCsv}>
+              <Download size={20} aria-hidden="true" />
+              <span>
+                <strong>Coded excerpts CSV</strong>
+                <small>Source, codes, excerpt text, and notes.</small>
+              </span>
+            </button>
+            <button className="report-card" type="button">
+              <FileText size={20} aria-hidden="true" />
+              <span>
+                <strong>Codebook</strong>
+                <small>Code names, descriptions, counts, and examples. Not implemented yet.</small>
+              </span>
+            </button>
           </article>
         )}
       </section>
 
       <aside className="properties-view">
-        <section className="panel" id="codes">
-          <div className="panel-heading">
-            <Tags size={18} aria-hidden="true" />
-            <h2>Active Codes</h2>
-          </div>
-          <div className="code-picker">
-            {codes.map((code) => (
-              <button key={code.id} className={selectedCodeIds.includes(code.id) ? 'selected' : ''} type="button" aria-pressed={selectedCodeIds.includes(code.id)} onClick={() => toggleSelectedCode(code.id)}>
-                <span style={{ background: code.color }} />
-                {code.name}
-              </button>
-            ))}
-          </div>
+        {activeView === 'code' && (
+          <section className="panel" id="codes">
+            <div className="panel-heading">
+              <Tags size={18} aria-hidden="true" />
+              <h2>Active Codes</h2>
+            </div>
+            <div className="code-picker">
+              {codes.map((code) => (
+                <button key={code.id} className={selectedCodeIds.includes(code.id) ? 'selected' : ''} type="button" aria-pressed={selectedCodeIds.includes(code.id)} onClick={() => toggleSelectedCode(code.id)}>
+                  <span style={{ background: code.color }} />
+                  {code.name}
+                </button>
+              ))}
+            </div>
 
-          <div className="new-code">
-            <input
-              value={newCodeName}
-              placeholder="New code"
-              aria-label="New code name"
-              onChange={(event) => setNewCodeName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') addCode()
-              }}
-            />
-            <button className="icon-button" type="button" onClick={addCode} aria-label="Add code">
-              <Plus size={18} aria-hidden="true" />
-            </button>
-          </div>
-        </section>
+            <div className="new-code">
+              <input
+                value={newCodeName}
+                placeholder="New code"
+                aria-label="New code name"
+                onChange={(event) => setNewCodeName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') addCode()
+                }}
+              />
+              <button className="icon-button" type="button" onClick={addCode} aria-label="Add code">
+                <Plus size={18} aria-hidden="true" />
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="panel">
           <div className="panel-heading">
@@ -943,7 +957,8 @@ function App() {
           {railMemo.id !== projectMemo.id && <p className="memo-link-note">Linked to this {railMemo.linkedType}.</p>}
         </section>
 
-        <section className="panel" id="assistant">
+        {activeView === 'analyze' && (
+          <section className="panel" id="assistant">
           <div className="panel-heading">
             <Sparkles size={18} aria-hidden="true" />
             <h2>AI draft</h2>
@@ -959,15 +974,18 @@ function App() {
           <button type="button" className="secondary-button">
             Suggest child codes
           </button>
-        </section>
+          </section>
+        )}
 
-        <section className="panel">
+        {(activeView === 'code' || activeView === 'refine' || activeView === 'analyze') && (
+          <section className="panel">
           <div className="panel-heading">
             <Highlighter size={18} aria-hidden="true" />
             <h2>Coded excerpts</h2>
           </div>
           <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} compact />
-        </section>
+          </section>
+        )}
       </aside>
     </main>
   )
@@ -977,34 +995,28 @@ function ListView({
   activeView,
   activeSourceId,
   activeCodeId,
-  activeMemoId,
   sources,
   codes,
-  memos,
   excerpts,
   onSelectSource,
   onSelectCode,
-  onSelectMemo,
 }: {
   activeView: WorkspaceView
   activeSourceId: string
   activeCodeId: string
-  activeMemoId: string
   sources: Source[]
   codes: Code[]
-  memos: Memo[]
   excerpts: Excerpt[]
   onSelectSource: (id: string) => void
   onSelectCode: (id: string) => void
-  onSelectMemo: (id: string) => void
 }) {
   return (
     <>
       <div className="pane-title">
         <FileText size={16} aria-hidden="true" />
-        <span>List View</span>
+        <span>{activeView === 'organize' || activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Queries' : 'Exports'}</span>
       </div>
-      {activeView === 'sources' &&
+      {(activeView === 'organize' || activeView === 'code') &&
         sources.map((source) => (
           <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
             <FileText size={17} aria-hidden="true" />
@@ -1016,7 +1028,7 @@ function ListView({
             </div>
           </button>
         ))}
-      {activeView === 'codes' &&
+      {activeView === 'refine' &&
         codes.map((code) => (
           <button className={code.id === activeCodeId ? 'list-item active' : 'list-item'} key={code.id} type="button" onClick={() => onSelectCode(code.id)}>
             <span className="code-dot" style={{ background: code.color }} />
@@ -1026,22 +1038,48 @@ function ListView({
             </div>
           </button>
         ))}
-      {activeView === 'memos' &&
-        memos.map((memo) => (
-          <button className={memo.id === activeMemoId ? 'list-item active' : 'list-item'} key={memo.id} type="button" onClick={() => onSelectMemo(memo.id)}>
-            <MessageSquareText size={17} aria-hidden="true" />
+      {activeView === 'classify' && (
+        <article className="empty-list-state">
+          <Database size={20} aria-hidden="true" />
+          <strong>Cases coming next</strong>
+          <span>Participants, attributes, and classification sheets will live here.</span>
+        </article>
+      )}
+      {activeView === 'analyze' && (
+        <>
+          <button className="list-item active" type="button">
+            <Search size={17} aria-hidden="true" />
             <div>
-              <strong>{memo.title}</strong>
-              <span>{memo.linkedType} memo</span>
+              <strong>Text search</strong>
+              <span>Search across coded excerpts</span>
             </div>
           </button>
-        ))}
-      {activeView === 'relationships' && (
-        <article className="empty-list-state">
-          <GitBranch size={20} aria-hidden="true" />
-          <strong>No relationships yet</strong>
-          <span>Use this area for future case, code, and source links.</span>
-        </article>
+          <button className="list-item" type="button">
+            <Rows3 size={17} aria-hidden="true" />
+            <div>
+              <strong>Matrix coding</strong>
+              <span>Not implemented yet</span>
+            </div>
+          </button>
+        </>
+      )}
+      {activeView === 'report' && (
+        <>
+          <button className="list-item active" type="button">
+            <Download size={17} aria-hidden="true" />
+            <div>
+              <strong>Coded excerpts</strong>
+              <span>CSV export available</span>
+            </div>
+          </button>
+          <button className="list-item" type="button">
+            <FileText size={17} aria-hidden="true" />
+            <div>
+              <strong>Codebook</strong>
+              <span>Not implemented yet</span>
+            </div>
+          </button>
+        </>
       )}
     </>
   )
@@ -1051,27 +1089,29 @@ function DetailTitle({
   activeView,
   activeSource,
   activeCode,
-  activeMemo,
   onSourceTitleChange,
   onCodeNameChange,
-  onMemoTitleChange,
 }: {
   activeView: WorkspaceView
   activeSource: Source
   activeCode: Code
-  activeMemo: Memo
   onSourceTitleChange: (title: string) => void
   onCodeNameChange: (name: string) => void
-  onMemoTitleChange: (title: string) => void
 }) {
-  if (activeView === 'codes') {
+  if (activeView === 'refine') {
     return <input className="title-input" value={activeCode.name} aria-label="Code name" onChange={(event) => onCodeNameChange(event.target.value)} />
   }
-  if (activeView === 'memos') {
-    return <input className="title-input" value={activeMemo.title} aria-label="Memo title" onChange={(event) => onMemoTitleChange(event.target.value)} />
+  if (activeView === 'classify') {
+    return <h2 className="static-detail-title">Classify</h2>
   }
-  if (activeView === 'relationships') {
-    return <h2 className="static-detail-title">Relationships</h2>
+  if (activeView === 'analyze') {
+    return <h2 className="static-detail-title">Analyze</h2>
+  }
+  if (activeView === 'report') {
+    return <h2 className="static-detail-title">Report</h2>
+  }
+  if (activeView === 'organize') {
+    return <input className="title-input" value={activeSource.title} aria-label="Source title" onChange={(event) => onSourceTitleChange(event.target.value)} />
   }
   return <input className="title-input" value={activeSource.title} aria-label="Source title" onChange={(event) => onSourceTitleChange(event.target.value)} />
 }

@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 230px 260px minmax(460px, 1fr) 420px;
-  grid-template-rows: 68px 104px minmax(0, 1fr);
+  grid-template-rows: 68px minmax(0, 1fr);
   background: var(--canvas);
   color: var(--ink);
 }
@@ -100,6 +100,7 @@
 
 .brand-block,
 .header-tools,
+.mode-switcher,
 .ribbon-tabs,
 .ribbon-groups,
 .ribbon-group,
@@ -174,6 +175,30 @@ button {
 
 .header-tools {
   gap: 10px;
+}
+
+.mode-switcher {
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 4px;
+}
+
+.mode-switcher button {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.mode-switcher button.active,
+.mode-switcher button:hover {
+  background: var(--soft);
+  color: var(--ink);
 }
 
 .sync-box,
@@ -320,9 +345,9 @@ button {
 
 .navigation-view {
   grid-column: 1;
-  grid-row: 3;
+  grid-row: 2;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .folder-pane {
@@ -355,6 +380,10 @@ button {
   text-align: left;
 }
 
+.import-row input {
+  display: none;
+}
+
 .folder-row.active,
 .folder-row:hover,
 .section-switcher button.active,
@@ -373,7 +402,7 @@ button {
 
 .list-view {
   grid-column: 2;
-  grid-row: 3;
+  grid-row: 2;
   padding: 14px;
   overflow: auto;
 }
@@ -443,7 +472,7 @@ button {
 
 .detail-view {
   grid-column: 3;
-  grid-row: 3;
+  grid-row: 2;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   padding: 14px;
@@ -501,6 +530,60 @@ button {
 
 .memo-editor {
   min-height: 360px;
+}
+
+.source-table,
+.report-surface,
+.analyze-surface {
+  display: grid;
+  gap: 10px;
+}
+
+.source-row,
+.report-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 12px;
+  background: #fbfaf7;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.source-row.active {
+  border-color: #c8d8d8;
+  background: #eef6f5;
+}
+
+.source-row span,
+.report-card strong {
+  font-weight: 760;
+}
+
+.source-row small,
+.report-card small,
+.mode-placeholder p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.report-card {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.report-card span {
+  display: grid;
+  gap: 3px;
+}
+
+.search-box.wide {
+  width: 100%;
+  margin-bottom: 12px;
 }
 
 .document-panel {
@@ -583,7 +666,7 @@ mark {
 
 .properties-view {
   grid-column: 4;
-  grid-row: 3;
+  grid-row: 2;
   padding: 14px;
   display: flex;
   flex-direction: column;

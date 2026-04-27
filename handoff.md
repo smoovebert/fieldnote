@@ -4,7 +4,7 @@
 
 Fieldnote is a qualitative research coding app inspired by NVivo. It has a working prototype foundation, but the product direction has been corrected.
 
-Important: the current UI should be treated as **provisional**.
+Important: the UI has started moving from pane-based to mode-based, but it should still be treated as **provisional**.
 
 The app should not keep evolving as an always-visible dashboard. The next major pass should follow the mode-based workflow in:
 
@@ -197,31 +197,43 @@ Typing in a missing context memo creates it automatically.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
 
+## Mode Shell Status
+
+Milestone 1 has been started.
+
+Implemented:
+
+- Top-level mode switcher:
+  - Organize
+  - Code
+  - Refine
+  - Classify
+  - Analyze
+  - Report
+- Removed the old ribbon from the main app flow.
+- Moved source import/source list into Organize mode.
+- Moved close reading/coding into Code mode.
+- Moved code reference review into Refine mode.
+- Added initial Classify, Analyze, and Report work surfaces.
+- Moved CSV export into Report mode.
+
+Still needed:
+
+- Mode-specific right rails need another design pass.
+- Organize mode needs real folder/source-table behavior.
+- Refine mode needs hierarchy/merge/split tools.
+- Classify, Analyze, and Report are only first-pass shells.
+
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should be:
+Next implementation should continue Milestone 1 cleanup and then move into Milestone 2:
 
 ```text
-Milestone 1: Mode Shell
+Milestone 1 cleanup: tighten mode-specific right rails
+Milestone 2: Organize Mode
 ```
-
-From `product-workflow-plan.md`:
-
-- Add `mode` state:
-  - `organize`
-  - `code`
-  - `refine`
-  - `classify`
-  - `analyze`
-  - `report`
-- Replace the current ribbon-first mental model with a mode switcher.
-- Move the current source coding screen into Code mode.
-- Move code reference review into Refine mode.
-- Move import/source management into Organize mode.
-- Move export into Report mode.
-- Hide AI and relationship placeholders unless they belong to the active mode.
 
 ## Design Direction
 
@@ -252,6 +264,7 @@ https://fieldnote-seven.vercel.app
 
 ## Recent Commits
 
+- `d7ee415` Document mode-based product plan
 - `5589edd` Add handoff and enlarge memo rail
 - `254523b` Make right rail memo context aware
 - `71e7c7e` Make research workspace flow functional
