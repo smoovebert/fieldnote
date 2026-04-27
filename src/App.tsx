@@ -531,7 +531,7 @@ function App() {
     setCodes((current) => [...current, code])
     setSelectedCodeIds((current) => [...current, code.id])
     setActiveCodeId(code.id)
-    setActiveView('refine')
+    setSelectionHint(`Created "${name}" and added it to the active coding set.`)
     setNewCodeName('')
   }
 
