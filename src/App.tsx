@@ -499,6 +499,11 @@ function App() {
   const [newAttributeName, setNewAttributeName] = useState('')
   const [mergeTargetCodeId, setMergeTargetCodeId] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [queryText, setQueryText] = useState('')
+  const [queryCodeId, setQueryCodeId] = useState('')
+  const [queryCaseId, setQueryCaseId] = useState('')
+  const [queryAttributeId, setQueryAttributeId] = useState('')
+  const [queryAttributeValue, setQueryAttributeValue] = useState('')
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
@@ -542,6 +547,23 @@ function App() {
   const caseGridTemplate = `minmax(170px, 1fr) minmax(160px, 1fr) ${attributes
     .map(() => 'minmax(120px, 0.75fr)')
     .join(' ')} minmax(160px, 1fr) 36px`
+  const sourceById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources])
+  const caseBySourceId = useMemo(() => {
+    const map = new Map<string, Case>()
+    cases.forEach((item) => item.sourceIds.forEach((sourceId) => map.set(sourceId, item)))
+    return map
+  }, [cases])
+  const queryAttributeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          attributeValues
+            .filter((attributeValue) => attributeValue.attributeId === queryAttributeId && attributeValue.value.trim())
+            .map((attributeValue) => attributeValue.value.trim())
+        )
+      ),
+    [attributeValues, queryAttributeId]
+  )
 
   async function loadProjectData(project: ProjectRow) {
     try {
@@ -960,6 +982,60 @@ function App() {
       return [excerpt.text, excerpt.note, excerpt.sourceTitle, ...excerptCodes].join(' ').toLowerCase().includes(term)
     })
   }, [activeView, codeExcerpts, codes, excerpts, searchTerm, sourceExcerpts])
+
+  const analyzeResults = useMemo(() => {
+    const term = queryText.trim().toLowerCase()
+
+    return excerpts.filter((excerpt) => {
+      const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id))
+      const source = sourceById.get(excerpt.sourceId)
+      const linkedCase = caseBySourceId.get(excerpt.sourceId)
+      const haystack = [
+        excerpt.text,
+        excerpt.note,
+        excerpt.sourceTitle,
+        source?.folder ?? '',
+        linkedCase?.name ?? '',
+        linkedCase?.description ?? '',
+        ...excerptCodes.map((code) => code.name),
+        ...excerptCodes.map((code) => code.description),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      if (term && !haystack.includes(term)) return false
+      if (queryCodeId && !excerpt.codeIds.includes(queryCodeId)) return false
+      if (queryCaseId && linkedCase?.id !== queryCaseId) return false
+
+      if (queryAttributeId) {
+        if (!linkedCase) return false
+        const value = attributeValues.find((item) => item.caseId === linkedCase.id && item.attributeId === queryAttributeId)?.value.trim() ?? ''
+        if (!value) return false
+        if (queryAttributeValue && value !== queryAttributeValue) return false
+      }
+
+      return true
+    })
+  }, [attributeValues, caseBySourceId, codes, excerpts, queryAttributeId, queryAttributeValue, queryCaseId, queryCodeId, queryText, sourceById])
+
+  const analyzeMatchingCases = useMemo(() => {
+    const matchingCases = analyzeResults.flatMap((excerpt) => {
+      const linkedCase = caseBySourceId.get(excerpt.sourceId)
+      return linkedCase ? [linkedCase] : []
+    })
+    return Array.from(new Map(matchingCases.map((item) => [item.id, item])).values())
+  }, [analyzeResults, caseBySourceId])
+
+  const activeQueryFilters = [
+    queryText.trim() ? `Text contains "${queryText.trim()}"` : '',
+    queryCodeId ? `Code: ${codes.find((code) => code.id === queryCodeId)?.name ?? 'Unknown code'}` : '',
+    queryCaseId ? `Case: ${cases.find((item) => item.id === queryCaseId)?.name ?? 'Unknown case'}` : '',
+    queryAttributeId
+      ? `Attribute: ${attributes.find((attribute) => attribute.id === queryAttributeId)?.name ?? 'Unknown attribute'}${
+          queryAttributeValue ? ` = ${queryAttributeValue}` : ''
+        }`
+      : '',
+  ].filter(Boolean)
 
   const highlightedTranscript = useMemo(() => {
     let pieces: Array<{ text: string; codes?: Code[] }> = [{ text: activeSource.content }]
@@ -1451,6 +1527,29 @@ function App() {
     downloadCsv(rows, 'fieldnote-coded-excerpts.csv')
   }
 
+  function exportAnalyzeCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const rows = [
+      ['Project', 'Source', 'Case', 'Codes', 'Excerpt', 'Note', 'Active filters'],
+      ...analyzeResults.map((excerpt) => {
+        const linkedCase = caseBySourceId.get(excerpt.sourceId)
+        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
+        return [
+          projectTitle,
+          excerpt.sourceTitle,
+          linkedCase?.name ?? '',
+          excerptCodes.map((code) => code.name).join('; '),
+          excerpt.text,
+          excerpt.note,
+          activeQueryFilters.join('; '),
+        ]
+      }),
+    ]
+
+    downloadCsv(rows, 'fieldnote-query-results.csv')
+  }
+
   function exportCodebookCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
@@ -1759,10 +1858,12 @@ function App() {
             />
           </div>
 
-          <div className="search-box">
-            <Search size={17} aria-hidden="true" />
-            <input value={searchTerm} placeholder="Find coded work" aria-label="Search coded work" onChange={(event) => setSearchTerm(event.target.value)} />
-          </div>
+          {activeView !== 'analyze' && (
+            <div className="search-box">
+              <Search size={17} aria-hidden="true" />
+              <input value={searchTerm} placeholder="Find coded work" aria-label="Search coded work" onChange={(event) => setSearchTerm(event.target.value)} />
+            </div>
+          )}
         </header>
 
         {activeView === 'organize' && (
@@ -2023,12 +2124,115 @@ function App() {
 
         {activeView === 'analyze' && (
           <article className="detail-card analyze-surface">
-            <p className="detail-kicker">Query results</p>
-            <div className="search-box wide">
-              <Search size={17} aria-hidden="true" />
-              <input value={searchTerm} placeholder="Search coded excerpts" aria-label="Search coded excerpts" onChange={(event) => setSearchTerm(event.target.value)} />
+            <div className="source-register-heading">
+              <div>
+                <p className="detail-kicker">Query builder</p>
+                <h2>Coded excerpt query</h2>
+              </div>
+              <span className="reference-count">{analyzeResults.length} results</span>
             </div>
-            <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} />
+
+            <div className="query-builder">
+              <label className="property-field">
+                <span>Text</span>
+                <input value={queryText} placeholder="Search excerpt text, notes, sources, cases" onChange={(event) => setQueryText(event.target.value)} />
+              </label>
+              <label className="property-field">
+                <span>Code</span>
+                <select value={queryCodeId} onChange={(event) => setQueryCodeId(event.target.value)}>
+                  <option value="">Any code</option>
+                  {codes.map((code) => (
+                    <option key={code.id} value={code.id}>
+                      {code.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="property-field">
+                <span>Case</span>
+                <select value={queryCaseId} onChange={(event) => setQueryCaseId(event.target.value)}>
+                  <option value="">Any case</option>
+                  {cases.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="property-field">
+                <span>Attribute</span>
+                <select
+                  value={queryAttributeId}
+                  onChange={(event) => {
+                    setQueryAttributeId(event.target.value)
+                    setQueryAttributeValue('')
+                  }}
+                >
+                  <option value="">Any attribute</option>
+                  {attributes.map((attribute) => (
+                    <option key={attribute.id} value={attribute.id}>
+                      {attribute.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="property-field">
+                <span>Value</span>
+                <select value={queryAttributeValue} disabled={!queryAttributeId} onChange={(event) => setQueryAttributeValue(event.target.value)}>
+                  <option value="">Any filled value</option>
+                  {queryAttributeOptions.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="secondary-button query-clear"
+                type="button"
+                onClick={() => {
+                  setQueryText('')
+                  setQueryCodeId('')
+                  setQueryCaseId('')
+                  setQueryAttributeId('')
+                  setQueryAttributeValue('')
+                }}
+              >
+                Clear filters
+              </button>
+            </div>
+
+            <div className="query-results-table" role="table" aria-label="Analyze query results">
+              <div className="query-result-row query-result-head" role="row">
+                <span>Source</span>
+                <span>Case</span>
+                <span>Codes</span>
+                <span>Excerpt</span>
+                <span>Note</span>
+              </div>
+              {analyzeResults.map((excerpt) => {
+                const linkedCase = caseBySourceId.get(excerpt.sourceId)
+                const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
+
+                return (
+                  <div key={excerpt.id} className="query-result-row" role="row">
+                    <button type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
+                      {excerpt.sourceTitle}
+                    </button>
+                    <span>{linkedCase?.name ?? '-'}</span>
+                    <span>{excerptCodes.map((code) => code.name).join(', ')}</span>
+                    <p>{excerpt.text}</p>
+                    <input value={excerpt.note} placeholder="Add note" onChange={(event) => updateExcerptNote(excerpt.id, event.target.value)} />
+                  </div>
+                )
+              })}
+              {!analyzeResults.length && (
+                <div className="empty-table-state">
+                  <strong>No matching excerpts</strong>
+                  <span>Loosen the filters or add more coded references.</span>
+                </div>
+              )}
+            </div>
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
               <span>Matrix coding, co-occurrence, word frequency, and saved queries.</span>
@@ -2216,6 +2420,41 @@ function App() {
           </section>
         )}
 
+        {activeView === 'analyze' && (
+          <section className="panel">
+            <div className="panel-heading">
+              <Search size={18} aria-hidden="true" />
+              <h2>Query Summary</h2>
+            </div>
+            <dl className="properties-list">
+              <div>
+                <dt>Results</dt>
+                <dd>{analyzeResults.length}</dd>
+              </div>
+              <div>
+                <dt>Cases</dt>
+                <dd>{analyzeMatchingCases.length}</dd>
+              </div>
+              <div>
+                <dt>Codes</dt>
+                <dd>{new Set(analyzeResults.flatMap((excerpt) => excerpt.codeIds)).size}</dd>
+              </div>
+            </dl>
+            <div className="query-filter-list">
+              <strong>Active filters</strong>
+              {activeQueryFilters.length ? (
+                activeQueryFilters.map((filter) => <span key={filter}>{filter}</span>)
+              ) : (
+                <span>None. Showing all coded excerpts.</span>
+              )}
+            </div>
+            <button className="secondary-button" type="button" onClick={exportAnalyzeCsv}>
+              <Download size={17} aria-hidden="true" />
+              Export query CSV
+            </button>
+          </section>
+        )}
+
         {activeView === 'report' && (
           <section className="panel">
             <div className="panel-heading">
@@ -2243,7 +2482,7 @@ function App() {
           </section>
         )}
 
-        {(activeView === 'code' || activeView === 'refine' || activeView === 'analyze') && (
+        {(activeView === 'code' || activeView === 'refine') && (
           <section className="panel">
           <div className="panel-heading">
             <Highlighter size={18} aria-hidden="true" />

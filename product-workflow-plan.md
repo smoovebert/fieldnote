@@ -652,7 +652,22 @@ Right:
 
 ### Current App Gap
 
-Not implemented, except basic search over excerpts.
+First MVP pass implemented:
+
+- text search over coded excerpts
+- filter by code
+- filter by case/participant
+- filter by attribute and filled attribute value
+- structured result table
+- query summary rail
+- query result CSV export
+
+Still missing:
+
+- saved queries
+- word frequency
+- code co-occurrence
+- matrix coding
 
 ## Mode 6: Report
 
@@ -904,11 +919,11 @@ Goal: structured analysis.
 
 Tasks:
 
-- Text search.
+- Text search. First pass done.
 - Word frequency.
 - Code co-occurrence.
 - Basic matrix coding.
-- Filters by source/code/case attribute.
+- Filters by source/code/case attribute. First pass done for code, case, and attribute value.
 
 Acceptance criteria:
 

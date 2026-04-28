@@ -308,6 +308,14 @@ Typing in a missing context memo creates it automatically.
 - Coded excerpts CSV export includes project, source, folder, case, codes, code descriptions, excerpt text, and notes.
 - Codebook CSV export includes code names, descriptions, reference counts, and an example excerpt.
 - Memos CSV export includes project, memo title, linked type, linked source/code/project, and memo body.
+- Analyze mode can export the current query result set as CSV.
+
+### Analyze
+
+- Analyze mode now has a first-pass query builder instead of duplicating excerpt panels.
+- Query filters include text search, code, case/participant, attribute, and attribute value.
+- Query results show source, case, codes, excerpt text, and note in a structured table.
+- The Analyze right rail now summarizes result count, matching cases, matching codes, active filters, and query export.
 
 ## Current Known Issues
 
@@ -315,7 +323,7 @@ Typing in a missing context memo creates it automatically.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
-- Query/Analyze tools are not implemented.
+- Analyze is first-pass only: it has useful filters, but not saved queries, matrix coding, word frequency, or co-occurrence yet.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
 - Code hierarchy and parent-child nodes are not implemented.
@@ -344,7 +352,7 @@ Implemented:
 - Mode navigation moved out of the top header and into the left workspace sidebar so navigation, mode actions, and object lists live in one consolidated rail.
 - Left navigation and object list were collapsed into one stacked sidebar.
 - Mode sidebar actions were audited: only Organize keeps a dedicated action/folder section. Code, Refine, Classify, Analyze, and Report now rely on their object list plus the center/right work surfaces to avoid redundant navigation furniture.
-- Right rail was audited: universal item properties and the premature AI draft panel were removed. Memos show only in Organize/Code/Refine. Report shows an export summary. Analyze keeps coded excerpts only.
+- Right rail was audited: universal item properties and the premature AI draft panel were removed. Memos show only in Organize/Code/Refine. Report shows an export summary. Analyze now shows query summary instead of duplicate coded excerpts.
 - Report sidebar no longer duplicates export buttons; export actions live in the center Report panel.
 - Removed the old ribbon from the main app flow.
 - Moved source import/source list into Organize mode.
@@ -358,6 +366,7 @@ Implemented:
 - Tightened the Code -> Refine -> Report MVP loop with duplicate-reference merging, better code editing, and stronger CSV exports.
 - Added memo export to complete the basic source/code/memo reporting loop.
 - Added initial Classify, Analyze, and Report work surfaces.
+- Rebuilt Analyze into a query builder with text/code/case/attribute filters, result table, query summary, and query CSV export.
 - Moved CSV export into Report mode.
 
 Still needed:
@@ -367,17 +376,17 @@ Still needed:
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
 - Refine mode still needs hierarchy tools.
 - Classify still needs attribute import, case groups, and better filtering.
-- Advanced Analyze/Report features are intentionally placeholders for MVP.
+- Advanced Analyze/Report features like saved queries, matrices, word frequency, report preview, and Word/PDF export are intentionally placeholders for MVP.
 
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should continue from the new case foundation into analysis/report usefulness:
+Next implementation should continue from the query foundation into report usefulness:
 
 ```text
-Milestone 3: first Analyze query that uses cases/attributes
 Milestone 4: report/export case sheets and coded excerpts by case
+Milestone 5: saved queries or first matrix coding view
 ```
 
 ## Design Direction
