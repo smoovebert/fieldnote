@@ -190,6 +190,12 @@ The current JSON-on-`fieldnote_projects` model should not be stretched into the 
 
 Keep the prototype simple while validating the core loop, but plan to normalize before building collaboration, media, transcription, AI, or serious querying.
 
+The detailed table and migration plan is in:
+
+```text
+data-model-plan.md
+```
+
 Current MVP loop target:
 
 - Code mode should avoid duplicate references when the same passage is coded again.

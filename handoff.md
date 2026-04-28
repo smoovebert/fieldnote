@@ -16,6 +16,14 @@ product-workflow-plan.md
 
 That plan is now the source of truth for the next design and implementation phase.
 
+Architecture planning now lives in:
+
+```bash
+data-model-plan.md
+```
+
+Use that before implementing collaboration, media imports, transcription, serious Analyze mode, AI, or rich exports.
+
 ## Core Product Correction
 
 Fieldnote should use the full workflow map with MVP depth:
@@ -212,6 +220,8 @@ Current project data is still mostly JSON on `fieldnote_projects`:
 - `active_source_id`
 
 This is acceptable for the prototype, but the plan recommends normalizing later.
+
+See `data-model-plan.md` for the full future schema, including sources, source files, source segments, codes, coded references, memos, cases, attributes, relationships, queries, AI suggestions, exports, and collaboration/review tables.
 
 ## Current Implemented Behavior
 
