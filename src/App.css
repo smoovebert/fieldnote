@@ -1,8 +1,10 @@
 .app-shell {
+  height: 100vh;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 320px minmax(500px, 1fr) 420px;
   grid-template-rows: 68px minmax(0, 1fr);
+  overflow: hidden;
   background: var(--canvas);
   color: var(--ink);
 }
@@ -1548,6 +1550,8 @@ textarea {
 @media (max-width: 860px) {
   .app-shell {
     display: block;
+    height: auto;
+    overflow: visible;
   }
 
   .app-header,
