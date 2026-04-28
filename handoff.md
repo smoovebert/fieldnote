@@ -217,6 +217,7 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 - Codes can be deleted with an in-app confirmation; linked references are cleaned up or removed if no codes remain.
 - Coded references can be deleted with confirmation.
 - Individual codes can be removed from a multi-coded reference with confirmation.
+- Refine mode can add new codes directly to the codebook and select them for definition editing.
 
 ### Memos
 

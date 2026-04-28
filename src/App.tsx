@@ -519,6 +519,7 @@ function App() {
     const name = newCodeName.trim()
     if (!name) return
 
+    const addToActiveCodingSet = activeView === 'code'
     const palette = ['#d9892b', '#2f7ebc', '#9b5a9f', '#5c8f42', '#c45173']
     const code: Code = {
       id: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
@@ -528,9 +529,9 @@ function App() {
     }
 
     setCodes((current) => [...current, code])
-    setSelectedCodeIds((current) => [...current, code.id])
+    if (addToActiveCodingSet) setSelectedCodeIds((current) => [...current, code.id])
     setActiveCodeId(code.id)
-    setSelectionHint(`Created "${name}" and added it to the active coding set.`)
+    setSelectionHint(addToActiveCodingSet ? `Created "${name}" and added it to the active coding set.` : `Created "${name}" in the codebook.`)
     setNewCodeName('')
   }
 
@@ -1434,15 +1435,27 @@ function App() {
           </section>
         )}
 
-        {activeView === 'code' && (
+        {(activeView === 'code' || activeView === 'refine') && (
           <section className="panel" id="codes">
             <div className="panel-heading">
               <Tags size={18} aria-hidden="true" />
-              <h2>Active Codes</h2>
+              <h2>{activeView === 'code' ? 'Active Codes' : 'Codebook'}</h2>
             </div>
             <div className="code-picker">
               {codes.map((code) => (
-                <button key={code.id} className={selectedCodeIds.includes(code.id) ? 'selected' : ''} type="button" aria-pressed={selectedCodeIds.includes(code.id)} onClick={() => toggleSelectedCode(code.id)}>
+                <button
+                  key={code.id}
+                  className={(activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id) ? 'selected' : ''}
+                  type="button"
+                  aria-pressed={activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id}
+                  onClick={() => {
+                    if (activeView === 'code') {
+                      toggleSelectedCode(code.id)
+                      return
+                    }
+                    setActiveCodeId(code.id)
+                  }}
+                >
                   <span style={{ background: code.color }} />
                   {code.name}
                 </button>
