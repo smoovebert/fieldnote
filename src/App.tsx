@@ -249,6 +249,7 @@ function App() {
   const [excerpts, setExcerpts] = useState(defaultProject.excerpts)
   const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([initialCodes[0].id])
   const [newCodeName, setNewCodeName] = useState('')
+  const [mergeTargetCodeId, setMergeTargetCodeId] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
@@ -564,6 +565,34 @@ function App() {
       return next.length ? next : [remainingCodes[0].id]
     })
     setActiveCodeId(remainingCodes[0].id)
+  }
+
+  function mergeActiveCodeIntoTarget() {
+    const targetCode = codes.find((code) => code.id === mergeTargetCodeId)
+    if (!activeCode || !targetCode || activeCode.id === targetCode.id) return
+
+    const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id)).length
+    const shouldMerge = window.confirm(
+      `Merge "${activeCode.name}" into "${targetCode.name}"? ${references} coded reference${references === 1 ? '' : 's'} will move to "${targetCode.name}", and "${activeCode.name}" will be removed from the codebook.`
+    )
+    if (!shouldMerge) return
+
+    setExcerpts((current) =>
+      current.map((excerpt) =>
+        excerpt.codeIds.includes(activeCode.id)
+          ? {
+              ...excerpt,
+              codeIds: Array.from(new Set(excerpt.codeIds.map((codeId) => (codeId === activeCode.id ? targetCode.id : codeId)))),
+            }
+          : excerpt
+      )
+    )
+    setCodes((current) => current.filter((code) => code.id !== activeCode.id))
+    setMemos((current) => current.filter((memo) => !(memo.linkedType === 'code' && memo.linkedId === activeCode.id)))
+    setSelectedCodeIds((current) => Array.from(new Set(current.map((codeId) => (codeId === activeCode.id ? targetCode.id : codeId)))))
+    setActiveCodeId(targetCode.id)
+    setMergeTargetCodeId('')
+    setSelectionHint(`Merged "${activeCode.name}" into "${targetCode.name}".`)
   }
 
   function toggleSelectedCode(codeId: string) {
@@ -1244,6 +1273,25 @@ function App() {
                 onChange={(event) => updateCode(activeCode.id, { description: event.target.value })}
               />
             </label>
+
+            <div className="code-maintenance-row">
+              <label className="property-field">
+                <span>Merge into</span>
+                <select value={mergeTargetCodeId} onChange={(event) => setMergeTargetCodeId(event.target.value)}>
+                  <option value="">Choose another code</option>
+                  {codes
+                    .filter((code) => code.id !== activeCode.id)
+                    .map((code) => (
+                      <option key={code.id} value={code.id}>
+                        {code.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button className="secondary-button" type="button" disabled={!mergeTargetCodeId} onClick={mergeActiveCodeIntoTarget}>
+                Merge code
+              </button>
+            </div>
 
             <div className="reference-toolbar">
               <p className="detail-kicker">References</p>
