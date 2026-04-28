@@ -987,8 +987,40 @@ button {
   display: none;
 }
 
+.classify-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.classify-toolbar .secondary-button {
+  width: auto;
+  margin: 0;
+  padding: 0 13px;
+}
+
+.inline-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: min(320px, 100%);
+}
+
+.inline-entry input {
+  width: 100%;
+  height: 36px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 10px;
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+}
+
 .source-row,
-.case-row,
 .report-card {
   width: 100%;
   display: grid;
@@ -1005,21 +1037,43 @@ button {
   text-align: left;
 }
 
+.case-assignment-table,
+.case-table {
+  overflow-x: auto;
+  border-top: 1px solid var(--line);
+}
+
+.case-assignment-row,
+.case-row {
+  min-width: 720px;
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding: 11px 12px;
+  color: var(--ink);
+}
+
+.case-assignment-row {
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 0.8fr);
+}
+
+.case-row {
+  grid-template-columns: minmax(170px, 1fr) minmax(160px, 1fr) repeat(2, minmax(120px, 0.75fr)) minmax(160px, 1fr) 36px;
+}
+
 .source-row.active {
   border-color: var(--line);
   background: #f3f8ff;
 }
 
-.case-row {
-  grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.8fr) minmax(84px, auto) minmax(84px, auto);
-  cursor: default;
-}
-
+.case-assignment-row.active,
 .case-row.active {
   border-color: var(--line);
   background: #f3f8ff;
 }
 
+.case-assignment-row select,
 .case-row input {
   width: 100%;
   min-width: 0;
@@ -1030,6 +1084,7 @@ button {
   color: var(--ink);
 }
 
+.case-assignment-row button,
 .case-row button {
   min-width: 0;
   border-radius: 7px;
@@ -1043,6 +1098,12 @@ button {
   white-space: nowrap;
 }
 
+.case-assignment-row button {
+  display: grid;
+  gap: 2px;
+}
+
+.case-assignment-row button:hover,
 .case-row button:hover {
   background: var(--soft);
 }
@@ -1070,9 +1131,33 @@ button {
 }
 
 .source-row small,
+.case-assignment-row small,
 .case-row small,
 .report-card small,
 .mode-placeholder p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.danger-icon {
+  border-color: #efc4bd;
+  background: #fff4f2;
+  color: #9b352a;
+}
+
+.empty-table-state {
+  min-width: 720px;
+  display: grid;
+  gap: 4px;
+  padding: 18px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.empty-table-state strong {
+  color: var(--ink);
+}
+
+.empty-table-state span {
   color: var(--muted);
   font-size: 13px;
 }

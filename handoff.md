@@ -218,10 +218,15 @@ Applied migrations:
 - `20260427203844_add_sources_and_memos_to_projects.sql`
 - `20260428000000_fix_fieldnote_rls_recursion.sql`
 - `20260428010000_normalize_core_objects.sql`
+- `20260428020000_add_cases_and_attributes.sql`
 
 Current project data is now dual-written:
 
 - `sources`
+- `cases`
+- `case_sources`
+- `attributes`
+- `attribute_values`
 - `codes`
 - `memos`
 - `excerpts`
@@ -258,8 +263,8 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 - Organize mode supports multi-file import.
 - Folders are now source-driven, so moving a source into a new folder creates that folder.
 - Sources can be archived/restored, or deleted after an in-app confirmation.
-- A source can be assigned a case name or turned into a case from the source properties rail.
-- Classify mode now has a basic source classification sheet for assigning/editing source-level case names.
+- A source can be assigned to a real case/participant or turned into a case from the source properties rail.
+- Classify mode now has source-to-case assignment plus a case sheet with editable participant attributes.
 
 ### Coding
 
@@ -312,7 +317,7 @@ Typing in a missing context memo creates it automatically.
 - AI draft panel is only a placeholder.
 - Query/Analyze tools are not implemented.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
-- Classify mode has a basic source-level case sheet, but no real attribute columns or case groups yet.
+- Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
 - Code hierarchy and parent-child nodes are not implemented.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
@@ -346,7 +351,8 @@ Implemented:
 - Added Organize folder filtering and a fuller source register.
 - Added source title/type/folder editing in the Organize right rail.
 - Added multi-source import, custom source folders, archive/restore/delete controls, and first-pass source-to-case setup.
-- Added a basic Classify case sheet for reviewing and editing source-level case assignments.
+- Added normalized cases, source-case links, attributes, and attribute values in Supabase.
+- Rebuilt Classify into a participant/case sheet with source assignment, editable case names, case notes, and editable attribute columns.
 - Moved close reading/coding into Code mode.
 - Moved code reference review into Refine mode.
 - Tightened the Code -> Refine -> Report MVP loop with duplicate-reference merging, better code editing, and stronger CSV exports.
@@ -358,20 +364,20 @@ Still needed:
 
 - Project rename/delete/share controls.
 - Mode-specific right rails outside Organize need another design pass.
-- Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, richer source previews, and real case/classification sheets.
+- Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
 - Refine mode still needs hierarchy tools.
-- Classify, Analyze, and Report are only first-pass shells.
-- Classify and advanced Analyze/Report features are intentionally placeholders for MVP.
+- Classify still needs attribute import, case groups, and better filtering.
+- Advanced Analyze/Report features are intentionally placeholders for MVP.
 
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should continue Milestone 1 cleanup and then move into Milestone 2:
+Next implementation should continue from the new case foundation into analysis/report usefulness:
 
 ```text
-Milestone 1 cleanup: finish Project Home polish and tighten mode-specific right rails
-Milestone 2: Organize Mode
+Milestone 3: first Analyze query that uses cases/attributes
+Milestone 4: report/export case sheets and coded excerpts by case
 ```
 
 ## Design Direction

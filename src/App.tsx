@@ -47,6 +47,25 @@ type Source = {
   caseName?: string
 }
 
+type Case = {
+  id: string
+  name: string
+  description: string
+  sourceIds: string[]
+}
+
+type Attribute = {
+  id: string
+  name: string
+  valueType: 'text'
+}
+
+type AttributeValue = {
+  caseId: string
+  attributeId: string
+  value: string
+}
+
 type Memo = {
   id: string
   title: string
@@ -67,6 +86,9 @@ type Excerpt = {
 type ProjectData = {
   activeSourceId: string
   sources: Source[]
+  cases: Case[]
+  attributes: Attribute[]
+  attributeValues: AttributeValue[]
   codes: Code[]
   memos: Memo[]
   excerpts: Excerpt[]
@@ -131,6 +153,33 @@ type NormalizedCodedReferenceRow = {
   note: string
 }
 
+type NormalizedCaseRow = {
+  id: string
+  project_id: string
+  name: string
+  description: string
+}
+
+type NormalizedCaseSourceRow = {
+  project_id: string
+  case_id: string
+  source_id: string
+}
+
+type NormalizedAttributeRow = {
+  id: string
+  project_id: string
+  name: string
+  value_type: Attribute['valueType']
+}
+
+type NormalizedAttributeValueRow = {
+  project_id: string
+  case_id: string
+  attribute_id: string
+  value: string
+}
+
 const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
 
 Participant: It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else. After a while it felt like the system was testing whether I would give up.
@@ -189,6 +238,15 @@ const initialSources: Source[] = [
   },
 ]
 
+const initialCases: Case[] = []
+
+const initialAttributes: Attribute[] = [
+  { id: 'role', name: 'Role', valueType: 'text' },
+  { id: 'cohort', name: 'Cohort', valueType: 'text' },
+]
+
+const initialAttributeValues: AttributeValue[] = []
+
 const initialMemos: Memo[] = [
   {
     id: 'project-memo',
@@ -220,6 +278,9 @@ const initialExcerpts: Excerpt[] = [
 const defaultProject: ProjectData = {
   activeSourceId: initialSources[0].id,
   sources: initialSources,
+  cases: initialCases,
+  attributes: initialAttributes,
+  attributeValues: initialAttributeValues,
   codes: initialCodes,
   memos: initialMemos,
   excerpts: initialExcerpts,
@@ -233,6 +294,28 @@ const modeItems: Array<{ id: WorkspaceView; label: string; description: string; 
   { id: 'analyze', label: 'Analyze', description: 'Run searches, matrices, and comparisons.', status: 'partial' },
   { id: 'report', label: 'Report', description: 'Export excerpts, memos, and codebooks.', status: 'partial' },
 ]
+
+function slugId(value: string, fallback = 'item') {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || fallback
+}
+
+function casesFromSources(sources: Source[]): Case[] {
+  const casesByName = new Map<string, Case>()
+  sources.forEach((source) => {
+    const name = source.caseName?.trim()
+    if (!name) return
+
+    const existingCase = casesByName.get(name) ?? {
+      id: `case-${slugId(name)}`,
+      name,
+      description: '',
+      sourceIds: [],
+    }
+    casesByName.set(name, { ...existingCase, sourceIds: Array.from(new Set([...existingCase.sourceIds, source.id])) })
+  })
+
+  return Array.from(casesByName.values())
+}
 
 function normalizeProject(project: ProjectRow): ProjectData {
   const fallbackSource: Source = {
@@ -257,6 +340,9 @@ function normalizeProject(project: ProjectRow): ProjectData {
   return {
     activeSourceId: project.active_source_id || sources[0].id,
     sources,
+    cases: casesFromSources(sources),
+    attributes: initialAttributes,
+    attributeValues: initialAttributeValues,
     codes: project.codes?.length ? project.codes : defaultProject.codes,
     memos,
     excerpts: (project.excerpts ?? []).map((excerpt) => ({
@@ -272,8 +358,19 @@ function composeProjectFromNormalized(
   codeRows: NormalizedCodeRow[],
   memoRows: NormalizedMemoRow[],
   segmentRows: NormalizedSegmentRow[],
-  referenceRows: NormalizedCodedReferenceRow[]
+  referenceRows: NormalizedCodedReferenceRow[],
+  caseRows: NormalizedCaseRow[] = [],
+  caseSourceRows: NormalizedCaseSourceRow[] = [],
+  attributeRows: NormalizedAttributeRow[] = [],
+  attributeValueRows: NormalizedAttributeValueRow[] = []
 ): ProjectData {
+  const caseNameBySourceId = new Map<string, string>()
+  const caseNameById = new Map(caseRows.map((caseRow) => [caseRow.id, caseRow.name]))
+  caseSourceRows.forEach((caseSource) => {
+    const caseName = caseNameById.get(caseSource.case_id)
+    if (caseName) caseNameBySourceId.set(caseSource.source_id, caseName)
+  })
+
   const sources = sourceRows.map<Source>((source) => ({
     id: source.id,
     title: source.title,
@@ -282,7 +379,27 @@ function composeProjectFromNormalized(
     content: source.content,
     archived: source.archived,
     importedAt: source.imported_at ?? undefined,
-    caseName: source.case_name ?? undefined,
+    caseName: caseNameBySourceId.get(source.id) ?? source.case_name ?? undefined,
+  }))
+  const caseSourceIdsByCaseId = caseSourceRows.reduce<Record<string, string[]>>((groups, caseSource) => {
+    groups[caseSource.case_id] = [...(groups[caseSource.case_id] ?? []), caseSource.source_id]
+    return groups
+  }, {})
+  const cases = caseRows.map<Case>((caseRow) => ({
+    id: caseRow.id,
+    name: caseRow.name,
+    description: caseRow.description,
+    sourceIds: caseSourceIdsByCaseId[caseRow.id] ?? [],
+  }))
+  const attributes = attributeRows.map<Attribute>((attribute) => ({
+    id: attribute.id,
+    name: attribute.name,
+    valueType: attribute.value_type,
+  }))
+  const attributeValues = attributeValueRows.map<AttributeValue>((attributeValue) => ({
+    caseId: attributeValue.case_id,
+    attributeId: attributeValue.attribute_id,
+    value: attributeValue.value,
   }))
   const codes = codeRows.map<Code>((code) => ({
     id: code.id,
@@ -321,6 +438,9 @@ function composeProjectFromNormalized(
   return {
     activeSourceId: project.active_source_id || sources[0]?.id || defaultProject.activeSourceId,
     sources: sources.length ? sources : normalizeProject(project).sources,
+    cases: cases.length ? cases : casesFromSources(sources),
+    attributes: attributes.length ? attributes : initialAttributes,
+    attributeValues,
     codes: codes.length ? codes : normalizeProject(project).codes,
     memos: memos.length ? memos : normalizeProject(project).memos,
     excerpts,
@@ -368,11 +488,15 @@ function App() {
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
   const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
   const [sources, setSources] = useState(defaultProject.sources)
+  const [cases, setCases] = useState(defaultProject.cases)
+  const [attributes, setAttributes] = useState(defaultProject.attributes)
+  const [attributeValues, setAttributeValues] = useState(defaultProject.attributeValues)
   const [codes, setCodes] = useState(defaultProject.codes)
   const [memos, setMemos] = useState(defaultProject.memos)
   const [excerpts, setExcerpts] = useState(defaultProject.excerpts)
   const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([initialCodes[0].id])
   const [newCodeName, setNewCodeName] = useState('')
+  const [newAttributeName, setNewAttributeName] = useState('')
   const [mergeTargetCodeId, setMergeTargetCodeId] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
@@ -412,21 +536,37 @@ function App() {
         ? `${activeCode.name} memo`
         : 'Project memo'
   const projectData = useMemo<ProjectData>(
-    () => ({ activeSourceId, sources, codes, memos, excerpts }),
-    [activeSourceId, codes, excerpts, memos, sources]
+    () => ({ activeSourceId, sources, cases, attributes, attributeValues, codes, memos, excerpts }),
+    [activeSourceId, attributeValues, attributes, cases, codes, excerpts, memos, sources]
   )
+  const caseGridTemplate = `minmax(170px, 1fr) minmax(160px, 1fr) ${attributes
+    .map(() => 'minmax(120px, 0.75fr)')
+    .join(' ')} minmax(160px, 1fr) 36px`
 
   async function loadProjectData(project: ProjectRow) {
     try {
-      const [sourceResult, codeResult, memoResult, segmentResult, referenceResult] = await Promise.all([
+      const [sourceResult, codeResult, memoResult, segmentResult, referenceResult, caseResult, caseSourceResult, attributeResult, attributeValueResult] = await Promise.all([
         supabase.from('fieldnote_sources').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_codes').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_memos').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_source_segments').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_coded_references').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_cases').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_case_sources').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_attributes').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_attribute_values').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
       ])
 
-      const normalizedError = sourceResult.error ?? codeResult.error ?? memoResult.error ?? segmentResult.error ?? referenceResult.error
+      const normalizedError =
+        sourceResult.error ??
+        codeResult.error ??
+        memoResult.error ??
+        segmentResult.error ??
+        referenceResult.error ??
+        caseResult.error ??
+        caseSourceResult.error ??
+        attributeResult.error ??
+        attributeValueResult.error
       if (normalizedError) throw normalizedError
 
       const normalizedSources = (sourceResult.data ?? []) as NormalizedSourceRow[]
@@ -434,9 +574,32 @@ function App() {
       const normalizedMemos = (memoResult.data ?? []) as NormalizedMemoRow[]
       const normalizedSegments = (segmentResult.data ?? []) as NormalizedSegmentRow[]
       const normalizedReferences = (referenceResult.data ?? []) as NormalizedCodedReferenceRow[]
+      const normalizedCases = (caseResult.data ?? []) as NormalizedCaseRow[]
+      const normalizedCaseSources = (caseSourceResult.data ?? []) as NormalizedCaseSourceRow[]
+      const normalizedAttributes = (attributeResult.data ?? []) as NormalizedAttributeRow[]
+      const normalizedAttributeValues = (attributeValueResult.data ?? []) as NormalizedAttributeValueRow[]
 
-      if (normalizedSources.length || normalizedCodes.length || normalizedMemos.length || normalizedSegments.length || normalizedReferences.length) {
-        return composeProjectFromNormalized(project, normalizedSources, normalizedCodes, normalizedMemos, normalizedSegments, normalizedReferences)
+      if (
+        normalizedSources.length ||
+        normalizedCodes.length ||
+        normalizedMemos.length ||
+        normalizedSegments.length ||
+        normalizedReferences.length ||
+        normalizedCases.length ||
+        normalizedAttributes.length
+      ) {
+        return composeProjectFromNormalized(
+          project,
+          normalizedSources,
+          normalizedCodes,
+          normalizedMemos,
+          normalizedSegments,
+          normalizedReferences,
+          normalizedCases,
+          normalizedCaseSources,
+          normalizedAttributes,
+          normalizedAttributeValues
+        )
       }
     } catch (error) {
       console.warn('Falling back to project JSON data.', error)
@@ -464,6 +627,33 @@ function App() {
       imported_at: source.importedAt ?? null,
       case_name: source.caseName ?? null,
     }))
+    const caseRows = nextProjectData.cases.map((item) => ({
+      id: item.id,
+      project_id: nextProjectId,
+      name: item.name,
+      description: item.description,
+    }))
+    const caseSourceRows = nextProjectData.cases.flatMap((item) =>
+      item.sourceIds.map((sourceId) => ({
+        project_id: nextProjectId,
+        case_id: item.id,
+        source_id: sourceId,
+      }))
+    )
+    const attributeRows = nextProjectData.attributes.map((attribute) => ({
+      id: attribute.id,
+      project_id: nextProjectId,
+      name: attribute.name,
+      value_type: attribute.valueType,
+    }))
+    const attributeValueRows = nextProjectData.attributeValues
+      .filter((attributeValue) => attributeValue.value.trim())
+      .map((attributeValue) => ({
+        project_id: nextProjectId,
+        case_id: attributeValue.caseId,
+        attribute_id: attributeValue.attributeId,
+        value: attributeValue.value,
+      }))
     const codeRows = nextProjectData.codes.map((code) => ({
       id: code.id,
       project_id: nextProjectId,
@@ -499,6 +689,8 @@ function App() {
     const upserts = [
       folderRows.length ? supabase.from('fieldnote_folders').upsert(folderRows, { onConflict: 'project_id,id' }) : undefined,
       sourceRows.length ? supabase.from('fieldnote_sources').upsert(sourceRows, { onConflict: 'project_id,id' }) : undefined,
+      caseRows.length ? supabase.from('fieldnote_cases').upsert(caseRows, { onConflict: 'project_id,id' }) : undefined,
+      attributeRows.length ? supabase.from('fieldnote_attributes').upsert(attributeRows, { onConflict: 'project_id,id' }) : undefined,
       codeRows.length ? supabase.from('fieldnote_codes').upsert(codeRows, { onConflict: 'project_id,id' }) : undefined,
       memoRows.length ? supabase.from('fieldnote_memos').upsert(memoRows, { onConflict: 'project_id,id' }) : undefined,
       segmentRows.length ? supabase.from('fieldnote_source_segments').upsert(segmentRows, { onConflict: 'project_id,id' }) : undefined,
@@ -509,14 +701,36 @@ function App() {
     if (upsertError) throw upsertError
 
     const existingSourceIds = nextProjectData.sources.map((source) => source.id)
+    const existingCaseIds = nextProjectData.cases.map((item) => item.id)
+    const existingAttributeIds = nextProjectData.attributes.map((attribute) => attribute.id)
     const existingCodeIds = nextProjectData.codes.map((code) => code.id)
     const existingMemoIds = nextProjectData.memos.map((memo) => memo.id)
     const existingSegmentIds = nextProjectData.excerpts.map((excerpt) => excerpt.id)
+
+    const { error: caseSourcesDeleteError } = await supabase.from('fieldnote_case_sources').delete().eq('project_id', nextProjectId)
+    if (caseSourcesDeleteError) throw caseSourcesDeleteError
+    if (caseSourceRows.length) {
+      const { error: caseSourcesInsertError } = await supabase.from('fieldnote_case_sources').insert(caseSourceRows)
+      if (caseSourcesInsertError) throw caseSourcesInsertError
+    }
+
+    const { error: attributeValuesDeleteError } = await supabase.from('fieldnote_attribute_values').delete().eq('project_id', nextProjectId)
+    if (attributeValuesDeleteError) throw attributeValuesDeleteError
+    if (attributeValueRows.length) {
+      const { error: attributeValuesInsertError } = await supabase.from('fieldnote_attribute_values').insert(attributeValueRows)
+      if (attributeValuesInsertError) throw attributeValuesInsertError
+    }
 
     await Promise.all([
       existingSourceIds.length
         ? supabase.from('fieldnote_sources').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingSourceIds))
         : supabase.from('fieldnote_sources').delete().eq('project_id', nextProjectId),
+      existingCaseIds.length
+        ? supabase.from('fieldnote_cases').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingCaseIds))
+        : supabase.from('fieldnote_cases').delete().eq('project_id', nextProjectId),
+      existingAttributeIds.length
+        ? supabase.from('fieldnote_attributes').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingAttributeIds))
+        : supabase.from('fieldnote_attributes').delete().eq('project_id', nextProjectId),
       existingCodeIds.length
         ? supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingCodeIds))
         : supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId),
@@ -545,6 +759,9 @@ function App() {
     setActiveView('organize')
     setActiveSourceId(nextProject.activeSourceId)
     setSources(nextProject.sources)
+    setCases(nextProject.cases)
+    setAttributes(nextProject.attributes)
+    setAttributeValues(nextProject.attributeValues)
     setCodes(nextProject.codes)
     setMemos(nextProject.memos)
     setExcerpts(nextProject.excerpts)
@@ -931,7 +1148,113 @@ function App() {
   }
 
   function createCaseFromSource() {
-    updateSource(activeSource.id, { caseName: activeSource.caseName?.trim() || activeSource.title })
+    const caseName = activeSource.caseName?.trim() || activeSource.title
+    const existingCase = cases.find((item) => item.name.toLowerCase() === caseName.toLowerCase())
+
+    if (existingCase) {
+      setCases((current) =>
+        current.map((item) =>
+          item.id === existingCase.id ? { ...item, sourceIds: Array.from(new Set([...item.sourceIds, activeSource.id])) } : item
+        )
+      )
+      updateSource(activeSource.id, { caseName: existingCase.name })
+      return
+    }
+
+    const newCase: Case = {
+      id: `case-${Date.now()}`,
+      name: caseName,
+      description: '',
+      sourceIds: [activeSource.id],
+    }
+    setCases((current) => [...current, newCase])
+    updateSource(activeSource.id, { caseName: newCase.name })
+  }
+
+  function createCasesFromSources() {
+    const nextCasesByName = new Map(cases.map((item) => [item.name.toLowerCase(), item]))
+    sources.forEach((source) => {
+      const caseName = source.caseName?.trim() || source.title
+      const key = caseName.toLowerCase()
+      const existingCase = nextCasesByName.get(key) ?? {
+        id: `case-${slugId(caseName)}-${Date.now()}`,
+        name: caseName,
+        description: '',
+        sourceIds: [],
+      }
+      nextCasesByName.set(key, { ...existingCase, sourceIds: Array.from(new Set([...existingCase.sourceIds, source.id])) })
+    })
+
+    const nextCases = Array.from(nextCasesByName.values())
+    setCases(nextCases)
+    setSources((current) =>
+      current.map((source) => {
+        const linkedCase = nextCases.find((item) => item.sourceIds.includes(source.id))
+        return linkedCase ? { ...source, caseName: linkedCase.name } : source
+      })
+    )
+  }
+
+  function assignSourceToCase(sourceId: string, caseId: string) {
+    const nextCase = cases.find((item) => item.id === caseId)
+    setCases((current) =>
+      current.map((item) => ({
+        ...item,
+        sourceIds: caseId && item.id === caseId ? Array.from(new Set([...item.sourceIds, sourceId])) : item.sourceIds.filter((id) => id !== sourceId),
+      }))
+    )
+    updateSource(sourceId, { caseName: nextCase?.name ?? '' })
+  }
+
+  function updateCase(caseId: string, patch: Partial<Case>) {
+    setCases((current) =>
+      current.map((item) => {
+        if (item.id !== caseId) return item
+        const nextCase = { ...item, ...patch }
+        if (patch.name) {
+          setSources((sourceList) =>
+            sourceList.map((source) => (nextCase.sourceIds.includes(source.id) ? { ...source, caseName: nextCase.name } : source))
+          )
+        }
+        return nextCase
+      })
+    )
+  }
+
+  function deleteCase(caseId: string) {
+    const removedCase = cases.find((item) => item.id === caseId)
+    setCases((current) => current.filter((item) => item.id !== caseId))
+    setAttributeValues((current) => current.filter((item) => item.caseId !== caseId))
+    if (removedCase) {
+      setSources((current) =>
+        current.map((source) => (removedCase.sourceIds.includes(source.id) ? { ...source, caseName: '' } : source))
+      )
+    }
+  }
+
+  function addAttribute() {
+    const name = newAttributeName.trim()
+    if (!name) return
+
+    const exists = attributes.some((attribute) => attribute.name.toLowerCase() === name.toLowerCase())
+    if (exists) {
+      setNewAttributeName('')
+      return
+    }
+
+    setAttributes((current) => [...current, { id: `attribute-${Date.now()}`, name, valueType: 'text' }])
+    setNewAttributeName('')
+  }
+
+  function updateAttributeValue(caseId: string, attributeId: string, value: string) {
+    setAttributeValues((current) => {
+      const existingValue = current.find((item) => item.caseId === caseId && item.attributeId === attributeId)
+      if (existingValue) {
+        return current.map((item) => (item.caseId === caseId && item.attributeId === attributeId ? { ...item, value } : item))
+      }
+
+      return [...current, { caseId, attributeId, value }]
+    })
   }
 
   function archiveActiveSource() {
@@ -1395,11 +1718,12 @@ function App() {
             activeCodeId={activeCode.id}
             sources={activeSources}
             visibleSources={activeView === 'organize' ? visibleSources : sources}
+            cases={cases}
             codes={codes}
             excerpts={excerpts}
             onSelectSource={(id) => {
               setActiveSourceId(id)
-              if (activeView === 'organize') return
+              if (activeView === 'organize' || activeView === 'classify') return
               setActiveView('code')
             }}
             onSelectCode={(id) => {
@@ -1598,43 +1922,101 @@ function App() {
           <article className="detail-card classify-surface">
             <div className="source-register-heading">
               <div>
-                <p className="detail-kicker">Case sheet</p>
-                <h2>Source classifications</h2>
+                <p className="detail-kicker">Participants and attributes</p>
+                <h2>Case sheet</h2>
               </div>
-              <span className="reference-count">{sources.filter((source) => source.caseName?.trim()).length} assigned</span>
+              <span className="reference-count">{cases.length} cases</span>
             </div>
 
-            <div className="case-table" role="table" aria-label="Source classifications">
-              <div className="case-row case-row-head" role="row">
-                <span>Case</span>
-                <small>Source</small>
-                <small>Type</small>
-                <small>References</small>
+            <div className="classify-toolbar">
+              <button className="secondary-button" type="button" onClick={createCasesFromSources}>
+                <UserPlus size={16} aria-hidden="true" />
+                Create cases from sources
+              </button>
+              <label className="inline-entry">
+                <input value={newAttributeName} placeholder="New attribute" onChange={(event) => setNewAttributeName(event.target.value)} />
+                <button className="secondary-button" type="button" onClick={addAttribute}>
+                  <Plus size={16} aria-hidden="true" />
+                  Add
+                </button>
+              </label>
+            </div>
+
+            <div className="case-assignment-table" role="table" aria-label="Source case assignments">
+              <div className="case-assignment-row case-row-head" role="row">
+                <span>Source</span>
+                <span>Assigned case</span>
               </div>
-              {sources.map((source) => {
-                const referenceCount = excerpts.filter((excerpt) => excerpt.sourceId === source.id).length
+              {sources.map((source) => (
+                <div key={source.id} className={source.id === activeSource.id ? 'case-assignment-row active' : 'case-assignment-row'} role="row">
+                  <button type="button" onClick={() => setActiveSourceId(source.id)}>
+                    <strong>{source.title}</strong>
+                    <small>{source.kind}</small>
+                  </button>
+                  <select
+                    value={cases.find((item) => item.sourceIds.includes(source.id))?.id ?? ''}
+                    aria-label={`Assigned case for ${source.title}`}
+                    onFocus={() => setActiveSourceId(source.id)}
+                    onChange={(event) => assignSourceToCase(source.id, event.target.value)}
+                  >
+                    <option value="">No case</option>
+                    {cases.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+
+            <div className="case-table" role="table" aria-label="Case attributes">
+              <div className="case-row case-row-head" role="row" style={{ gridTemplateColumns: caseGridTemplate }}>
+                <span>Case</span>
+                <span>Sources</span>
+                {attributes.map((attribute) => (
+                  <span key={attribute.id}>{attribute.name}</span>
+                ))}
+                <span>Notes</span>
+                <span />
+              </div>
+              {cases.map((item) => {
+                const linkedSources = sources.filter((source) => item.sourceIds.includes(source.id))
 
                 return (
-                  <div key={source.id} className={source.id === activeSource.id ? 'case-row active' : 'case-row'} role="row">
+                  <div key={item.id} className="case-row" role="row" style={{ gridTemplateColumns: caseGridTemplate }}>
+                    <input value={item.name} aria-label="Case name" onChange={(event) => updateCase(item.id, { name: event.target.value })} />
+                    <small>{linkedSources.map((source) => source.title).join(', ') || '-'}</small>
+                    {attributes.map((attribute) => (
+                      <input
+                        key={attribute.id}
+                        value={attributeValues.find((value) => value.caseId === item.id && value.attributeId === attribute.id)?.value ?? ''}
+                        aria-label={`${attribute.name} for ${item.name}`}
+                        onChange={(event) => updateAttributeValue(item.id, attribute.id, event.target.value)}
+                      />
+                    ))}
                     <input
-                      value={source.caseName ?? ''}
-                      placeholder={source.title}
-                      aria-label={`Case for ${source.title}`}
-                      onFocus={() => setActiveSourceId(source.id)}
-                      onChange={(event) => updateSource(source.id, { caseName: event.target.value })}
+                      value={item.description}
+                      aria-label={`Notes for ${item.name}`}
+                      placeholder="Optional note"
+                      onChange={(event) => updateCase(item.id, { description: event.target.value })}
                     />
-                    <button type="button" onClick={() => setActiveSourceId(source.id)}>
-                      {source.title}
+                    <button className="icon-button danger-icon" type="button" aria-label={`Delete ${item.name}`} onClick={() => deleteCase(item.id)}>
+                      <Trash2 size={15} aria-hidden="true" />
                     </button>
-                    <small>{source.kind}</small>
-                    <small>{referenceCount}</small>
                   </div>
                 )
               })}
+              {!cases.length && (
+                <div className="empty-table-state">
+                  <strong>No cases yet</strong>
+                  <span>Create cases from sources, then fill in participant attributes here.</span>
+                </div>
+              )}
             </div>
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
-              <span>Attribute columns, case groups, and spreadsheet-style filtering.</span>
+              <span>Attribute import, case groups, and spreadsheet-style filtering.</span>
             </div>
           </article>
         )}
@@ -1720,7 +2102,18 @@ function App() {
 
             <label className="property-field">
               <span>Case</span>
-              <input value={activeSource.caseName ?? ''} placeholder="No case assigned" onChange={(event) => updateSource(activeSource.id, { caseName: event.target.value })} />
+              <select
+                value={cases.find((item) => item.sourceIds.includes(activeSource.id))?.id ?? ''}
+                aria-label={`Case for ${activeSource.title}`}
+                onChange={(event) => assignSourceToCase(activeSource.id, event.target.value)}
+              >
+                <option value="">No case assigned</option>
+                {cases.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <dl className="properties-list compact-properties">
@@ -1870,6 +2263,7 @@ function ListView({
   activeCodeId,
   sources,
   visibleSources,
+  cases,
   codes,
   excerpts,
   onSelectSource,
@@ -1880,6 +2274,7 @@ function ListView({
   activeCodeId: string
   sources: Source[]
   visibleSources: Source[]
+  cases: Case[]
   codes: Code[]
   excerpts: Excerpt[]
   onSelectSource: (id: string) => void
@@ -1914,12 +2309,23 @@ function ListView({
           </button>
         ))}
       {activeView === 'classify' && (
-        sources.map((source) => (
+        cases.length ? cases.map((item) => {
+          const firstSourceId = item.sourceIds[0] ?? activeSourceId
+          return (
+          <button className={item.sourceIds.includes(activeSourceId) ? 'list-item active' : 'list-item'} key={item.id} type="button" onClick={() => onSelectSource(firstSourceId)}>
+            <Database size={17} aria-hidden="true" />
+            <div>
+              <strong>{item.name}</strong>
+              <span>{item.sourceIds.length} source{item.sourceIds.length === 1 ? '' : 's'}</span>
+            </div>
+          </button>
+          )
+        }) : sources.map((source) => (
           <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
             <Database size={17} aria-hidden="true" />
             <div>
-              <strong>{source.caseName?.trim() || source.title}</strong>
-              <span>{source.title}</span>
+              <strong>{source.title}</strong>
+              <span>No case yet</span>
             </div>
           </button>
         ))

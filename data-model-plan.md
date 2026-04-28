@@ -747,6 +747,8 @@ Keep JSON fields temporarily as backup during migration.
 
 ### Phase 2: Cases And Attributes
 
+Status: implemented as the first MVP pass in `20260428020000_add_cases_and_attributes.sql`.
+
 Create:
 
 ```text
@@ -762,6 +764,20 @@ This unlocks:
 - participant sheets
 - comparisons by case attributes
 - matrix coding foundations
+
+Current MVP depth:
+
+- cases can be created from sources
+- sources can be assigned to cases
+- text attributes can be created in the UI
+- attribute values can be edited in the Classify case sheet
+
+Still later:
+
+- attribute import
+- case groups/sets
+- typed attribute controls beyond free text
+- matrix queries that consume these fields
 
 ### Phase 3: Source Files And Rich Source Types
 
