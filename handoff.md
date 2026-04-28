@@ -193,6 +193,12 @@ Supabase tables currently used:
 
 - `fieldnote_projects`
 - `fieldnote_project_members`
+- `fieldnote_sources`
+- `fieldnote_folders`
+- `fieldnote_codes`
+- `fieldnote_source_segments`
+- `fieldnote_coded_references`
+- `fieldnote_memos`
 
 Schema:
 
@@ -210,8 +216,10 @@ Applied migrations:
 
 - `20260427202944_fieldnote_auth_schema.sql`
 - `20260427203844_add_sources_and_memos_to_projects.sql`
+- `20260428000000_fix_fieldnote_rls_recursion.sql`
+- `20260428010000_normalize_core_objects.sql`
 
-Current project data is still mostly JSON on `fieldnote_projects`:
+Current project data is now dual-written:
 
 - `sources`
 - `codes`
@@ -219,7 +227,7 @@ Current project data is still mostly JSON on `fieldnote_projects`:
 - `excerpts`
 - `active_source_id`
 
-This is acceptable for the prototype, but the plan recommends normalizing later.
+The JSON fields remain as a fallback/transition layer, but the app now reads normalized rows when available and writes normalized rows on save.
 
 See `data-model-plan.md` for the full future schema, including sources, source files, source segments, codes, coded references, memos, cases, attributes, relationships, queries, AI suggestions, exports, and collaboration/review tables.
 

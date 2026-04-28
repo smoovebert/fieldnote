@@ -86,6 +86,51 @@ type ProjectRow = {
   excerpts: Excerpt[]
 }
 
+type NormalizedSourceRow = {
+  id: string
+  project_id: string
+  title: string
+  kind: Source['kind']
+  folder_name: string
+  content: string
+  archived: boolean
+  imported_at?: string | null
+  case_name?: string | null
+}
+
+type NormalizedCodeRow = {
+  id: string
+  project_id: string
+  name: string
+  color: string
+  description: string
+  parent_code_id?: string | null
+}
+
+type NormalizedMemoRow = {
+  id: string
+  project_id: string
+  title: string
+  body: string
+  linked_type: Memo['linkedType']
+  linked_id?: string | null
+}
+
+type NormalizedSegmentRow = {
+  id: string
+  project_id: string
+  source_id: string
+  content: string
+}
+
+type NormalizedCodedReferenceRow = {
+  project_id: string
+  segment_id: string
+  code_id: string
+  source_id: string
+  note: string
+}
+
 const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
 
 Participant: It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else. After a while it felt like the system was testing whether I would give up.
@@ -221,10 +266,75 @@ function normalizeProject(project: ProjectRow): ProjectData {
   }
 }
 
+function composeProjectFromNormalized(
+  project: ProjectRow,
+  sourceRows: NormalizedSourceRow[],
+  codeRows: NormalizedCodeRow[],
+  memoRows: NormalizedMemoRow[],
+  segmentRows: NormalizedSegmentRow[],
+  referenceRows: NormalizedCodedReferenceRow[]
+): ProjectData {
+  const sources = sourceRows.map<Source>((source) => ({
+    id: source.id,
+    title: source.title,
+    kind: source.kind,
+    folder: source.folder_name,
+    content: source.content,
+    archived: source.archived,
+    importedAt: source.imported_at ?? undefined,
+    caseName: source.case_name ?? undefined,
+  }))
+  const codes = codeRows.map<Code>((code) => ({
+    id: code.id,
+    name: code.name,
+    color: code.color,
+    description: code.description,
+  }))
+  const memos = memoRows.map<Memo>((memo) => ({
+    id: memo.id,
+    title: memo.title,
+    body: memo.body,
+    linkedType: memo.linked_type,
+    linkedId: memo.linked_id ?? undefined,
+  }))
+  const referencesBySegment = referenceRows.reduce<Record<string, NormalizedCodedReferenceRow[]>>((groups, reference) => {
+    groups[reference.segment_id] = [...(groups[reference.segment_id] ?? []), reference]
+    return groups
+  }, {})
+  const sourceTitleById = new Map(sources.map((source) => [source.id, source.title]))
+  const excerpts = segmentRows.flatMap<Excerpt>((segment) => {
+    const segmentReferences = referencesBySegment[segment.id] ?? []
+    if (!segmentReferences.length) return []
+
+    return [
+      {
+        id: segment.id,
+        sourceId: segment.source_id,
+        sourceTitle: sourceTitleById.get(segment.source_id) ?? 'Unknown source',
+        text: segment.content,
+        note: segmentReferences[0]?.note ?? '',
+        codeIds: segmentReferences.map((reference) => reference.code_id),
+      },
+    ]
+  })
+
+  return {
+    activeSourceId: project.active_source_id || sources[0]?.id || defaultProject.activeSourceId,
+    sources: sources.length ? sources : normalizeProject(project).sources,
+    codes: codes.length ? codes : normalizeProject(project).codes,
+    memos: memos.length ? memos : normalizeProject(project).memos,
+    excerpts,
+  }
+}
+
 function errorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message
   return fallback
+}
+
+function postgrestInList(values: string[]) {
+  return `(${values.map((value) => value.replaceAll(',', '')).join(',')})`
 }
 
 function App() {
@@ -293,8 +403,129 @@ function App() {
     [activeSourceId, codes, excerpts, memos, sources]
   )
 
-  function applyProject(project: ProjectRow) {
-    const nextProject = normalizeProject(project)
+  async function loadProjectData(project: ProjectRow) {
+    try {
+      const [sourceResult, codeResult, memoResult, segmentResult, referenceResult] = await Promise.all([
+        supabase.from('fieldnote_sources').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_codes').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_memos').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_source_segments').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_coded_references').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+      ])
+
+      const normalizedError = sourceResult.error ?? codeResult.error ?? memoResult.error ?? segmentResult.error ?? referenceResult.error
+      if (normalizedError) throw normalizedError
+
+      const normalizedSources = (sourceResult.data ?? []) as NormalizedSourceRow[]
+      const normalizedCodes = (codeResult.data ?? []) as NormalizedCodeRow[]
+      const normalizedMemos = (memoResult.data ?? []) as NormalizedMemoRow[]
+      const normalizedSegments = (segmentResult.data ?? []) as NormalizedSegmentRow[]
+      const normalizedReferences = (referenceResult.data ?? []) as NormalizedCodedReferenceRow[]
+
+      if (normalizedSources.length || normalizedCodes.length || normalizedMemos.length || normalizedSegments.length || normalizedReferences.length) {
+        return composeProjectFromNormalized(project, normalizedSources, normalizedCodes, normalizedMemos, normalizedSegments, normalizedReferences)
+      }
+    } catch (error) {
+      console.warn('Falling back to project JSON data.', error)
+    }
+
+    return normalizeProject(project)
+  }
+
+  async function saveNormalizedProject(nextProjectId: string, nextProjectData: ProjectData) {
+    const folderNames = Array.from(new Set(nextProjectData.sources.map((source) => source.folder || 'Internals')))
+    const folderRows = folderNames.map((folder) => ({
+      id: folder.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      project_id: nextProjectId,
+      name: folder,
+      kind: 'source',
+    }))
+    const sourceRows = nextProjectData.sources.map((source) => ({
+      id: source.id,
+      project_id: nextProjectId,
+      title: source.title,
+      kind: source.kind,
+      folder_name: source.folder || 'Internals',
+      content: source.content,
+      archived: Boolean(source.archived),
+      imported_at: source.importedAt ?? null,
+      case_name: source.caseName ?? null,
+    }))
+    const codeRows = nextProjectData.codes.map((code) => ({
+      id: code.id,
+      project_id: nextProjectId,
+      name: code.name,
+      color: code.color,
+      description: code.description,
+    }))
+    const memoRows = nextProjectData.memos.map((memo) => ({
+      id: memo.id,
+      project_id: nextProjectId,
+      title: memo.title,
+      body: memo.body,
+      linked_type: memo.linkedType,
+      linked_id: memo.linkedId ?? null,
+    }))
+    const segmentRows = nextProjectData.excerpts.map((excerpt) => ({
+      id: excerpt.id,
+      project_id: nextProjectId,
+      source_id: excerpt.sourceId,
+      segment_type: 'text_range',
+      content: excerpt.text,
+    }))
+    const referenceRows = nextProjectData.excerpts.flatMap((excerpt) =>
+      excerpt.codeIds.map((codeId) => ({
+        project_id: nextProjectId,
+        segment_id: excerpt.id,
+        code_id: codeId,
+        source_id: excerpt.sourceId,
+        note: excerpt.note,
+      }))
+    )
+
+    const upserts = [
+      folderRows.length ? supabase.from('fieldnote_folders').upsert(folderRows, { onConflict: 'project_id,id' }) : undefined,
+      sourceRows.length ? supabase.from('fieldnote_sources').upsert(sourceRows, { onConflict: 'project_id,id' }) : undefined,
+      codeRows.length ? supabase.from('fieldnote_codes').upsert(codeRows, { onConflict: 'project_id,id' }) : undefined,
+      memoRows.length ? supabase.from('fieldnote_memos').upsert(memoRows, { onConflict: 'project_id,id' }) : undefined,
+      segmentRows.length ? supabase.from('fieldnote_source_segments').upsert(segmentRows, { onConflict: 'project_id,id' }) : undefined,
+    ].filter(Boolean)
+
+    const upsertResults = await Promise.all(upserts)
+    const upsertError = upsertResults.find((result) => result?.error)?.error
+    if (upsertError) throw upsertError
+
+    const existingSourceIds = nextProjectData.sources.map((source) => source.id)
+    const existingCodeIds = nextProjectData.codes.map((code) => code.id)
+    const existingMemoIds = nextProjectData.memos.map((memo) => memo.id)
+    const existingSegmentIds = nextProjectData.excerpts.map((excerpt) => excerpt.id)
+
+    await Promise.all([
+      existingSourceIds.length
+        ? supabase.from('fieldnote_sources').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingSourceIds))
+        : supabase.from('fieldnote_sources').delete().eq('project_id', nextProjectId),
+      existingCodeIds.length
+        ? supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingCodeIds))
+        : supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId),
+      existingMemoIds.length
+        ? supabase.from('fieldnote_memos').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingMemoIds))
+        : supabase.from('fieldnote_memos').delete().eq('project_id', nextProjectId),
+      existingSegmentIds.length
+        ? supabase.from('fieldnote_source_segments').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingSegmentIds))
+        : supabase.from('fieldnote_source_segments').delete().eq('project_id', nextProjectId),
+    ])
+
+    const { error: referencesDeleteError } = await supabase.from('fieldnote_coded_references').delete().eq('project_id', nextProjectId)
+    if (referencesDeleteError) throw referencesDeleteError
+    if (referenceRows.length) {
+      const { error: referencesInsertError } = await supabase.from('fieldnote_coded_references').insert(referenceRows)
+      if (referencesInsertError) throw referencesInsertError
+    }
+  }
+
+  async function applyProject(project: ProjectRow) {
+    setSaveStatus('Opening project...')
+    const nextProject = await loadProjectData(project)
 
     setProjectId(project.id)
     setProjectTitle(project.title || 'Untitled project')
@@ -364,9 +595,10 @@ function App() {
 
       if (error) throw error
       const nextProject = createdProject as ProjectRow
+      await saveNormalizedProject(nextProject.id, defaultProject)
       setProjectRows((current) => [nextProject, ...current])
       setNewProjectTitle('')
-      applyProject(nextProject)
+      await applyProject(nextProject)
     } catch (error) {
       setSaveStatus(errorMessage(error, 'Could not create project.'))
     } finally {
@@ -432,6 +664,7 @@ function App() {
   useEffect(() => {
     if (!session?.user || !projectId || !hasLoadedRemoteProject.current) return
 
+    const currentProjectId = projectId
     setSaveStatus('Saving...')
     const timeout = window.setTimeout(() => {
       async function saveProject() {
@@ -449,12 +682,17 @@ function App() {
               memos: projectData.memos,
               excerpts: projectData.excerpts,
             })
-            .eq('id', projectId)
+            .eq('id', currentProjectId)
 
           if (error) throw error
+          try {
+            await saveNormalizedProject(currentProjectId, projectData)
+          } catch (normalizedError) {
+            console.warn('Project JSON saved, but normalized save failed.', normalizedError)
+          }
           setProjectRows((current) =>
             current.map((project) =>
-              project.id === projectId
+              project.id === currentProjectId
                 ? {
                     ...project,
                     title: projectTitle,
@@ -1037,7 +1275,7 @@ function App() {
             {projectRows.length ? (
               <div className="project-list">
                 {projectRows.map((project) => (
-                  <button key={project.id} className="project-tile" type="button" onClick={() => applyProject(project)}>
+                  <button key={project.id} className="project-tile" type="button" onClick={() => void applyProject(project)}>
                     <span className="project-tile-icon">
                       <FolderOpen size={19} aria-hidden="true" />
                     </span>

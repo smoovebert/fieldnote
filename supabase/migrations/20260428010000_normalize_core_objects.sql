@@ -1,133 +1,3 @@
-create extension if not exists pgcrypto;
-
-create table if not exists public.fieldnote_projects (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  title text not null default 'Untitled project',
-  active_source_id text,
-  sources jsonb not null default '[]'::jsonb,
-  source_title text not null default '',
-  transcript text not null default '',
-  memo text not null default '',
-  memos jsonb not null default '[]'::jsonb,
-  codes jsonb not null default '[]'::jsonb,
-  excerpts jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.fieldnote_project_members (
-  project_id uuid not null references public.fieldnote_projects(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null default 'viewer' check (role in ('viewer', 'editor')),
-  created_at timestamptz not null default now(),
-  primary key (project_id, user_id)
-);
-
-alter table public.fieldnote_projects enable row level security;
-alter table public.fieldnote_project_members enable row level security;
-
-create or replace function public.set_fieldnote_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
-create or replace function public.fieldnote_project_member_role(project_id uuid, user_id uuid)
-returns text
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select members.role
-  from public.fieldnote_project_members members
-  where members.project_id = fieldnote_project_member_role.project_id
-    and members.user_id = fieldnote_project_member_role.user_id
-  limit 1
-$$;
-
-create or replace function public.fieldnote_project_owner_id(project_id uuid)
-returns uuid
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  select projects.owner_id
-  from public.fieldnote_projects projects
-  where projects.id = fieldnote_project_owner_id.project_id
-  limit 1
-$$;
-
-grant execute on function public.fieldnote_project_member_role(uuid, uuid) to authenticated;
-grant execute on function public.fieldnote_project_owner_id(uuid) to authenticated;
-
-drop trigger if exists set_fieldnote_projects_updated_at on public.fieldnote_projects;
-
-create trigger set_fieldnote_projects_updated_at
-before update on public.fieldnote_projects
-for each row
-execute function public.set_fieldnote_updated_at();
-
-drop policy if exists "Owners can create projects" on public.fieldnote_projects;
-drop policy if exists "Owners and members can read projects" on public.fieldnote_projects;
-drop policy if exists "Owners and editors can update projects" on public.fieldnote_projects;
-drop policy if exists "Owners can delete projects" on public.fieldnote_projects;
-drop policy if exists "Owners can manage project members" on public.fieldnote_project_members;
-drop policy if exists "Members can read their own memberships" on public.fieldnote_project_members;
-
-create policy "Owners can create projects"
-on public.fieldnote_projects
-for insert
-to authenticated
-with check (owner_id = auth.uid());
-
-create policy "Owners and members can read projects"
-on public.fieldnote_projects
-for select
-to authenticated
-using (
-  owner_id = auth.uid()
-  or public.fieldnote_project_member_role(id, auth.uid()) is not null
-);
-
-create policy "Owners and editors can update projects"
-on public.fieldnote_projects
-for update
-to authenticated
-using (
-  owner_id = auth.uid()
-  or public.fieldnote_project_member_role(id, auth.uid()) = 'editor'
-)
-with check (
-  owner_id = auth.uid()
-  or public.fieldnote_project_member_role(id, auth.uid()) = 'editor'
-);
-
-create policy "Owners can delete projects"
-on public.fieldnote_projects
-for delete
-to authenticated
-using (owner_id = auth.uid());
-
-create policy "Owners can manage project members"
-on public.fieldnote_project_members
-for all
-to authenticated
-using (public.fieldnote_project_owner_id(project_id) = auth.uid())
-with check (public.fieldnote_project_owner_id(project_id) = auth.uid());
-
-create policy "Members can read their own memberships"
-on public.fieldnote_project_members
-for select
-to authenticated
-using (user_id = auth.uid());
-
 create table if not exists public.fieldnote_sources (
   id text not null,
   project_id uuid not null references public.fieldnote_projects(id) on delete cascade,
@@ -212,6 +82,164 @@ alter table public.fieldnote_source_segments enable row level security;
 alter table public.fieldnote_coded_references enable row level security;
 alter table public.fieldnote_memos enable row level security;
 
+drop trigger if exists set_fieldnote_sources_updated_at on public.fieldnote_sources;
+create trigger set_fieldnote_sources_updated_at
+before update on public.fieldnote_sources
+for each row execute function public.set_fieldnote_updated_at();
+
+drop trigger if exists set_fieldnote_folders_updated_at on public.fieldnote_folders;
+create trigger set_fieldnote_folders_updated_at
+before update on public.fieldnote_folders
+for each row execute function public.set_fieldnote_updated_at();
+
+drop trigger if exists set_fieldnote_codes_updated_at on public.fieldnote_codes;
+create trigger set_fieldnote_codes_updated_at
+before update on public.fieldnote_codes
+for each row execute function public.set_fieldnote_updated_at();
+
+drop trigger if exists set_fieldnote_source_segments_updated_at on public.fieldnote_source_segments;
+create trigger set_fieldnote_source_segments_updated_at
+before update on public.fieldnote_source_segments
+for each row execute function public.set_fieldnote_updated_at();
+
+drop trigger if exists set_fieldnote_coded_references_updated_at on public.fieldnote_coded_references;
+create trigger set_fieldnote_coded_references_updated_at
+before update on public.fieldnote_coded_references
+for each row execute function public.set_fieldnote_updated_at();
+
+drop trigger if exists set_fieldnote_memos_updated_at on public.fieldnote_memos;
+create trigger set_fieldnote_memos_updated_at
+before update on public.fieldnote_memos
+for each row execute function public.set_fieldnote_updated_at();
+
+insert into public.fieldnote_sources (project_id, id, title, kind, folder_name, content, archived, imported_at, case_name)
+select
+  projects.id,
+  source_item.value->>'id',
+  coalesce(source_item.value->>'title', 'Untitled source'),
+  coalesce(source_item.value->>'kind', 'Transcript'),
+  coalesce(source_item.value->>'folder', 'Internals'),
+  coalesce(source_item.value->>'content', ''),
+  coalesce((source_item.value->>'archived')::boolean, false),
+  source_item.value->>'importedAt',
+  source_item.value->>'caseName'
+from public.fieldnote_projects projects
+cross join lateral jsonb_array_elements(projects.sources) as source_item(value)
+where source_item.value ? 'id'
+on conflict (project_id, id) do update set
+  title = excluded.title,
+  kind = excluded.kind,
+  folder_name = excluded.folder_name,
+  content = excluded.content,
+  archived = excluded.archived,
+  imported_at = excluded.imported_at,
+  case_name = excluded.case_name;
+
+insert into public.fieldnote_sources (project_id, id, title, kind, folder_name, content)
+select
+  projects.id,
+  coalesce(nullif(projects.active_source_id, ''), 'interview-03'),
+  coalesce(nullif(projects.source_title, ''), 'Interview 03'),
+  'Transcript',
+  'Internals',
+  projects.transcript
+from public.fieldnote_projects projects
+where not exists (
+  select 1 from public.fieldnote_sources sources where sources.project_id = projects.id
+)
+on conflict (project_id, id) do nothing;
+
+insert into public.fieldnote_folders (project_id, id, name)
+select distinct
+  sources.project_id,
+  lower(regexp_replace(sources.folder_name, '[^a-zA-Z0-9]+', '-', 'g')),
+  sources.folder_name
+from public.fieldnote_sources sources
+where nullif(sources.folder_name, '') is not null
+on conflict (project_id, kind, name) do nothing;
+
+insert into public.fieldnote_codes (project_id, id, name, color, description)
+select
+  projects.id,
+  code_item.value->>'id',
+  coalesce(code_item.value->>'name', 'Untitled code'),
+  coalesce(code_item.value->>'color', '#2f80ed'),
+  coalesce(code_item.value->>'description', '')
+from public.fieldnote_projects projects
+cross join lateral jsonb_array_elements(projects.codes) as code_item(value)
+where code_item.value ? 'id'
+on conflict (project_id, id) do update set
+  name = excluded.name,
+  color = excluded.color,
+  description = excluded.description;
+
+insert into public.fieldnote_memos (project_id, id, title, body, linked_type, linked_id)
+select
+  projects.id,
+  memo_item.value->>'id',
+  coalesce(memo_item.value->>'title', 'Untitled memo'),
+  coalesce(memo_item.value->>'body', ''),
+  coalesce(memo_item.value->>'linkedType', 'project'),
+  memo_item.value->>'linkedId'
+from public.fieldnote_projects projects
+cross join lateral jsonb_array_elements(projects.memos) as memo_item(value)
+where memo_item.value ? 'id'
+on conflict (project_id, id) do update set
+  title = excluded.title,
+  body = excluded.body,
+  linked_type = excluded.linked_type,
+  linked_id = excluded.linked_id;
+
+insert into public.fieldnote_memos (project_id, id, title, body, linked_type)
+select projects.id, 'project-memo', 'Project memo', projects.memo, 'project'
+from public.fieldnote_projects projects
+where not exists (
+  select 1 from public.fieldnote_memos memos where memos.project_id = projects.id and memos.linked_type = 'project'
+)
+on conflict (project_id, id) do nothing;
+
+insert into public.fieldnote_source_segments (project_id, id, source_id, segment_type, content)
+select
+  projects.id,
+  excerpt_item.value->>'id',
+  coalesce(excerpt_item.value->>'sourceId', sources.id),
+  'text_range',
+  coalesce(excerpt_item.value->>'text', '')
+from public.fieldnote_projects projects
+cross join lateral jsonb_array_elements(projects.excerpts) as excerpt_item(value)
+left join public.fieldnote_sources sources
+  on sources.project_id = projects.id
+  and sources.title = excerpt_item.value->>'sourceTitle'
+where excerpt_item.value ? 'id'
+  and coalesce(excerpt_item.value->>'sourceId', sources.id) is not null
+on conflict (project_id, id) do update set
+  source_id = excluded.source_id,
+  content = excluded.content;
+
+insert into public.fieldnote_coded_references (project_id, segment_id, code_id, source_id, note)
+select
+  projects.id,
+  excerpt_item.value->>'id',
+  code_id.value#>>'{}',
+  coalesce(excerpt_item.value->>'sourceId', sources.id),
+  coalesce(excerpt_item.value->>'note', '')
+from public.fieldnote_projects projects
+cross join lateral jsonb_array_elements(projects.excerpts) as excerpt_item(value)
+cross join lateral jsonb_array_elements(coalesce(excerpt_item.value->'codeIds', '[]'::jsonb)) as code_id(value)
+left join public.fieldnote_sources sources
+  on sources.project_id = projects.id
+  and sources.title = excerpt_item.value->>'sourceTitle'
+where excerpt_item.value ? 'id'
+  and coalesce(excerpt_item.value->>'sourceId', sources.id) is not null
+on conflict (project_id, segment_id, code_id) do update set
+  source_id = excluded.source_id,
+  note = excluded.note;
+
+drop policy if exists "Project members can read sources" on public.fieldnote_sources;
+drop policy if exists "Project editors can insert sources" on public.fieldnote_sources;
+drop policy if exists "Project editors can update sources" on public.fieldnote_sources;
+drop policy if exists "Project editors can delete sources" on public.fieldnote_sources;
+
 create policy "Project members can read sources" on public.fieldnote_sources for select to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) is not null);
 create policy "Project editors can insert sources" on public.fieldnote_sources for insert to authenticated
@@ -221,6 +249,11 @@ using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fiel
 with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
 create policy "Project editors can delete sources" on public.fieldnote_sources for delete to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
+
+drop policy if exists "Project members can read folders" on public.fieldnote_folders;
+drop policy if exists "Project editors can insert folders" on public.fieldnote_folders;
+drop policy if exists "Project editors can update folders" on public.fieldnote_folders;
+drop policy if exists "Project editors can delete folders" on public.fieldnote_folders;
 
 create policy "Project members can read folders" on public.fieldnote_folders for select to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) is not null);
@@ -232,6 +265,11 @@ with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public
 create policy "Project editors can delete folders" on public.fieldnote_folders for delete to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
 
+drop policy if exists "Project members can read codes" on public.fieldnote_codes;
+drop policy if exists "Project editors can insert codes" on public.fieldnote_codes;
+drop policy if exists "Project editors can update codes" on public.fieldnote_codes;
+drop policy if exists "Project editors can delete codes" on public.fieldnote_codes;
+
 create policy "Project members can read codes" on public.fieldnote_codes for select to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) is not null);
 create policy "Project editors can insert codes" on public.fieldnote_codes for insert to authenticated
@@ -241,6 +279,11 @@ using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fiel
 with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
 create policy "Project editors can delete codes" on public.fieldnote_codes for delete to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
+
+drop policy if exists "Project members can read source segments" on public.fieldnote_source_segments;
+drop policy if exists "Project editors can insert source segments" on public.fieldnote_source_segments;
+drop policy if exists "Project editors can update source segments" on public.fieldnote_source_segments;
+drop policy if exists "Project editors can delete source segments" on public.fieldnote_source_segments;
 
 create policy "Project members can read source segments" on public.fieldnote_source_segments for select to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) is not null);
@@ -252,6 +295,11 @@ with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public
 create policy "Project editors can delete source segments" on public.fieldnote_source_segments for delete to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
 
+drop policy if exists "Project members can read coded references" on public.fieldnote_coded_references;
+drop policy if exists "Project editors can insert coded references" on public.fieldnote_coded_references;
+drop policy if exists "Project editors can update coded references" on public.fieldnote_coded_references;
+drop policy if exists "Project editors can delete coded references" on public.fieldnote_coded_references;
+
 create policy "Project members can read coded references" on public.fieldnote_coded_references for select to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) is not null);
 create policy "Project editors can insert coded references" on public.fieldnote_coded_references for insert to authenticated
@@ -261,6 +309,11 @@ using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fiel
 with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
 create policy "Project editors can delete coded references" on public.fieldnote_coded_references for delete to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
+
+drop policy if exists "Project members can read memos" on public.fieldnote_memos;
+drop policy if exists "Project editors can insert memos" on public.fieldnote_memos;
+drop policy if exists "Project editors can update memos" on public.fieldnote_memos;
+drop policy if exists "Project editors can delete memos" on public.fieldnote_memos;
 
 create policy "Project members can read memos" on public.fieldnote_memos for select to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) is not null);
