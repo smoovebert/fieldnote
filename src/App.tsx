@@ -16,6 +16,7 @@ import {
   MessageSquareText,
   Plus,
   Rows3,
+  Scissors,
   Search,
   Tags,
   Trash2,
@@ -741,6 +742,45 @@ function App() {
     )
   }
 
+  function splitExcerpt(excerptId: string) {
+    const excerpt = excerpts.find((item) => item.id === excerptId)
+    const selectedText = window.getSelection()?.toString().trim()
+    if (!excerpt) return
+
+    if (!selectedText) {
+      setSelectionHint('Select part of the coded reference text first, then click Split.')
+      return
+    }
+
+    const splitIndex = excerpt.text.indexOf(selectedText)
+    if (splitIndex === -1) {
+      setSelectionHint('The selected text must be inside the coded reference you are splitting.')
+      return
+    }
+
+    const before = excerpt.text.slice(0, splitIndex).trim()
+    const after = excerpt.text.slice(splitIndex + selectedText.length).trim()
+    const remainingText = [before, after].filter(Boolean).join(' ')
+
+    if (!remainingText) {
+      setSelectionHint('Split needs a smaller selection, not the whole coded reference.')
+      return
+    }
+
+    const splitReference: Excerpt = {
+      ...excerpt,
+      id: `excerpt-${Date.now()}`,
+      text: selectedText,
+      note: '',
+    }
+
+    setExcerpts((current) =>
+      current.flatMap((item) => (item.id === excerpt.id ? [{ ...item, text: remainingText }, splitReference] : [item]))
+    )
+    window.getSelection()?.removeAllRanges()
+    setSelectionHint('Split the selected text into a new coded reference.')
+  }
+
   function updateRailMemo(body: string) {
     if (contextualMemo) {
       updateMemo(contextualMemo.id, { body })
@@ -1301,10 +1341,10 @@ function App() {
               </button>
             </div>
 
-            <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} />
+            <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} onSplit={splitExcerpt} />
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
-              <span>Parent/child codes, merge, split, and codebook cleanup tools.</span>
+              <span>Parent/child codes, hierarchy views, and deeper codebook cleanup tools.</span>
             </div>
           </article>
         )}
@@ -1709,6 +1749,7 @@ function ReferenceList({
   onNoteChange,
   onDelete,
   onRemoveCode,
+  onSplit,
   compact = false,
 }: {
   excerpts: Excerpt[]
@@ -1716,6 +1757,7 @@ function ReferenceList({
   onNoteChange: (id: string, note: string) => void
   onDelete: (id: string) => void
   onRemoveCode: (excerptId: string, codeId: string) => void
+  onSplit?: (excerptId: string) => void
   compact?: boolean
 }) {
   if (!excerpts.length) {
@@ -1742,6 +1784,12 @@ function ReferenceList({
             <p>{excerpt.text}</p>
             <div className="reference-actions">
               <input value={excerpt.note} placeholder="Add note" aria-label="Reference note" onChange={(event) => onNoteChange(excerpt.id, event.target.value)} />
+              {onSplit && (
+                <button className="neutral-reference-button" type="button" onClick={() => onSplit(excerpt.id)}>
+                  <Scissors size={14} aria-hidden="true" />
+                  Split
+                </button>
+              )}
               <button type="button" onClick={() => onDelete(excerpt.id)}>
                 <Trash2 size={14} aria-hidden="true" />
                 Delete

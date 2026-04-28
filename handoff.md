@@ -219,6 +219,7 @@ This is acceptable for the prototype, but the plan recommends normalizing later.
 - Individual codes can be removed from a multi-coded reference with confirmation.
 - Refine mode can add new codes directly to the codebook and select them for definition editing.
 - Refine mode can merge the active code into another code, moving coded references and removing the merged code.
+- Refine mode can split selected text out of an existing coded reference into a new reference with the same codes.
 
 ### Memos
 
@@ -257,7 +258,7 @@ Typing in a missing context memo creates it automatically.
 - Query/Analyze tools are not implemented.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classify mode has a basic source-level case sheet, but no real attribute columns or case groups yet.
-- Code hierarchy, split, and parent-child nodes are not implemented.
+- Code hierarchy and parent-child nodes are not implemented.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
 
@@ -303,7 +304,7 @@ Still needed:
 - Project rename/delete/share controls.
 - Mode-specific right rails outside Organize need another design pass.
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, richer source previews, and real case/classification sheets.
-- Refine mode still needs hierarchy and split tools.
+- Refine mode still needs hierarchy tools.
 - Classify, Analyze, and Report are only first-pass shells.
 - Classify and advanced Analyze/Report features are intentionally placeholders for MVP.
 

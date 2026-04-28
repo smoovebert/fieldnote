@@ -1487,6 +1487,11 @@ textarea {
   font-weight: 760;
 }
 
+.reference-actions .neutral-reference-button {
+  background: #eaf3ff;
+  color: #1558a8;
+}
+
 .relationship-map {
   display: grid;
   place-items: center;
