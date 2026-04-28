@@ -32,6 +32,43 @@ import sources -> code selections with multiple codes -> review/refine reference
 
 Anything outside that path should appear as an honest placeholder or partial mode, not as a hidden future feature and not as a rushed full implementation.
 
+## Original Full Product Ambition
+
+Do not confuse the current MVP with the full Fieldnote vision. The original target was NVivo-level qualitative research breadth, with a more modern interface and workflow.
+
+Full feature ambition:
+
+- **Projects:** Import and organize interviews, PDFs, documents, images, audio, video, spreadsheets, surveys, web captures, references, and other research materials.
+- **Coding:** Highlight text, media, and image regions; attach codes, nested codes, sentiment codes, relationships, notes, and annotations.
+- **Research Workspace:** Source viewer, codebook, folders, tabs, side-by-side views, memos, attributes/demographics, cases, and participants.
+- **Search and Queries:** Text search, word frequency, coding queries, matrix coding, crosstabs, and comparisons by participant attributes.
+- **Visualizations:** Word clouds, charts, hierarchy charts, cluster analysis, mind maps, concept maps, and relationship maps.
+- **Transcription:** Audio/video transcription with speaker labels and transcript-linked media playback.
+- **AI Assistant:** Summaries, suggested codes/sub-codes, thematic suggestions, and "ask your data" querying, always with human approval.
+- **Collaboration:** Shared projects, team coding, reviewer roles, conflict handling, inter-coder reliability, and cloud sync.
+- **Exports:** Codebook exports, coded excerpts, reports, charts, Word/Excel/PDF/CSV exports, and archive formats.
+
+Current MVP slice:
+
+```text
+projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV exports
+```
+
+Major parity gaps:
+
+- non-text source types
+- media/image region coding
+- nested code hierarchy
+- annotations and relationships
+- full source search and formal query system
+- visualizations
+- transcription
+- AI assistant
+- collaboration and inter-coder reliability
+- rich report/export formats
+
+Important architecture note: full parity will require normalized database tables for sources, codes, references, memos, cases, attributes, relationships, files/media, queries, exports, and collaboration. The current JSON-on-project model is only acceptable for the prototype/MVP spine.
+
 The first prototype copied too much of NVivo's visible anatomy:
 
 - ribbon

@@ -32,6 +32,164 @@ Import sources -> code excerpts with multiple codes -> review/refine references 
 
 Classify, advanced Analyze, and fuller Report features should remain visible as clear placeholders until the core loop is reliable.
 
+## Full Product Ambition
+
+Fieldnote is not intended to stop at the current text-coding MVP. The long-term ambition is broad qualitative research software comparable in scope to NVivo, but with a clearer, calmer, more modern workflow.
+
+### Feature Domains
+
+#### Projects
+
+Import and organize:
+
+- interviews and transcripts
+- PDFs
+- documents
+- images
+- audio
+- video
+- spreadsheets
+- surveys
+- web captures
+- references and bibliographic materials
+
+#### Coding
+
+Support coding across research media:
+
+- highlighted text
+- media time ranges
+- image regions
+- nested/parent-child codes
+- sentiment codes
+- relationship codes
+- notes
+- annotations
+
+#### Research Workspace
+
+Support the working environment researchers expect:
+
+- source viewer
+- codebook
+- folders
+- tabs
+- side-by-side views
+- memos
+- attributes/demographics
+- cases/participants
+
+#### Search And Queries
+
+Support structured analysis:
+
+- text search
+- word frequency
+- coding queries
+- matrix coding
+- crosstabs
+- comparisons by participant attributes
+
+#### Visualizations
+
+Support visual sensemaking:
+
+- word clouds
+- charts
+- hierarchy charts
+- cluster analysis
+- mind maps
+- concept maps
+- relationship maps
+
+#### Transcription
+
+Support audio/video research materials:
+
+- audio/video transcription
+- speaker labels
+- transcript-linked media playback
+
+#### AI Assistant
+
+AI should be contextual and approval-based, not an ambient autopilot:
+
+- summaries
+- suggested codes and sub-codes
+- thematic suggestions
+- "ask your data" querying
+- human approval before applying AI suggestions
+
+#### Collaboration
+
+Support shared research work:
+
+- shared projects
+- team coding
+- reviewer roles
+- conflict handling
+- inter-coder reliability
+- cloud sync
+
+#### Exports
+
+Support getting research out of the system:
+
+- codebook exports
+- coded excerpts
+- reports
+- charts
+- Word exports
+- Excel exports
+- PDF exports
+- CSV exports
+- archive formats
+
+### Current MVP Slice
+
+The current build only covers a narrow but important spine:
+
+```text
+projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV exports
+```
+
+That is intentional for MVP, but it is not the full product definition.
+
+### Major Parity Gaps
+
+- non-text source types
+- PDF/DOCX parsing and preview
+- image/media region coding
+- audio/video transcription and playback
+- nested code hierarchy
+- annotations and relationships
+- full source search and formal queries
+- matrix coding and crosstabs
+- visualizations
+- AI-assisted analysis
+- project sharing and team workflows
+- inter-coder reliability
+- rich Word/Excel/PDF exports
+
+### Architecture Implication
+
+The current JSON-on-`fieldnote_projects` model should not be stretched into the full feature set. Full parity needs real normalized data structures for:
+
+- sources and source files
+- source segments / media ranges / image regions
+- codes and code hierarchy
+- coded references
+- annotations
+- memos
+- cases
+- attributes and attribute values
+- relationships
+- queries and query results
+- exports
+- project members, roles, and review state
+
+Keep the prototype simple while validating the core loop, but plan to normalize before building collaboration, media, transcription, AI, or serious querying.
+
 Current MVP loop target:
 
 - Code mode should avoid duplicate references when the same passage is coded again.
