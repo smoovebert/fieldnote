@@ -337,6 +337,19 @@ function postgrestInList(values: string[]) {
   return `(${values.map((value) => value.replaceAll(',', '')).join(',')})`
 }
 
+async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kind'>> {
+  if (file.name.toLowerCase().endsWith('.docx')) {
+    const mammoth = await import('mammoth/mammoth.browser')
+    const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })
+    return { content: result.value.trim(), kind: 'Transcript' }
+  }
+
+  return {
+    content: await file.text(),
+    kind: file.name.toLowerCase().endsWith('.csv') ? 'Document' : 'Transcript',
+  }
+}
+
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in')
@@ -1044,23 +1057,17 @@ function App() {
     const targetFolder = sourceFolderFilter !== 'All' && sourceFolderFilter !== 'Archived' ? sourceFolderFilter : 'Internals'
 
     Promise.all(
-      files.map(
-        (file, index) =>
-          new Promise<Source>((resolve) => {
-            const reader = new FileReader()
-            reader.onload = () => {
-              resolve({
-                id: `source-${Date.now()}-${index}`,
-                title: file.name.replace(/\.[^.]+$/, ''),
-                kind: file.name.toLowerCase().endsWith('.csv') ? 'Document' : 'Transcript',
-                folder: targetFolder,
-                content: String(reader.result ?? ''),
-                importedAt: new Date().toISOString(),
-              })
-            }
-            reader.readAsText(file)
-          })
-      )
+      files.map(async (file, index) => {
+        const sourceFile = await readSourceFile(file)
+        return {
+          id: `source-${Date.now()}-${index}`,
+          title: file.name.replace(/\.[^.]+$/, ''),
+          kind: sourceFile.kind,
+          folder: targetFolder,
+          content: sourceFile.content || '[No readable text found in this file.]',
+          importedAt: new Date().toISOString(),
+        }
+      })
     ).then((newSources) => {
       setSources((current) => [...newSources, ...current])
       setActiveSourceId(newSources[0].id)
@@ -1345,7 +1352,7 @@ function App() {
               <label className="folder-row import-row">
                 <FilePlus2 size={16} aria-hidden="true" />
                 Import sources
-                <input type="file" accept=".txt,.md,.csv" multiple onChange={importTranscript} />
+                <input type="file" accept=".txt,.md,.csv,.docx" multiple onChange={importTranscript} />
               </label>
               <button className={sourceFolderFilter === 'All' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('All')}>
                 <FolderOpen size={16} aria-hidden="true" />
@@ -1444,7 +1451,7 @@ function App() {
               <label className="secondary-button import-inline">
                 <FilePlus2 size={17} aria-hidden="true" />
                 Import
-                <input type="file" accept=".txt,.md,.csv" multiple onChange={importTranscript} />
+                <input type="file" accept=".txt,.md,.csv,.docx" multiple onChange={importTranscript} />
               </label>
             </div>
             <div className="source-table" role="table" aria-label="Project sources">

@@ -250,7 +250,7 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 ### Sources
 
 - Multiple text sources are supported.
-- Importing `.txt`, `.md`, or `.csv` creates a new source.
+- Importing `.txt`, `.md`, `.csv`, or `.docx` creates a new source. DOCX import extracts plain transcript text and does not preserve Word formatting.
 - Clicking a source opens it.
 - Organize mode has folder filters for all sources, Internals, and Externals.
 - Organize mode has a source register with title, type, folder, references, and memo status.
