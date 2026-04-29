@@ -9,6 +9,7 @@ import {
   FileText,
   FolderInput,
   FolderOpen,
+  Grid3x3,
   Highlighter,
   ListTree,
   LogIn,
@@ -2276,6 +2277,15 @@ function App() {
       exportCoOccurrenceCsv(event)
       return
     }
+    if (analyzePanel === 'crosstab') {
+      event.preventDefault()
+      if (!crosstabResult) return
+      const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
+      const a2 = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
+      const rows = crosstabCsvRows(crosstabResult, a1, a2)
+      downloadCsv(rows, 'fieldnote-crosstabs.csv')
+      return
+    }
     exportAnalyzeCsv(event)
   }
 
@@ -2988,7 +2998,10 @@ function App() {
                 <ListTree size={15} aria-hidden="true" />
                 Co-occurrence
               </button>
-              <button className={analyzePanel === 'crosstab' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('crosstab')}>Crosstabs</button>
+              <button className={analyzePanel === 'crosstab' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('crosstab')}>
+                <Grid3x3 size={15} aria-hidden="true" />
+                Crosstabs
+              </button>
             </div>
 
             <div className="query-builder">
@@ -3455,7 +3468,9 @@ function App() {
                   ? 'Export word CSV'
                   : analyzePanel === 'cooccurrence'
                     ? 'Export pairs CSV'
-                    : 'Export query CSV'}
+                    : analyzePanel === 'crosstab'
+                      ? 'Export crosstabs CSV'
+                      : 'Export query CSV'}
             </button>
           </section>
         )}
