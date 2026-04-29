@@ -277,7 +277,7 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 
 - Users can select source text and code it.
 - Code mode displays source text with line numbers; line numbers are not part of the source text.
-- Code mode has a toggleable quick coding menu: when enabled, selecting transcript text opens a contextual menu near the selection with code chips and an apply action.
+- Code mode has a toggleable quick coding menu: when enabled, selecting transcript text opens a contextual menu near the selection with code chips, an instant new-code field, and apply actions.
 - One excerpt can have multiple codes.
 - Coding the same exact source passage again now merges new codes into the existing reference instead of creating a duplicate.
 - Codes can be created from the right rail.

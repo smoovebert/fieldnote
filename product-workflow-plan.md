@@ -470,7 +470,7 @@ Center:
 - Source reader
 - Highlighted coded passages
 - Coding toolbar
-- Toggleable contextual quick coding menu after text selection
+- Toggleable contextual quick coding menu after text selection, including instant new-code creation
 
 Right:
 
@@ -483,6 +483,7 @@ Right:
 
 - Code selection
 - Quick code selected text from contextual menu
+- Create and apply a new code from the contextual menu
 - Create quick code
 - Add note to coded selection
 - Open source memo

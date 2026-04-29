@@ -685,6 +685,7 @@ function App() {
   const [matrixAttributeId, setMatrixAttributeId] = useState('')
   const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
   const [quickCodeMenu, setQuickCodeMenu] = useState<QuickCodeMenu | null>(null)
+  const [quickNewCodeName, setQuickNewCodeName] = useState('')
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
@@ -1413,14 +1414,7 @@ function App() {
 
     const addToActiveCodingSet = activeView === 'code'
     const addAsChild = activeView === 'refine'
-    const palette = ['#d9892b', '#2f7ebc', '#9b5a9f', '#5c8f42', '#c45173']
-    const code: Code = {
-      id: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
-      name,
-      color: palette[codes.length % palette.length],
-      description: 'New research code. Add a short meaning once the pattern becomes clear.',
-      parentCodeId: addAsChild ? activeCode.id : undefined,
-    }
+    const code = buildNewCode(name, addAsChild ? activeCode.id : undefined)
 
     setCodes((current) => [...current, code])
     if (addToActiveCodingSet) setSelectedCodeIds((current) => [...current, code.id])
@@ -1512,6 +1506,17 @@ function App() {
     })
   }
 
+  function buildNewCode(name: string, parentCodeId?: string): Code {
+    const palette = ['#d9892b', '#2f7ebc', '#9b5a9f', '#5c8f42', '#c45173']
+    return {
+      id: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
+      name,
+      color: palette[codes.length % palette.length],
+      description: 'New research code. Add a short meaning once the pattern becomes clear.',
+      parentCodeId,
+    }
+  }
+
   function selectView(view: WorkspaceView) {
     setActiveView(view)
     setQuickCodeMenu(null)
@@ -1534,7 +1539,7 @@ function App() {
     if (firstVisibleSource) selectActiveSource(firstVisibleSource.id)
   }
 
-  function applyCodesToText(selectedText: string) {
+  function applyCodesToText(selectedText: string, codeIds = selectedCodeIds, label = selectedCodeNames) {
     let mergedExistingReference = false
 
     setExcerpts((current) => {
@@ -1545,7 +1550,7 @@ function App() {
           excerpt.id === existingReference.id
             ? {
                 ...excerpt,
-                codeIds: Array.from(new Set([...excerpt.codeIds, ...selectedCodes.map((code) => code.id)])),
+                codeIds: Array.from(new Set([...excerpt.codeIds, ...codeIds])),
               }
             : excerpt
         )
@@ -1554,7 +1559,7 @@ function App() {
       return [
         {
           id: `excerpt-${Date.now()}`,
-          codeIds: selectedCodes.map((code) => code.id),
+          codeIds,
           sourceId: activeSource.id,
           sourceTitle: activeSource.title,
           text: selectedText,
@@ -1563,8 +1568,9 @@ function App() {
         ...current,
       ]
     })
-    setSelectionHint(`${mergedExistingReference ? 'Added codes to existing reference' : 'Coded selection'} as ${selectedCodeNames}.`)
+    setSelectionHint(`${mergedExistingReference ? 'Added codes to existing reference' : 'Coded selection'} as ${label}.`)
     setQuickCodeMenu(null)
+    setQuickNewCodeName('')
     window.getSelection()?.removeAllRanges()
   }
 
@@ -1577,6 +1583,20 @@ function App() {
     }
 
     applyCodesToText(selectedText)
+  }
+
+  function createQuickCodeAndApply() {
+    const name = quickNewCodeName.trim()
+    if (!name || !quickCodeMenu) return
+
+    const code = buildNewCode(name)
+    const nextCodeIds = Array.from(new Set([...selectedCodeIds, code.id]))
+    const nextLabel = [...selectedCodes.map((item) => item.name), code.name].join(', ')
+
+    setCodes((current) => [...current, code])
+    setSelectedCodeIds(nextCodeIds)
+    setActiveCodeId(code.id)
+    applyCodesToText(quickCodeMenu.text, nextCodeIds, nextLabel)
   }
 
   function captureQuickCodeSelection() {
@@ -1599,6 +1619,7 @@ function App() {
 
       const x = Math.min(window.innerWidth - 220, Math.max(220, rect.left + rect.width / 2))
       const y = Math.max(88, rect.top - 12)
+      setQuickNewCodeName('')
       setQuickCodeMenu({ text: selectedText, x, y })
     })
   }
@@ -2562,6 +2583,21 @@ function App() {
                   </button>
                 </div>
                 <p>{quickCodeMenu.text.length > 110 ? `${quickCodeMenu.text.slice(0, 110)}...` : quickCodeMenu.text}</p>
+                <div className="quick-code-new">
+                  <input
+                    value={quickNewCodeName}
+                    placeholder="New code for this passage"
+                    aria-label="New quick code"
+                    onChange={(event) => setQuickNewCodeName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') createQuickCodeAndApply()
+                    }}
+                  />
+                  <button type="button" onClick={createQuickCodeAndApply} disabled={!quickNewCodeName.trim()}>
+                    <Plus size={15} aria-hidden="true" />
+                    Add & apply
+                  </button>
+                </div>
                 <div className="quick-code-chips">
                   {sortedCodes.map((code) => (
                     <button

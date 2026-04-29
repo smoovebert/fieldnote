@@ -1783,6 +1783,44 @@ button {
   line-height: 1.45;
 }
 
+.quick-code-new {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.quick-code-new input {
+  min-width: 0;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 9px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+}
+
+.quick-code-new button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #0d5c63;
+  border-radius: 7px;
+  padding: 0 9px;
+  background: #0d5c63;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.quick-code-new button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .quick-code-chips {
   display: flex;
   flex-wrap: wrap;
