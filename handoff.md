@@ -360,7 +360,7 @@ Typing in a missing context memo creates it automatically.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
-- Analyze is first-pass only: it has useful filters, saved queries, basic matrix coding, word frequency, code co-occurrence, and crosstabs, but no stored query result snapshots yet, and the crosstab cells are display-only until multi-attribute filtering lands.
+- Analyze is first-pass only: it has useful filters (now multi-attribute), saved queries, matrix coding, word frequency, code co-occurrence, and crosstabs (with cell drill-down), but no stored query result snapshots yet.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
 - Code hierarchy is first-pass only: parent assignment and tree display exist, but hierarchy drag-and-drop and code splitting are not implemented.
@@ -409,6 +409,7 @@ Implemented:
 - Added first-pass matrix coding in Analyze with codes by case or codes by attribute value, excerpt previews in cells, and matrix CSV export.
 - Added first-pass word frequency and code co-occurrence in Analyze, both driven by the active filters and exportable as CSV.
 - Added first-pass crosstabs in Analyze: codes × the cartesian product of two attributes, row/column totals, Count / Row % / Col % toggle, and CSV export.
+- Replaced the single attribute filter slot with an array of `(attributeId, value)` filters AND'd together; legacy saved queries auto-migrate on read. Crosstab cells now drill into the query view with a smart merge that preserves text/case filters and replaces conflicting code/attribute filters so the drilled query result count matches the cell count.
 - Moved CSV export into Report mode.
 
 Still needed:
@@ -419,14 +420,13 @@ Still needed:
 - Refine mode still needs hierarchy drag-and-drop, stronger code splitting, and deeper codebook cleanup tools.
 - Classify still needs attribute import, case groups, and better filtering.
 - M5.3 (query result snapshots): persist `fieldnote_query_results` rows for point-in-time captures.
-- Crosstab cell drill-down: requires extending the analyze filter model to multi-attribute filters (currently one slot) so a click can apply both `attr1 = v1` and `attr2 = v2` plus the row's code.
 - Report preview and Word/PDF export remain placeholders for MVP.
 
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should pick up M6 Report mode: report preview / formatted Word/PDF outputs, reusing `src/analyze/exportImage.ts`. Crosstab cells are display-only in v1; adding click-to-drill requires extending the analyze filter model to multiple attribute filters (and applying the row's code at the same time) — that work is a clean, scoped follow-up.
+Next implementation should pick up M6 Report mode: report preview / formatted Word/PDF outputs, reusing `src/analyze/exportImage.ts`.
 
 ## Design Direction
 
