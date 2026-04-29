@@ -3,8 +3,8 @@ import type { ChangeEvent, MouseEvent } from 'react'
 import {
   BarChart3,
   BookOpenText,
-  ChevronLeft as _ChevronLeft, // eslint-disable-line @typescript-eslint/no-unused-vars
-  ChevronRight as _ChevronRight, // eslint-disable-line @typescript-eslint/no-unused-vars
+  ChevronLeft,
+  ChevronRight,
   Cloud,
   Database,
   Download,
@@ -769,8 +769,7 @@ function App() {
   const [matrixColumnMode, setMatrixColumnMode] = useState<MatrixColumnMode>('case')
   const [matrixAttributeId, setMatrixAttributeId] = useState('')
   const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [sidebarCollapsed, _setSidebarCollapsed] = useState<boolean>(() => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem('fieldnote.sidebarCollapsed') === 'true'
   })
@@ -2462,19 +2461,51 @@ function App() {
         </div>
       </header>
 
-      <aside className="workspace-sidebar" aria-label="Workspace sidebar">
+      <aside
+        className={`workspace-sidebar ${sidebarCollapsed ? 'is-collapsed' : ''}`}
+        aria-label="Workspace sidebar"
+      >
+        <div className="sidebar-brand">
+          <div className="sidebar-mark">F</div>
+          <div className="sidebar-brand-text">
+            <span className="sidebar-eyebrow">Qualitative workspace</span>
+            <span className="sidebar-wordmark">Fieldnote</span>
+          </div>
+          <button
+            type="button"
+            className="sidebar-collapse-toggle"
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <ChevronRight size={14} aria-hidden="true" /> : <ChevronLeft size={14} aria-hidden="true" />}
+          </button>
+        </div>
+
         <button className="project-switcher project-nav-link" type="button" onClick={returnToProjects} title="Back to project home">
-          <FolderOpen size={16} aria-hidden="true" />
-          {projectTitle}
+          <span className="project-switcher-chevron" aria-hidden="true">▾</span>
+          <span className="project-switcher-name">{projectTitle}</span>
         </button>
 
         <nav className="mode-switcher" aria-label="Research modes">
-          {modeItems.map((mode) => (
-            <button key={mode.id} className={activeView === mode.id ? 'active' : ''} type="button" title={mode.description} onClick={() => selectView(mode.id)}>
-              <span>{mode.label}</span>
-              <small className={`mode-badge ${mode.status}`}>{mode.status === 'ready' ? 'Now' : mode.status === 'partial' ? 'MVP' : 'Soon'}</small>
-            </button>
-          ))}
+          {modeItems.map((mode) => {
+            const Icon = mode.icon
+            return (
+              <button
+                key={mode.id}
+                className={activeView === mode.id ? 'active' : ''}
+                type="button"
+                title={`${mode.label} — ${mode.description}`}
+                onClick={() => selectView(mode.id)}
+              >
+                <Icon size={15} className="mode-icon" aria-hidden="true" />
+                <span className="mode-label">{mode.label}</span>
+                <small className={`mode-badge ${mode.status}`}>
+                  {mode.status === 'ready' ? 'Now' : mode.status === 'partial' ? 'MVP' : 'Soon'}
+                </small>
+              </button>
+            )
+          })}
         </nav>
 
         {activeView === 'organize' && (
