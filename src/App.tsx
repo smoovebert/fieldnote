@@ -103,6 +103,12 @@ type CoOccurrenceRow = {
   excerpts: Excerpt[]
 }
 
+type QuickCodeMenu = {
+  text: string
+  x: number
+  y: number
+}
+
 type Memo = {
   id: string
   title: string
@@ -677,9 +683,12 @@ function App() {
   const [analyzePanel, setAnalyzePanel] = useState<AnalyzePanel>('query')
   const [matrixColumnMode, setMatrixColumnMode] = useState<MatrixColumnMode>('case')
   const [matrixAttributeId, setMatrixAttributeId] = useState('')
+  const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
+  const [quickCodeMenu, setQuickCodeMenu] = useState<QuickCodeMenu | null>(null)
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
+  const transcriptRef = useRef<HTMLDivElement>(null)
 
   const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
   const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
@@ -1505,7 +1514,13 @@ function App() {
 
   function selectView(view: WorkspaceView) {
     setActiveView(view)
+    setQuickCodeMenu(null)
     if (view === 'refine') setActiveCodeId(activeCodeId || codes[0]?.id || '')
+  }
+
+  function selectActiveSource(sourceId: string) {
+    setActiveSourceId(sourceId)
+    setQuickCodeMenu(null)
   }
 
   function selectSourceFolder(folder: SourceFolderFilter) {
@@ -1516,17 +1531,10 @@ function App() {
         : folder === 'All'
           ? activeSources[0]
           : activeSources.find((source) => source.folder === folder)
-    if (firstVisibleSource) setActiveSourceId(firstVisibleSource.id)
+    if (firstVisibleSource) selectActiveSource(firstVisibleSource.id)
   }
 
-  function codeSelection() {
-    const selectedText = window.getSelection()?.toString().trim()
-
-    if (!selectedText || activeView !== 'code') {
-      setSelectionHint(activeView === 'code' ? 'No text is selected yet. Drag across a phrase or paragraph first.' : 'Switch to Code mode before coding text.')
-      return
-    }
-
+  function applyCodesToText(selectedText: string) {
     let mergedExistingReference = false
 
     setExcerpts((current) => {
@@ -1556,7 +1564,43 @@ function App() {
       ]
     })
     setSelectionHint(`${mergedExistingReference ? 'Added codes to existing reference' : 'Coded selection'} as ${selectedCodeNames}.`)
+    setQuickCodeMenu(null)
     window.getSelection()?.removeAllRanges()
+  }
+
+  function codeSelection(selectedTextOverride?: string) {
+    const selectedText = selectedTextOverride?.trim() || window.getSelection()?.toString().trim()
+
+    if (!selectedText || activeView !== 'code') {
+      setSelectionHint(activeView === 'code' ? 'No text is selected yet. Drag across a phrase or paragraph first.' : 'Switch to Code mode before coding text.')
+      return
+    }
+
+    applyCodesToText(selectedText)
+  }
+
+  function captureQuickCodeSelection() {
+    if (!quickCodingEnabled || activeView !== 'code') return
+
+    window.requestAnimationFrame(() => {
+      const selection = window.getSelection()
+      const selectedText = selection?.toString().trim() ?? ''
+      const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null
+      const transcriptElement = transcriptRef.current
+      const anchorNode = selection?.anchorNode
+
+      if (!selectedText || !range || !transcriptElement || !anchorNode || !transcriptElement.contains(anchorNode)) {
+        setQuickCodeMenu(null)
+        return
+      }
+
+      const rect = range.getBoundingClientRect()
+      if (!rect.width && !rect.height) return
+
+      const x = Math.min(window.innerWidth - 220, Math.max(220, rect.left + rect.width / 2))
+      const y = Math.max(88, rect.top - 12)
+      setQuickCodeMenu({ text: selectedText, x, y })
+    })
   }
 
   function updateSource(sourceId: string, patch: Partial<Source>) {
@@ -1742,7 +1786,7 @@ function App() {
   function archiveActiveSource() {
     updateSource(activeSource.id, { archived: true })
     const nextSource = activeSources.find((source) => source.id !== activeSource.id) ?? sources.find((source) => source.id !== activeSource.id)
-    if (nextSource) setActiveSourceId(nextSource.id)
+    if (nextSource) selectActiveSource(nextSource.id)
   }
 
   function restoreActiveSource() {
@@ -1758,7 +1802,7 @@ function App() {
     setExcerpts((current) => current.filter((excerpt) => excerpt.sourceId !== activeSource.id))
     setMemos((current) => current.filter((memo) => !(memo.linkedType === 'source' && memo.linkedId === activeSource.id)))
     const nextSource = sources.find((source) => source.id !== activeSource.id)
-    if (nextSource) setActiveSourceId(nextSource.id)
+    if (nextSource) selectActiveSource(nextSource.id)
   }
 
   function updateMemo(memoId: string, patch: Partial<Memo>) {
@@ -1875,7 +1919,7 @@ function App() {
       })
     ).then((newSources) => {
       setSources((current) => [...newSources, ...current])
-      setActiveSourceId(newSources[0].id)
+      selectActiveSource(newSources[0].id)
       setSourceFolderFilter(targetFolder)
       setActiveView('organize')
       setSelectionHint(`${newSources.length} source${newSources.length === 1 ? '' : 's'} imported.`)
@@ -2345,7 +2389,7 @@ function App() {
             codes={codes}
             excerpts={excerpts}
             onSelectSource={(id) => {
-              setActiveSourceId(id)
+              selectActiveSource(id)
               if (activeView === 'organize' || activeView === 'classify') return
               setActiveView('code')
             }}
@@ -2426,7 +2470,7 @@ function App() {
                 const hasMemo = memos.some((memo) => memo.linkedType === 'source' && memo.linkedId === source.id && memo.body.trim())
 
                 return (
-                  <button key={source.id} className={source.id === activeSource.id ? 'source-row active' : 'source-row'} type="button" onClick={() => setActiveSourceId(source.id)}>
+                  <button key={source.id} className={source.id === activeSource.id ? 'source-row active' : 'source-row'} type="button" onClick={() => selectActiveSource(source.id)}>
                     <span>{source.title}</span>
                     <small>{source.kind}</small>
                     <small>{source.folder}</small>
@@ -2454,13 +2498,26 @@ function App() {
                 <strong>{selectedCodeNames}</strong>
                 <p>{selectionHint} Active codes can be combined.</p>
               </div>
-              <button type="button" className="primary-button" onClick={codeSelection}>
-                <Highlighter size={18} aria-hidden="true" />
-                Code selection
-              </button>
+              <div className="coding-action-group">
+                <label className="quick-toggle">
+                  <input
+                    type="checkbox"
+                    checked={quickCodingEnabled}
+                    onChange={(event) => {
+                      setQuickCodingEnabled(event.target.checked)
+                      setQuickCodeMenu(null)
+                    }}
+                  />
+                  Quick menu
+                </label>
+                <button type="button" className="primary-button" onClick={() => codeSelection()}>
+                  <Highlighter size={18} aria-hidden="true" />
+                  Code selection
+                </button>
+              </div>
             </div>
 
-            <div className="transcript" aria-label="Source text with line numbers">
+            <div className="transcript" ref={transcriptRef} aria-label="Source text with line numbers" onMouseUp={captureQuickCodeSelection} onKeyUp={captureQuickCodeSelection}>
               {highlightedTranscriptLines.map((line, lineIndex) => (
                 <div className="transcript-line" key={`${activeSource.id}-line-${lineIndex}`}>
                   <span className="line-number" aria-hidden="true">
@@ -2496,6 +2553,34 @@ function App() {
                 </div>
               ))}
             </div>
+            {quickCodingEnabled && quickCodeMenu && activeView === 'code' && (
+              <div className="quick-code-menu" style={{ left: quickCodeMenu.x, top: quickCodeMenu.y }}>
+                <div className="quick-code-heading">
+                  <strong>Code selection</strong>
+                  <button type="button" aria-label="Close quick coding menu" onClick={() => setQuickCodeMenu(null)}>
+                    x
+                  </button>
+                </div>
+                <p>{quickCodeMenu.text.length > 110 ? `${quickCodeMenu.text.slice(0, 110)}...` : quickCodeMenu.text}</p>
+                <div className="quick-code-chips">
+                  {sortedCodes.map((code) => (
+                    <button
+                      key={code.id}
+                      className={selectedCodeIds.includes(code.id) ? 'selected' : ''}
+                      type="button"
+                      onClick={() => toggleSelectedCode(code.id)}
+                    >
+                      <span style={{ background: code.color }} />
+                      {code.name}
+                    </button>
+                  ))}
+                </div>
+                <button className="primary-button" type="button" onClick={() => codeSelection(quickCodeMenu.text)}>
+                  <Highlighter size={16} aria-hidden="true" />
+                  Apply {selectedCodeIds.length} code{selectedCodeIds.length === 1 ? '' : 's'}
+                </button>
+              </div>
+            )}
           </article>
         )}
 
@@ -2613,14 +2698,14 @@ function App() {
               </div>
               {sources.map((source) => (
                 <div key={source.id} className={source.id === activeSource.id ? 'case-assignment-row active' : 'case-assignment-row'} role="row">
-                  <button type="button" onClick={() => setActiveSourceId(source.id)}>
+                  <button type="button" onClick={() => selectActiveSource(source.id)}>
                     <strong>{source.title}</strong>
                     <small>{source.kind}</small>
                   </button>
                   <select
                     value={cases.find((item) => item.sourceIds.includes(source.id))?.id ?? ''}
                     aria-label={`Assigned case for ${source.title}`}
-                    onFocus={() => setActiveSourceId(source.id)}
+                    onFocus={() => selectActiveSource(source.id)}
                     onChange={(event) => assignSourceToCase(source.id, event.target.value)}
                   >
                     <option value="">No case</option>
@@ -2804,7 +2889,7 @@ function App() {
 
                   return (
                     <div key={excerpt.id} className="query-result-row" role="row">
-                      <button type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
+                      <button type="button" onClick={() => selectActiveSource(excerpt.sourceId)}>
                         {excerpt.sourceTitle}
                       </button>
                       <span>{linkedCase?.name ?? '-'}</span>
@@ -2870,7 +2955,7 @@ function App() {
                         <div className={cell.excerpts.length ? 'matrix-cell has-results' : 'matrix-cell'} key={cell.column.id}>
                           <strong>{cell.excerpts.length}</strong>
                           {cell.excerpts.slice(0, 3).map((excerpt) => (
-                            <button key={excerpt.id} type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
+                            <button key={excerpt.id} type="button" onClick={() => selectActiveSource(excerpt.sourceId)}>
                               {excerpt.text}
                             </button>
                           ))}
@@ -2957,7 +3042,7 @@ function App() {
                       <strong>{row.count}</strong>
                       <div className="cooccurrence-excerpts">
                         {row.excerpts.slice(0, 3).map((excerpt) => (
-                          <button key={excerpt.id} type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
+                          <button key={excerpt.id} type="button" onClick={() => selectActiveSource(excerpt.sourceId)}>
                             {excerpt.text}
                           </button>
                         ))}

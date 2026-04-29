@@ -1598,6 +1598,7 @@ button {
 }
 
 .document-panel {
+  position: relative;
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -1710,6 +1711,114 @@ button {
 
 .transcript-line:hover {
   background: #f8fafc;
+}
+
+.coding-action-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.quick-toggle input {
+  accent-color: #0d5c63;
+}
+
+.quick-code-menu {
+  position: fixed;
+  z-index: 30;
+  width: min(380px, calc(100vw - 28px));
+  max-height: min(460px, calc(100vh - 120px));
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+  transform: translate(-50%, -100%);
+}
+
+.quick-code-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quick-code-heading strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.quick-code-heading button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8fafc;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.quick-code-menu p {
+  max-height: 74px;
+  overflow: auto;
+  margin: 0;
+  border-left: 2px solid #0d5c63;
+  padding-left: 9px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.quick-code-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.quick-code-chips button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 9px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.quick-code-chips button.selected {
+  border-color: #0d5c63;
+  background: #edfafa;
+  color: var(--ink);
+}
+
+.quick-code-chips span {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  flex: 0 0 auto;
+}
+
+.quick-code-menu .primary-button {
+  width: 100%;
+  min-height: 36px;
 }
 
 mark {

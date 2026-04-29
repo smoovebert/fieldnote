@@ -470,6 +470,7 @@ Center:
 - Source reader
 - Highlighted coded passages
 - Coding toolbar
+- Toggleable contextual quick coding menu after text selection
 
 Right:
 
@@ -481,6 +482,7 @@ Right:
 ### Main Actions
 
 - Code selection
+- Quick code selected text from contextual menu
 - Create quick code
 - Add note to coded selection
 - Open source memo
@@ -883,7 +885,7 @@ Tasks:
 - Right: active codes + source memo + recent references.
 - Add quick code creation.
 - Keep multi-code selection.
-- Improve selection feedback.
+- Improve selection feedback. First pass done with toggleable contextual quick coding menu.
 
 Acceptance criteria:
 
