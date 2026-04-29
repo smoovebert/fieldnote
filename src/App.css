@@ -2277,3 +2277,6 @@ textarea {
   font-weight: 600;
 }
 .chart-view-toggle-icon { margin-right: 4px; display: inline-flex; }
+.topn-control { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.topn-control input { width: 56px; padding: 2px 4px; font-size: 12px; }
+.topn-control-dual { display: inline-flex; gap: 12px; }
