@@ -841,7 +841,7 @@ function App() {
         new Set(
           attributeValues
             .filter((av) => av.attributeId === attributeId && av.value.trim())
-            .map((av) => av.value),
+            .map((av) => av.value.trim()),
         ),
       ).sort()
       cache.set(attributeId, values)
