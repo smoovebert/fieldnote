@@ -37,8 +37,7 @@ A new top-level Analyze surface, sibling to Matrix coding / Word frequency / Co-
 
 **Interaction**
 
-- Clicking a cell (excluding the totals row/column) adds two filter chips to the active analyze filter set: `attr1 = v1` and `attr2 = v2`. The code is not added — codes are the rows themselves.
-- Cells where either value is `(none)` are **not clickable** in v1: the existing analyze filter logic only matches non-empty attribute values, so a `(none)` filter chip would have no effect. The cell still renders its count; the cursor stays default. Adding a "missing-value" filter mode is a follow-up.
+- Cells are **display-only in v1** — there is no click-to-drill. Drilling correctly requires three filter chips at once (the row's code, `attr1 = v1`, and `attr2 = v2`), and the existing analyze filter model holds only a single attribute filter and was not designed to accept three coordinated chips from one click. Adding click-to-drill is a follow-up that depends on extending the analyze filter model to multi-attribute filters.
 - Toolbar percent mode switches the cell rendering only; underlying counts are unchanged.
 
 ## Cell semantics
@@ -80,7 +79,8 @@ If a source has no linked case at all, its references are excluded from the cros
 type CrosstabBuilderInput = {
   excerpts: Excerpt[]            // already filtered by active analyze filters
   codes: Code[]
-  cases: Case[]                  // includes attribute_values
+  cases: Case[]
+  attributeValues: AttributeValue[]   // passed alongside cases — the app stores them in a separate array
   attr1Id: string
   attr2Id: string
   topNRows: number
@@ -176,5 +176,5 @@ Manual / visual checks in dev:
 
 - Heatmap of crosstab counts (would need single-value-per-cell, so percent toggle would have to choose).
 - 3+ attribute crosstabs.
-- Cell-level "show me the excerpts" drill (Analyze already has the filter-chip path; a popover would be redundant).
+- **Click-to-drill on a cell**, which requires extending the analyze filter model to hold a second attribute filter (and applying the row code at the same time). This is the natural follow-up once the filter model is multi-attribute.
 - Stored query result snapshots (M5.3) remain pending and are unaffected by this work.
