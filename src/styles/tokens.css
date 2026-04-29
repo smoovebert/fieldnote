@@ -1,0 +1,188 @@
+/* ============================================================
+   Fieldnote — aesthetic direction pass
+   "Quiet lab tool" — cool neutrals, serif reader, dark sidebar
+   ============================================================ */
+
+:root {
+  /* Surface scale — cool, low-chroma greys leaning toward 220h */
+  --paper:        oklch(0.985 0.003 220);   /* main canvas / reader bg */
+  --paper-tint:   oklch(0.975 0.005 220);   /* subtly differentiated panes */
+  --pane:         oklch(0.965 0.006 220);   /* secondary surface */
+  --pane-deep:    oklch(0.945 0.008 220);   /* hover, zebra */
+  --rule:         oklch(0.905 0.010 220);   /* hairlines */
+  --rule-soft:    oklch(0.935 0.008 220);
+
+  /* Ink scale */
+  --ink:          oklch(0.22 0.02 240);     /* primary text */
+  --ink-2:        oklch(0.42 0.018 235);    /* secondary */
+  --ink-3:        oklch(0.58 0.014 230);    /* muted, captions */
+  --ink-4:        oklch(0.72 0.010 225);    /* placeholder, disabled */
+
+  /* Sidebar — dark, near-black with cool cast (not navy, not pure black) */
+  --shell:        oklch(0.215 0.012 235);
+  --shell-deep:   oklch(0.175 0.012 235);
+  --shell-rule:   oklch(0.30 0.012 235);
+  --shell-ink:    oklch(0.96 0.005 220);
+  --shell-ink-2:  oklch(0.72 0.012 225);
+  --shell-ink-3:  oklch(0.55 0.014 225);
+
+  /* Accents — single chroma family, hue varies. Used for code colors. */
+  --c-teal:    oklch(0.62 0.10 195);
+  --c-cyan:    oklch(0.66 0.08  220);
+  --c-indigo:  oklch(0.55 0.10  265);
+  --c-plum:    oklch(0.55 0.10  315);
+  --c-rose:    oklch(0.62 0.10   20);
+  --c-amber:   oklch(0.72 0.09   75);
+  --c-moss:    oklch(0.62 0.08  150);
+  --c-slate:   oklch(0.55 0.04  240);
+
+  /* Highlight tints (soft marker) — same hue as code dot, ~18% intensity */
+  --hl-teal:    color-mix(in oklch, var(--c-teal)   22%, transparent);
+  --hl-cyan:    color-mix(in oklch, var(--c-cyan)   22%, transparent);
+  --hl-indigo:  color-mix(in oklch, var(--c-indigo) 20%, transparent);
+  --hl-plum:    color-mix(in oklch, var(--c-plum)   20%, transparent);
+  --hl-rose:    color-mix(in oklch, var(--c-rose)   20%, transparent);
+  --hl-amber:   color-mix(in oklch, var(--c-amber)  28%, transparent);
+  --hl-moss:    color-mix(in oklch, var(--c-moss)   22%, transparent);
+
+  /* Single semantic accent — used sparingly, only for primary actions */
+  --action:       oklch(0.45 0.08 220);
+  --action-ink:   oklch(0.985 0.003 220);
+  --action-soft:  color-mix(in oklch, var(--action) 12%, var(--paper));
+
+  /* Type — Newsreader for reading, Inter Tight for UI, JetBrains Mono for meta */
+  --font-reader: "Newsreader", "Source Serif Pro", Georgia, serif;
+  --font-ui:     "Inter Tight", "Inter", -apple-system, system-ui, sans-serif;
+  --font-mono:   "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Type scale — UI is small and tight; reader is big and airy */
+  --t-meta:    11px / 1.3   var(--font-mono);
+  --t-label:   11px / 1.2   var(--font-ui);     /* tracked, uppercase */
+  --t-ui-sm:   12.5px / 1.4 var(--font-ui);
+  --t-ui:      13.5px / 1.45 var(--font-ui);
+  --t-ui-lg:   15px / 1.4   var(--font-ui);
+  --t-title:   18px / 1.3   var(--font-ui);
+  --t-display: 22px / 1.2   var(--font-ui);
+
+  --t-reader:    18px / 1.7  var(--font-reader);
+  --t-reader-lg: 20px / 1.75 var(--font-reader);
+
+  /* Spacing — 4px base */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* Radii — small and crisp */
+  --r-1: 3px;
+  --r-2: 5px;
+  --r-3: 8px;
+  --r-4: 12px;
+
+  /* Elevation — used very sparingly */
+  --shadow-pop:   0 1px 0 oklch(0 0 0 / 0.04), 0 8px 24px -8px oklch(0 0 0 / 0.12);
+  --shadow-sheet: 0 1px 0 oklch(0 0 0 / 0.04), 0 24px 60px -20px oklch(0 0 0 / 0.18);
+
+  /* Reader column */
+  --reader-measure: 64ch;     /* ~65 chars per line */
+  --reader-pad-x: 56px;
+  --reader-pad-y: 56px;
+}
+
+[data-theme="dark"] {
+  --paper:      oklch(0.18 0.012 235);
+  --paper-tint: oklch(0.20 0.012 235);
+  --pane:       oklch(0.22 0.012 235);
+  --pane-deep:  oklch(0.255 0.012 235);
+  --rule:       oklch(0.30 0.012 235);
+  --rule-soft:  oklch(0.26 0.012 235);
+
+  --ink:    oklch(0.96 0.005 220);
+  --ink-2:  oklch(0.78 0.012 225);
+  --ink-3:  oklch(0.62 0.014 225);
+  --ink-4:  oklch(0.48 0.012 225);
+
+  --shell:      oklch(0.13 0.010 235);
+  --shell-deep: oklch(0.10 0.010 235);
+  --shell-rule: oklch(0.22 0.012 235);
+
+  --action:     oklch(0.72 0.10 220);
+  --action-ink: oklch(0.13 0.010 235);
+  --action-soft: color-mix(in oklch, var(--action) 18%, var(--paper));
+
+  --hl-teal:    color-mix(in oklch, var(--c-teal)   30%, transparent);
+  --hl-cyan:    color-mix(in oklch, var(--c-cyan)   28%, transparent);
+  --hl-indigo:  color-mix(in oklch, var(--c-indigo) 30%, transparent);
+  --hl-plum:    color-mix(in oklch, var(--c-plum)   28%, transparent);
+  --hl-rose:    color-mix(in oklch, var(--c-rose)   28%, transparent);
+  --hl-amber:   color-mix(in oklch, var(--c-amber)  32%, transparent);
+  --hl-moss:    color-mix(in oklch, var(--c-moss)   28%, transparent);
+}
+
+/* ----- shared primitives -------------------------------------- */
+.fn-root {
+  font: var(--t-ui);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11", "calt";
+  letter-spacing: -0.005em;
+}
+
+.fn-label {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.fn-meta {
+  font: var(--t-meta);
+  color: var(--ink-3);
+  font-feature-settings: "tnum", "zero";
+}
+
+.fn-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum", "zero";
+}
+
+.fn-rule {
+  height: 1px;
+  background: var(--rule);
+  border: 0;
+  margin: 0;
+}
+
+.fn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  flex: 0 0 auto;
+  display: inline-block;
+}
+
+.fn-dot--sq {
+  border-radius: 1px;
+}
+
+/* Marker highlight — the signature element */
+.fn-mark {
+  background: var(--hl, var(--hl-cyan));
+  padding: 1px 2px;
+  margin: 0 -2px;
+  border-radius: 1px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.fn-mark--double {
+  /* layered marker — for overlapping codes */
+  background:
+    linear-gradient(transparent 60%, var(--hl, var(--hl-cyan)) 60%);
+  padding: 1px 0;
+}
