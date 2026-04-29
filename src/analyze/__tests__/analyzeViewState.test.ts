@@ -29,7 +29,7 @@ describe('serialize / deserialize round-trip', () => {
       wordFreq: { view: 'cloud', topN: 50 },
       cooccur:  { view: 'network', topN: 15 },
       matrix:   { view: 'bars', topNRows: 20, topNCols: 25 },
-      crosstab: { attr1Id: null, attr2Id: null, percentMode: 'count', topNRows: 30, topNCols: 40 },
+      crosstab: { attr1Id: 'x', attr2Id: 'y', percentMode: 'col', topNRows: 12, topNCols: 22 },
     }
     expect(deserialize({ analyzeView: serialize(state) })).toEqual(state)
   })
@@ -123,5 +123,15 @@ describe('analyzeViewState — crosstab', () => {
       },
     })
     expect(result.crosstab.percentMode).toBe('count')
+  })
+
+  it('coerces empty-string attr IDs to null', () => {
+    const result = deserialize({
+      analyzeView: {
+        crosstab: { attr1Id: '', attr2Id: 'x', percentMode: 'count', topNRows: 30, topNCols: 40 },
+      },
+    })
+    expect(result.crosstab.attr1Id).toBe(null)
+    expect(result.crosstab.attr2Id).toBe('x')
   })
 })
