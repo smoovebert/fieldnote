@@ -164,7 +164,7 @@ That is intentional for MVP, but it is not the full product definition.
 - nested code hierarchy
 - annotations and relationships
 - full source search and formal queries
-- matrix coding and crosstabs
+- advanced matrix coding and crosstabs
 - visualizations
 - AI-assisted analysis
 - project sharing and team workflows
@@ -936,7 +936,7 @@ Tasks:
 - Text search. First pass done.
 - Word frequency.
 - Code co-occurrence.
-- Basic matrix coding.
+- Basic matrix coding. First pass done for codes by case and codes by attribute value.
 - Filters by source/code/case attribute. First pass done for code, case, and attribute value.
 
 Acceptance criteria:
@@ -972,19 +972,10 @@ Acceptance criteria:
 
 ## Immediate Next Code Pass
 
-The next code pass should implement **Milestone 1: Mode Shell**.
+The mode shell is now in place. The next code pass should deepen one of the partial MVP surfaces instead of adding a new mode.
 
-Do not build new features first.
+Best candidates:
 
-The app should first become structurally correct:
-
-```text
-Organize
-Code
-Refine
-Classify
-Analyze
-Report
-```
-
-Once that is in place, continue mode by mode.
+- Analyze: word frequency or code co-occurrence.
+- Report: report preview and formatted Word/PDF exports.
+- Refine: parent-child code hierarchy.

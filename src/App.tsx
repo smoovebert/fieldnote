@@ -28,6 +28,8 @@ import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 type SourceFolderFilter = 'All' | 'Archived' | string
+type AnalyzePanel = 'query' | 'matrix'
+type MatrixColumnMode = 'case' | 'attribute'
 
 type Code = {
   id: string
@@ -79,6 +81,12 @@ type SavedQuery = {
   name: string
   queryType: 'coded_excerpt'
   definition: QueryDefinition
+}
+
+type MatrixColumn = {
+  id: string
+  label: string
+  caseIds: string[]
 }
 
 type Memo = {
@@ -553,6 +561,9 @@ function App() {
   const [queryAttributeValue, setQueryAttributeValue] = useState('')
   const [queryName, setQueryName] = useState('')
   const [activeSavedQueryId, setActiveSavedQueryId] = useState('')
+  const [analyzePanel, setAnalyzePanel] = useState<AnalyzePanel>('query')
+  const [matrixColumnMode, setMatrixColumnMode] = useState<MatrixColumnMode>('case')
+  const [matrixAttributeId, setMatrixAttributeId] = useState('')
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
@@ -872,6 +883,7 @@ function App() {
     setQueryAttributeValue('')
     setQueryName('')
     setActiveSavedQueryId('')
+    setAnalyzePanel('query')
     setSourceFolderFilter('All')
     hasLoadedRemoteProject.current = true
     setSaveStatus('Project open.')
@@ -1107,6 +1119,58 @@ function App() {
     })
     return Array.from(new Map(matchingCases.map((item) => [item.id, item])).values())
   }, [analyzeResults, caseBySourceId])
+
+  const activeMatrixAttribute = attributes.find((attribute) => attribute.id === matrixAttributeId) ?? attributes[0]
+  const matrixRows = useMemo(() => {
+    if (queryCodeId) {
+      const selectedCode = codes.find((code) => code.id === queryCodeId)
+      return selectedCode ? [selectedCode] : []
+    }
+    return codes
+  }, [codes, queryCodeId])
+  const matrixColumns = useMemo<MatrixColumn[]>(() => {
+    if (matrixColumnMode === 'case') {
+      return cases.map((item) => ({
+        id: item.id,
+        label: item.name,
+        caseIds: [item.id],
+      }))
+    }
+
+    if (!activeMatrixAttribute) return []
+
+    const valueGroups = new Map<string, string[]>()
+    attributeValues.forEach((attributeValue) => {
+      if (attributeValue.attributeId !== activeMatrixAttribute.id) return
+      const value = attributeValue.value.trim()
+      if (!value) return
+      valueGroups.set(value, [...(valueGroups.get(value) ?? []), attributeValue.caseId])
+    })
+
+    return Array.from(valueGroups.entries()).map(([value, caseIds]) => ({
+      id: `${activeMatrixAttribute.id}:${value}`,
+      label: value,
+      caseIds,
+    }))
+  }, [activeMatrixAttribute, attributeValues, cases, matrixColumnMode])
+  const matrixResults = useMemo(() => {
+    const caseIdBySourceId = new Map<string, string>()
+    cases.forEach((item) => item.sourceIds.forEach((sourceId) => caseIdBySourceId.set(sourceId, item.id)))
+
+    return matrixRows.map((code) => ({
+      code,
+      cells: matrixColumns.map((column) => {
+        const columnCaseIds = new Set(column.caseIds)
+        const matches = analyzeResults.filter((excerpt) => {
+          const linkedCaseId = caseIdBySourceId.get(excerpt.sourceId)
+          return excerpt.codeIds.includes(code.id) && Boolean(linkedCaseId && columnCaseIds.has(linkedCaseId))
+        })
+
+        return { column, excerpts: matches }
+      }),
+    }))
+  }, [analyzeResults, cases, matrixColumns, matrixRows])
+  const matrixTotalReferences = matrixResults.reduce((total, row) => total + row.cells.reduce((rowTotal, cell) => rowTotal + cell.excerpts.length, 0), 0)
 
   const activeQueryFilters = [
     queryText.trim() ? `Text contains "${queryText.trim()}"` : '',
@@ -1456,6 +1520,7 @@ function App() {
     applyQueryDefinition(query.definition)
     setActiveSavedQueryId(query.id)
     setQueryName(query.name)
+    setAnalyzePanel('query')
   }
 
   function deleteSavedQuery(queryId: string) {
@@ -1739,6 +1804,29 @@ function App() {
     downloadCsv(rows, 'fieldnote-query-results.csv')
   }
 
+  function exportMatrixCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const columnType = matrixColumnMode === 'case' ? 'Case' : activeMatrixAttribute?.name ?? 'Attribute'
+    const rows = [
+      ['Project', 'Row code', 'Column type', 'Column', 'Count', 'Excerpt sources', 'Excerpts', 'Active filters'],
+      ...matrixResults.flatMap((row) =>
+        row.cells.map((cell) => [
+          projectTitle,
+          row.code.name,
+          columnType,
+          cell.column.label,
+          String(cell.excerpts.length),
+          cell.excerpts.map((excerpt) => excerpt.sourceTitle).join('; '),
+          cell.excerpts.map((excerpt) => excerpt.text).join(' | '),
+          activeQueryFilters.join('; '),
+        ])
+      ),
+    ]
+
+    downloadCsv(rows, 'fieldnote-matrix-coding.csv')
+  }
+
   function exportCodebookCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
@@ -2009,6 +2097,7 @@ function App() {
             cases={cases}
             savedQueries={savedQueries}
             activeSavedQueryId={activeSavedQueryId}
+            analyzePanel={analyzePanel}
             codes={codes}
             excerpts={excerpts}
             onSelectSource={(id) => {
@@ -2021,10 +2110,12 @@ function App() {
               setActiveView('refine')
             }}
             onUseCurrentQuery={() => {
+              setAnalyzePanel('query')
               setActiveSavedQueryId('')
               setQueryName('')
             }}
             onOpenSavedQuery={openSavedQuery}
+            onOpenMatrix={() => setAnalyzePanel('matrix')}
           />
         </section>
 
@@ -2335,10 +2426,21 @@ function App() {
           <article className="detail-card analyze-surface">
             <div className="source-register-heading">
               <div>
-                <p className="detail-kicker">Query builder</p>
-                <h2>{activeSavedQuery?.name ?? 'Coded excerpt query'}</h2>
+                <p className="detail-kicker">Analyze</p>
+                <h2>{analyzePanel === 'matrix' ? 'Matrix coding' : activeSavedQuery?.name ?? 'Coded excerpt query'}</h2>
               </div>
-              <span className="reference-count">{analyzeResults.length} results</span>
+              <span className="reference-count">{analyzePanel === 'matrix' ? `${matrixTotalReferences} matrix references` : `${analyzeResults.length} results`}</span>
+            </div>
+
+            <div className="analyze-tabs" role="tablist" aria-label="Analyze views">
+              <button className={analyzePanel === 'query' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('query')}>
+                <Search size={15} aria-hidden="true" />
+                Query results
+              </button>
+              <button className={analyzePanel === 'matrix' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('matrix')}>
+                <Rows3 size={15} aria-hidden="true" />
+                Matrix coding
+              </button>
             </div>
 
             <div className="query-builder">
@@ -2416,40 +2518,109 @@ function App() {
               </button>
             </div>
 
-            <div className="query-results-table" role="table" aria-label="Analyze query results">
-              <div className="query-result-row query-result-head" role="row">
-                <span>Source</span>
-                <span>Case</span>
-                <span>Codes</span>
-                <span>Excerpt</span>
-                <span>Note</span>
-              </div>
-              {analyzeResults.map((excerpt) => {
-                const linkedCase = caseBySourceId.get(excerpt.sourceId)
-                const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
-
-                return (
-                  <div key={excerpt.id} className="query-result-row" role="row">
-                    <button type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
-                      {excerpt.sourceTitle}
-                    </button>
-                    <span>{linkedCase?.name ?? '-'}</span>
-                    <span>{excerptCodes.map((code) => code.name).join(', ')}</span>
-                    <p>{excerpt.text}</p>
-                    <input value={excerpt.note} placeholder="Add note" onChange={(event) => updateExcerptNote(excerpt.id, event.target.value)} />
-                  </div>
-                )
-              })}
-              {!analyzeResults.length && (
-                <div className="empty-table-state">
-                  <strong>No matching excerpts</strong>
-                  <span>Loosen the filters or add more coded references.</span>
+            {analyzePanel === 'query' && (
+              <div className="query-results-table" role="table" aria-label="Analyze query results">
+                <div className="query-result-row query-result-head" role="row">
+                  <span>Source</span>
+                  <span>Case</span>
+                  <span>Codes</span>
+                  <span>Excerpt</span>
+                  <span>Note</span>
                 </div>
-              )}
-            </div>
+                {analyzeResults.map((excerpt) => {
+                  const linkedCase = caseBySourceId.get(excerpt.sourceId)
+                  const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
+
+                  return (
+                    <div key={excerpt.id} className="query-result-row" role="row">
+                      <button type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
+                        {excerpt.sourceTitle}
+                      </button>
+                      <span>{linkedCase?.name ?? '-'}</span>
+                      <span>{excerptCodes.map((code) => code.name).join(', ')}</span>
+                      <p>{excerpt.text}</p>
+                      <input value={excerpt.note} placeholder="Add note" onChange={(event) => updateExcerptNote(excerpt.id, event.target.value)} />
+                    </div>
+                  )
+                })}
+                {!analyzeResults.length && (
+                  <div className="empty-table-state">
+                    <strong>No matching excerpts</strong>
+                    <span>Loosen the filters or add more coded references.</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {analyzePanel === 'matrix' && (
+              <>
+                <div className="matrix-toolbar">
+                  <label className="property-field">
+                    <span>Columns</span>
+                    <select value={matrixColumnMode} onChange={(event) => setMatrixColumnMode(event.target.value as MatrixColumnMode)}>
+                      <option value="case">Cases</option>
+                      <option value="attribute">Attribute values</option>
+                    </select>
+                  </label>
+                  <label className="property-field">
+                    <span>Attribute</span>
+                    <select
+                      value={activeMatrixAttribute?.id ?? ''}
+                      disabled={matrixColumnMode !== 'attribute'}
+                      onChange={(event) => setMatrixAttributeId(event.target.value)}
+                    >
+                      {attributes.map((attribute) => (
+                        <option key={attribute.id} value={attribute.id}>
+                          {attribute.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="secondary-button" type="button" onClick={exportMatrixCsv}>
+                    <Download size={16} aria-hidden="true" />
+                    Export matrix CSV
+                  </button>
+                </div>
+                <div className="matrix-table" role="table" aria-label="Matrix coding results">
+                  <div className="matrix-row matrix-head" role="row" style={{ gridTemplateColumns: `minmax(190px, 220px) repeat(${Math.max(matrixColumns.length, 1)}, minmax(190px, 1fr))` }}>
+                    <span>Code</span>
+                    {matrixColumns.map((column) => (
+                      <span key={column.id}>{column.label}</span>
+                    ))}
+                    {!matrixColumns.length && <span>No columns</span>}
+                  </div>
+                  {matrixResults.map((row) => (
+                    <div key={row.code.id} className="matrix-row" role="row" style={{ gridTemplateColumns: `minmax(190px, 220px) repeat(${Math.max(matrixColumns.length, 1)}, minmax(190px, 1fr))` }}>
+                      <div className="matrix-code-label">
+                        <span className="code-dot" style={{ background: row.code.color }} />
+                        <strong>{row.code.name}</strong>
+                      </div>
+                      {row.cells.map((cell) => (
+                        <div className={cell.excerpts.length ? 'matrix-cell has-results' : 'matrix-cell'} key={cell.column.id}>
+                          <strong>{cell.excerpts.length}</strong>
+                          {cell.excerpts.slice(0, 3).map((excerpt) => (
+                            <button key={excerpt.id} type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
+                              {excerpt.text}
+                            </button>
+                          ))}
+                          {cell.excerpts.length > 3 && <small>+{cell.excerpts.length - 3} more</small>}
+                        </div>
+                      ))}
+                      {!row.cells.length && <div className="matrix-cell">No case or attribute columns yet.</div>}
+                    </div>
+                  ))}
+                  {!matrixResults.length && (
+                    <div className="empty-table-state">
+                      <strong>No matrix rows yet</strong>
+                      <span>Add codes and coded excerpts, then return to this matrix.</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
-              <span>Matrix coding, co-occurrence, word frequency, and saved queries.</span>
+              <span>Co-occurrence, word frequency, crosstabs, and matrix drill-down editing.</span>
             </div>
           </article>
         )}
@@ -2689,9 +2860,9 @@ function App() {
                 Delete saved query
               </button>
             )}
-            <button className="secondary-button" type="button" onClick={exportAnalyzeCsv}>
+            <button className="secondary-button" type="button" onClick={analyzePanel === 'matrix' ? exportMatrixCsv : exportAnalyzeCsv}>
               <Download size={17} aria-hidden="true" />
-              Export query CSV
+              {analyzePanel === 'matrix' ? 'Export matrix CSV' : 'Export query CSV'}
             </button>
           </section>
         )}
@@ -2754,12 +2925,14 @@ function ListView({
   cases,
   savedQueries,
   activeSavedQueryId,
+  analyzePanel,
   codes,
   excerpts,
   onSelectSource,
   onSelectCode,
   onUseCurrentQuery,
   onOpenSavedQuery,
+  onOpenMatrix,
 }: {
   activeView: WorkspaceView
   activeSourceId: string
@@ -2769,12 +2942,14 @@ function ListView({
   cases: Case[]
   savedQueries: SavedQuery[]
   activeSavedQueryId: string
+  analyzePanel: AnalyzePanel
   codes: Code[]
   excerpts: Excerpt[]
   onSelectSource: (id: string) => void
   onSelectCode: (id: string) => void
   onUseCurrentQuery: () => void
   onOpenSavedQuery: (query: SavedQuery) => void
+  onOpenMatrix: () => void
 }) {
   return (
     <>
@@ -2829,7 +3004,7 @@ function ListView({
       {activeView === 'analyze' && (
         <>
           <button
-            className={activeSavedQueryId ? 'list-item' : 'list-item active'}
+            className={!activeSavedQueryId && analyzePanel === 'query' ? 'list-item active' : 'list-item'}
             type="button"
             onClick={onUseCurrentQuery}
           >
@@ -2840,7 +3015,7 @@ function ListView({
             </div>
           </button>
           {savedQueries.map((query) => (
-            <button className={query.id === activeSavedQueryId ? 'list-item active' : 'list-item'} key={query.id} type="button" onClick={() => onOpenSavedQuery(query)}>
+            <button className={query.id === activeSavedQueryId && analyzePanel === 'query' ? 'list-item active' : 'list-item'} key={query.id} type="button" onClick={() => onOpenSavedQuery(query)}>
               <FileText size={17} aria-hidden="true" />
               <div>
                 <strong>{query.name}</strong>
@@ -2848,11 +3023,11 @@ function ListView({
               </div>
             </button>
           ))}
-          <button className="list-item" type="button">
+          <button className={analyzePanel === 'matrix' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenMatrix}>
             <Rows3 size={17} aria-hidden="true" />
             <div>
               <strong>Matrix coding</strong>
-              <span>Not implemented yet</span>
+              <span>Codes by case or attribute</span>
             </div>
           </button>
         </>

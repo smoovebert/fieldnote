@@ -802,6 +802,12 @@ This phase should introduce Supabase Storage or another durable file store.
 
 Status: first MVP pass started in `20260429010000_add_saved_queries.sql`.
 
+Current app coverage:
+
+- saved coded-excerpt queries are persisted in `fieldnote_queries`
+- first-pass matrix coding is computed client-side from normalized codes, cases, attributes, and coded references
+- matrix results are exportable as CSV, but not yet stored as `fieldnote_query_results`
+
 Create:
 
 ```text
