@@ -343,6 +343,7 @@ Typing in a missing context memo creates it automatically.
 - Matrix coding respects the active query filters, so a saved query can narrow the matrix before comparing codes by case or attribute value.
 - Word frequency is implemented as a first MVP pass over the current filtered coded excerpts, with term counts, excerpt counts, weight bars, and CSV export.
 - Code co-occurrence is implemented as a first MVP pass over the current filtered coded excerpts, counting code pairs that appear on the same excerpt, with excerpt previews and CSV export.
+- Crosstabs is implemented as a first MVP pass: codes × the cartesian product of two attributes, with row/column totals, a Count / Row % / Col % toggle, and CSV export. Cases missing a value for either attribute bucket into a `(none)` value. Cells are display-only in v1; click-to-drill ships once the analyze filter model supports multiple attribute filters.
 - The Analyze right rail now summarizes result count, matching cases, matching codes, active filters, and exports the active Analyze surface.
 - Word frequency, code co-occurrence, and matrix coding each have a 3-way toggle: Table / Chart A / Chart B.
   - Word frequency → Bar chart, Word cloud, Table.
@@ -359,7 +360,7 @@ Typing in a missing context memo creates it automatically.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
-- Analyze is first-pass only: it has useful filters, saved queries, basic matrix coding, word frequency, and code co-occurrence, but not crosstabs, stored query result snapshots, or visualizations yet.
+- Analyze is first-pass only: it has useful filters, saved queries, basic matrix coding, word frequency, code co-occurrence, and crosstabs, but no stored query result snapshots yet, and the crosstab cells are display-only until multi-attribute filtering lands.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
 - Code hierarchy is first-pass only: parent assignment and tree display exist, but hierarchy drag-and-drop and code splitting are not implemented.
@@ -407,6 +408,7 @@ Implemented:
 - Rebuilt Analyze into a query builder with text/code/case/attribute filters, result table, query summary, and query CSV export.
 - Added first-pass matrix coding in Analyze with codes by case or codes by attribute value, excerpt previews in cells, and matrix CSV export.
 - Added first-pass word frequency and code co-occurrence in Analyze, both driven by the active filters and exportable as CSV.
+- Added first-pass crosstabs in Analyze: codes × the cartesian product of two attributes, row/column totals, Count / Row % / Col % toggle, and CSV export.
 - Moved CSV export into Report mode.
 
 Still needed:
@@ -416,17 +418,15 @@ Still needed:
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
 - Refine mode still needs hierarchy drag-and-drop, stronger code splitting, and deeper codebook cleanup tools.
 - Classify still needs attribute import, case groups, and better filtering.
-- M5.2 (crosstabs): codes × N attribute groups, totals, percentages.
 - M5.3 (query result snapshots): persist `fieldnote_query_results` rows for point-in-time captures.
+- Crosstab cell drill-down: requires extending the analyze filter model to multi-attribute filters (currently one slot) so a click can apply both `attr1 = v1` and `attr2 = v2` plus the row's code.
 - Report preview and Word/PDF export remain placeholders for MVP.
 
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should pick up either:
-- Milestone B (M6 Report mode): report preview / formatted Word/PDF outputs, reusing `src/analyze/exportImage.ts`.
-- Or M5.2 (crosstabs) before Milestone B if the analysis depth matters more than report depth right now.
+Next implementation should pick up M6 Report mode: report preview / formatted Word/PDF outputs, reusing `src/analyze/exportImage.ts`. Crosstab cells are display-only in v1; adding click-to-drill requires extending the analyze filter model to multiple attribute filters (and applying the row's code at the same time) — that work is a clean, scoped follow-up.
 
 ## Design Direction
 
