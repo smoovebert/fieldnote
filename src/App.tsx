@@ -1711,16 +1711,11 @@ function App() {
         </header>
 
         <section className="project-home">
-          <div className="project-home-copy">
-            <p className="eyebrow">Project Home</p>
-            <h2>Choose a study before you organize, code, refine, or analyze.</h2>
-            <p>Each project keeps its own sources, codebook, memos, excerpts, and later its own cases and reports.</p>
-          </div>
-
-          <section className="project-create-card">
+          <div className="project-home-heading">
             <div>
-              <h2>New project</h2>
-              <p>Start a separate workspace for another study, class, grant, dissertation, or paper.</p>
+              <p className="eyebrow">Project Home</p>
+              <h2>Research projects</h2>
+              <p>Choose a study, or start a separate workspace for another class, grant, dissertation, or paper.</p>
             </div>
             <div className="new-project-row">
               <input
@@ -1737,7 +1732,7 @@ function App() {
                 Create
               </button>
             </div>
-          </section>
+          </div>
 
           <section className="project-list-card">
             <div className="project-list-heading">
@@ -1748,19 +1743,24 @@ function App() {
             </div>
 
             {projectRows.length ? (
-              <div className="project-list">
+              <div className="project-list" role="table" aria-label="Research projects">
+                <div className="project-row project-row-head" role="row">
+                  <span>Project</span>
+                  <span>Sources</span>
+                  <span>Codes</span>
+                  <span>References</span>
+                  <span>Updated</span>
+                </div>
                 {projectRows.map((project) => (
-                  <button key={project.id} className="project-tile" type="button" onClick={() => void applyProject(project)}>
-                    <span className="project-tile-icon">
-                      <FolderOpen size={19} aria-hidden="true" />
-                    </span>
+                  <button key={project.id} className="project-row" type="button" role="row" onClick={() => void applyProject(project)}>
                     <span>
                       <strong>{project.title || 'Untitled project'}</strong>
-                      <small>
-                        {(project.sources?.length ?? 0) || 1} sources - {(project.codes?.length ?? 0) || defaultProject.codes.length} codes -{' '}
-                        {(project.excerpts?.length ?? 0) || 0} references
-                      </small>
+                      <small>Open workspace</small>
                     </span>
+                    <span>{(project.sources?.length ?? 0) || 1}</span>
+                    <span>{(project.codes?.length ?? 0) || defaultProject.codes.length}</span>
+                    <span>{(project.excerpts?.length ?? 0) || 0}</span>
+                    <span>{project.updated_at ? new Date(project.updated_at).toLocaleDateString() : '-'}</span>
                   </button>
                 ))}
               </div>

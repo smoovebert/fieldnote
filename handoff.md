@@ -340,6 +340,7 @@ Implemented:
 
 - Project Home above all work modes.
 - Multiple projects per signed-in user.
+- Project Home uses a compact project register with create controls and project rows, instead of separate floating cards.
 - Left-rail mode switcher:
   - Organize
   - Code
