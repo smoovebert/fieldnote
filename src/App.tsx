@@ -1481,6 +1481,24 @@ function App() {
     })
   }, [analyzeResults, codes, cases, attributeValues, analyzeView.crosstab])
 
+  function handleCrosstabCellSelect(codeId: string, v1: string, v2: string) {
+    const attr1Id = analyzeView.crosstab.attr1Id
+    const attr2Id = analyzeView.crosstab.attr2Id
+    if (!attr1Id || !attr2Id) return
+    setQueryCodeId(codeId)
+    setQueryAttributes((prev) => {
+      const filtered = prev.filter(
+        (f) => f.attributeId !== attr1Id && f.attributeId !== attr2Id,
+      )
+      return [
+        ...filtered,
+        { attributeId: attr1Id, value: v1 },
+        { attributeId: attr2Id, value: v2 },
+      ]
+    })
+    setAnalyzePanel('query')
+  }
+
   const analyzePanelTitle =
     analyzePanel === 'matrix'
       ? 'Matrix coding'
@@ -3230,6 +3248,7 @@ function App() {
                   onPercentModeChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, percentMode: next } }))}
                   onTopNRowsChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, topNRows: next } }))}
                   onTopNColsChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, topNCols: next } }))}
+                  onCellSelect={handleCrosstabCellSelect}
                   onExportCsv={() => {
                     if (!crosstabResult) return
                     const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
