@@ -1126,6 +1126,33 @@ button {
   border-top: 1px solid var(--line);
 }
 
+.analysis-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.analysis-toolbar span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.analysis-toolbar .secondary-button {
+  width: auto;
+  margin: 0;
+  padding: 0 13px;
+  white-space: nowrap;
+}
+
+.analysis-table,
+.cooccurrence-table {
+  overflow-x: auto;
+  border-top: 1px solid var(--line);
+}
+
 .query-result-row {
   min-width: 920px;
   display: grid;
@@ -1256,6 +1283,93 @@ button {
 .matrix-cell small {
   color: var(--muted);
   font-size: 12px;
+}
+
+.analysis-row,
+.cooccurrence-row {
+  min-width: 720px;
+  display: grid;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 12px;
+}
+
+.analysis-row {
+  grid-template-columns: minmax(180px, 1fr) minmax(80px, 0.35fr) minmax(90px, 0.35fr) minmax(240px, 1.4fr);
+}
+
+.cooccurrence-row {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(80px, 0.25fr) minmax(360px, 1.4fr);
+  align-items: start;
+}
+
+.analysis-head,
+.cooccurrence-head {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.analysis-row strong,
+.cooccurrence-row strong {
+  color: var(--ink);
+}
+
+.analysis-row span,
+.cooccurrence-row span,
+.cooccurrence-row small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.frequency-bar {
+  height: 8px;
+  overflow: hidden;
+  background: #eef2f7;
+}
+
+.frequency-bar span {
+  display: block;
+  height: 100%;
+  background: #0d5c63;
+}
+
+.cooccurrence-pair,
+.cooccurrence-excerpts {
+  display: grid;
+  gap: 7px;
+}
+
+.cooccurrence-pair span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-weight: 760;
+}
+
+.cooccurrence-pair i {
+  width: 9px;
+  height: 9px;
+  border-radius: 99px;
+  flex: 0 0 auto;
+}
+
+.cooccurrence-excerpts button {
+  display: -webkit-box;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #1558a8;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .query-filter-list {

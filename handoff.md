@@ -322,6 +322,7 @@ Typing in a missing context memo creates it automatically.
 - Memos CSV export includes project, memo title, linked type, linked source/code/project, and memo body.
 - Analyze mode can export the current query result set as CSV.
 - Analyze mode can export the current matrix coding table as CSV.
+- Analyze mode can export current word frequency and code co-occurrence results as CSV.
 
 ### Analyze
 
@@ -331,7 +332,9 @@ Typing in a missing context memo creates it automatically.
 - Users can save the current Analyze filter setup as a named saved query, reopen it from the Analyze left rail, update it, delete it, and export its current results.
 - Matrix coding is now implemented as a first MVP pass: codes as rows, cases or attribute values as columns, and matching coded excerpts inside each cell.
 - Matrix coding respects the active query filters, so a saved query can narrow the matrix before comparing codes by case or attribute value.
-- The Analyze right rail now summarizes result count, matching cases, matching codes, active filters, and query/matrix export.
+- Word frequency is implemented as a first MVP pass over the current filtered coded excerpts, with term counts, excerpt counts, weight bars, and CSV export.
+- Code co-occurrence is implemented as a first MVP pass over the current filtered coded excerpts, counting code pairs that appear on the same excerpt, with excerpt previews and CSV export.
+- The Analyze right rail now summarizes result count, matching cases, matching codes, active filters, and exports the active Analyze surface.
 
 ## Current Known Issues
 
@@ -339,7 +342,7 @@ Typing in a missing context memo creates it automatically.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
-- Analyze is first-pass only: it has useful filters, saved queries, and basic matrix coding, but not word frequency or co-occurrence yet.
+- Analyze is first-pass only: it has useful filters, saved queries, basic matrix coding, word frequency, and code co-occurrence, but not crosstabs, stored query result snapshots, or visualizations yet.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
 - Code hierarchy is first-pass only: parent assignment and tree display exist, but hierarchy drag-and-drop and code splitting are not implemented.
@@ -386,6 +389,7 @@ Implemented:
 - Added initial Classify, Analyze, and Report work surfaces.
 - Rebuilt Analyze into a query builder with text/code/case/attribute filters, result table, query summary, and query CSV export.
 - Added first-pass matrix coding in Analyze with codes by case or codes by attribute value, excerpt previews in cells, and matrix CSV export.
+- Added first-pass word frequency and code co-occurrence in Analyze, both driven by the active filters and exportable as CSV.
 - Moved CSV export into Report mode.
 
 Still needed:
@@ -395,16 +399,16 @@ Still needed:
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
 - Refine mode still needs hierarchy drag-and-drop, stronger code splitting, and deeper codebook cleanup tools.
 - Classify still needs attribute import, case groups, and better filtering.
-- Advanced Analyze/Report features like word frequency, co-occurrence, report preview, and Word/PDF export are intentionally placeholders for MVP.
+- Advanced Analyze/Report features like crosstabs, visualizations, report preview, and Word/PDF export are intentionally placeholders for MVP.
 
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should continue from basic analysis/refinement into either co-occurrence/word-frequency or richer report outputs:
+Next implementation should continue from basic analysis/refinement into either crosstabs/visualization scaffolding or richer report outputs:
 
 ```text
-Milestone 5: co-occurrence or word frequency
+Milestone 5: crosstabs or analysis visualization scaffolding
 Milestone 6: report preview / formatted Word-PDF outputs
 ```
 

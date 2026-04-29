@@ -934,8 +934,8 @@ Goal: structured analysis.
 Tasks:
 
 - Text search. First pass done.
-- Word frequency.
-- Code co-occurrence.
+- Word frequency. First pass done for filtered coded excerpts.
+- Code co-occurrence. First pass done for code pairs on filtered coded excerpts.
 - Basic matrix coding. First pass done for codes by case and codes by attribute value.
 - Filters by source/code/case attribute. First pass done for code, case, and attribute value.
 
@@ -976,6 +976,6 @@ The mode shell is now in place. The next code pass should deepen one of the part
 
 Best candidates:
 
-- Analyze: word frequency or code co-occurrence.
+- Analyze: crosstabs, visualization scaffolding, or stored query result snapshots.
 - Report: report preview and formatted Word/PDF exports.
 - Refine: hierarchy drag-and-drop and richer codebook cleanup.

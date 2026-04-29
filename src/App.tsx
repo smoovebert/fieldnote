@@ -28,7 +28,7 @@ import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 type SourceFolderFilter = 'All' | 'Archived' | string
-type AnalyzePanel = 'query' | 'matrix'
+type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence'
 type MatrixColumnMode = 'case' | 'attribute'
 
 type Code = {
@@ -88,6 +88,19 @@ type MatrixColumn = {
   id: string
   label: string
   caseIds: string[]
+}
+
+type WordFrequencyRow = {
+  word: string
+  count: number
+  excerptCount: number
+}
+
+type CoOccurrenceRow = {
+  key: string
+  codes: Code[]
+  count: number
+  excerpts: Excerpt[]
 }
 
 type Memo = {
@@ -281,6 +294,57 @@ const initialAttributes: Attribute[] = [
 const initialAttributeValues: AttributeValue[] = []
 
 const initialSavedQueries: SavedQuery[] = []
+
+const stopWords = new Set([
+  'about',
+  'after',
+  'again',
+  'also',
+  'because',
+  'been',
+  'being',
+  'could',
+  'did',
+  'does',
+  'doing',
+  'for',
+  'from',
+  'had',
+  'has',
+  'have',
+  'her',
+  'him',
+  'his',
+  'how',
+  'into',
+  'just',
+  'like',
+  'not',
+  'now',
+  'our',
+  'out',
+  'she',
+  'that',
+  'the',
+  'their',
+  'them',
+  'then',
+  'there',
+  'they',
+  'this',
+  'was',
+  'were',
+  'what',
+  'when',
+  'where',
+  'which',
+  'who',
+  'why',
+  'with',
+  'would',
+  'you',
+  'your',
+])
 
 const initialMemos: Memo[] = [
   {
@@ -1227,6 +1291,65 @@ function App() {
     }))
   }, [analyzeResults, cases, matrixColumns, matrixRows])
   const matrixTotalReferences = matrixResults.reduce((total, row) => total + row.cells.reduce((rowTotal, cell) => rowTotal + cell.excerpts.length, 0), 0)
+  const wordFrequencyRows = useMemo<WordFrequencyRow[]>(() => {
+    const counts = new Map<string, { count: number; excerptIds: Set<string> }>()
+
+    analyzeResults.forEach((excerpt) => {
+      const words = excerpt.text.toLowerCase().match(/[a-z][a-z'-]{2,}/g) ?? []
+      words.forEach((rawWord) => {
+        const word = rawWord.replace(/^'+|'+$/g, '')
+        if (word.length < 3 || stopWords.has(word)) return
+        const current = counts.get(word) ?? { count: 0, excerptIds: new Set<string>() }
+        current.count += 1
+        current.excerptIds.add(excerpt.id)
+        counts.set(word, current)
+      })
+    })
+
+    return Array.from(counts.entries())
+      .map(([word, value]) => ({ word, count: value.count, excerptCount: value.excerptIds.size }))
+      .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
+      .slice(0, 60)
+  }, [analyzeResults])
+  const coOccurrenceRows = useMemo<CoOccurrenceRow[]>(() => {
+    const pairMap = new Map<string, CoOccurrenceRow>()
+
+    analyzeResults.forEach((excerpt) => {
+      const excerptCodes = excerpt.codeIds
+        .map((codeId) => codeById.get(codeId))
+        .filter((code): code is Code => Boolean(code))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      excerptCodes.forEach((firstCode, firstIndex) => {
+        excerptCodes.slice(firstIndex + 1).forEach((secondCode) => {
+          const ids = [firstCode.id, secondCode.id].sort()
+          const key = ids.join('__')
+          const existing = pairMap.get(key) ?? { key, codes: [firstCode, secondCode], count: 0, excerpts: [] }
+          existing.count += 1
+          existing.excerpts = [...existing.excerpts, excerpt]
+          pairMap.set(key, existing)
+        })
+      })
+    })
+
+    return Array.from(pairMap.values()).sort((a, b) => b.count - a.count || a.codes.map((code) => code.name).join(' + ').localeCompare(b.codes.map((code) => code.name).join(' + ')))
+  }, [analyzeResults, codeById])
+  const analyzePanelTitle =
+    analyzePanel === 'matrix'
+      ? 'Matrix coding'
+      : analyzePanel === 'frequency'
+        ? 'Word frequency'
+        : analyzePanel === 'cooccurrence'
+          ? 'Code co-occurrence'
+          : activeSavedQuery?.name ?? 'Coded excerpt query'
+  const analyzePanelCount =
+    analyzePanel === 'matrix'
+      ? `${matrixTotalReferences} matrix references`
+      : analyzePanel === 'frequency'
+        ? `${wordFrequencyRows.length} terms`
+        : analyzePanel === 'cooccurrence'
+          ? `${coOccurrenceRows.length} pairs`
+          : `${analyzeResults.length} results`
 
   const activeQueryFilters = [
     queryText.trim() ? `Text contains "${queryText.trim()}"` : '',
@@ -1902,6 +2025,52 @@ function App() {
     downloadCsv(rows, 'fieldnote-matrix-coding.csv')
   }
 
+  function exportWordFrequencyCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const rows = [
+      ['Project', 'Word', 'Count', 'Excerpt count', 'Active filters'],
+      ...wordFrequencyRows.map((row) => [projectTitle, row.word, String(row.count), String(row.excerptCount), activeQueryFilters.join('; ')]),
+    ]
+
+    downloadCsv(rows, 'fieldnote-word-frequency.csv')
+  }
+
+  function exportCoOccurrenceCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const rows = [
+      ['Project', 'Code 1', 'Code 2', 'Count', 'Excerpt sources', 'Excerpts', 'Active filters'],
+      ...coOccurrenceRows.map((row) => [
+        projectTitle,
+        row.codes[0]?.name ?? '',
+        row.codes[1]?.name ?? '',
+        String(row.count),
+        row.excerpts.map((excerpt) => excerpt.sourceTitle).join('; '),
+        row.excerpts.map((excerpt) => excerpt.text).join(' | '),
+        activeQueryFilters.join('; '),
+      ]),
+    ]
+
+    downloadCsv(rows, 'fieldnote-code-cooccurrence.csv')
+  }
+
+  function exportActiveAnalysisCsv(event: MouseEvent<HTMLButtonElement>) {
+    if (analyzePanel === 'matrix') {
+      exportMatrixCsv(event)
+      return
+    }
+    if (analyzePanel === 'frequency') {
+      exportWordFrequencyCsv(event)
+      return
+    }
+    if (analyzePanel === 'cooccurrence') {
+      exportCoOccurrenceCsv(event)
+      return
+    }
+    exportAnalyzeCsv(event)
+  }
+
   function exportCodebookCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
@@ -2191,6 +2360,8 @@ function App() {
             }}
             onOpenSavedQuery={openSavedQuery}
             onOpenMatrix={() => setAnalyzePanel('matrix')}
+            onOpenFrequency={() => setAnalyzePanel('frequency')}
+            onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
           />
         </section>
 
@@ -2519,9 +2690,9 @@ function App() {
             <div className="source-register-heading">
               <div>
                 <p className="detail-kicker">Analyze</p>
-                <h2>{analyzePanel === 'matrix' ? 'Matrix coding' : activeSavedQuery?.name ?? 'Coded excerpt query'}</h2>
+                <h2>{analyzePanelTitle}</h2>
               </div>
-              <span className="reference-count">{analyzePanel === 'matrix' ? `${matrixTotalReferences} matrix references` : `${analyzeResults.length} results`}</span>
+              <span className="reference-count">{analyzePanelCount}</span>
             </div>
 
             <div className="analyze-tabs" role="tablist" aria-label="Analyze views">
@@ -2532,6 +2703,14 @@ function App() {
               <button className={analyzePanel === 'matrix' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('matrix')}>
                 <Rows3 size={15} aria-hidden="true" />
                 Matrix coding
+              </button>
+              <button className={analyzePanel === 'frequency' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('frequency')}>
+                <BookOpenText size={15} aria-hidden="true" />
+                Word frequency
+              </button>
+              <button className={analyzePanel === 'cooccurrence' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('cooccurrence')}>
+                <ListTree size={15} aria-hidden="true" />
+                Co-occurrence
               </button>
             </div>
 
@@ -2710,9 +2889,94 @@ function App() {
                 </div>
               </>
             )}
+
+            {analyzePanel === 'frequency' && (
+              <>
+                <div className="analysis-toolbar">
+                  <span>Terms are counted from the current filtered excerpts.</span>
+                  <button className="secondary-button" type="button" onClick={exportWordFrequencyCsv}>
+                    <Download size={16} aria-hidden="true" />
+                    Export word CSV
+                  </button>
+                </div>
+                <div className="analysis-table" role="table" aria-label="Word frequency results">
+                  <div className="analysis-row analysis-head" role="row">
+                    <span>Word</span>
+                    <span>Count</span>
+                    <span>Excerpts</span>
+                    <span>Weight</span>
+                  </div>
+                  {wordFrequencyRows.map((row) => {
+                    const maxCount = wordFrequencyRows[0]?.count || 1
+                    return (
+                      <div key={row.word} className="analysis-row" role="row">
+                        <strong>{row.word}</strong>
+                        <span>{row.count}</span>
+                        <span>{row.excerptCount}</span>
+                        <div className="frequency-bar" aria-label={`${row.word} weight`}>
+                          <span style={{ width: `${Math.max(8, (row.count / maxCount) * 100)}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {!wordFrequencyRows.length && (
+                    <div className="empty-table-state">
+                      <strong>No terms found</strong>
+                      <span>Loosen the filters or add longer coded excerpts.</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {analyzePanel === 'cooccurrence' && (
+              <>
+                <div className="analysis-toolbar">
+                  <span>Pairs count coded excerpts that carry both codes.</span>
+                  <button className="secondary-button" type="button" onClick={exportCoOccurrenceCsv}>
+                    <Download size={16} aria-hidden="true" />
+                    Export pairs CSV
+                  </button>
+                </div>
+                <div className="cooccurrence-table" role="table" aria-label="Code co-occurrence results">
+                  <div className="cooccurrence-row cooccurrence-head" role="row">
+                    <span>Code pair</span>
+                    <span>Count</span>
+                    <span>Example excerpts</span>
+                  </div>
+                  {coOccurrenceRows.map((row) => (
+                    <div key={row.key} className="cooccurrence-row" role="row">
+                      <div className="cooccurrence-pair">
+                        {row.codes.map((code) => (
+                          <span key={code.id}>
+                            <i style={{ background: code.color }} />
+                            {code.name}
+                          </span>
+                        ))}
+                      </div>
+                      <strong>{row.count}</strong>
+                      <div className="cooccurrence-excerpts">
+                        {row.excerpts.slice(0, 3).map((excerpt) => (
+                          <button key={excerpt.id} type="button" onClick={() => setActiveSourceId(excerpt.sourceId)}>
+                            {excerpt.text}
+                          </button>
+                        ))}
+                        {row.excerpts.length > 3 && <small>+{row.excerpts.length - 3} more</small>}
+                      </div>
+                    </div>
+                  ))}
+                  {!coOccurrenceRows.length && (
+                    <div className="empty-table-state">
+                      <strong>No co-occurring codes yet</strong>
+                      <span>Co-occurrence appears when the same excerpt has two or more codes.</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
-              <span>Co-occurrence, word frequency, crosstabs, and matrix drill-down editing.</span>
+              <span>Crosstabs, saved analysis presets beyond coded excerpts, and matrix drill-down editing.</span>
             </div>
           </article>
         )}
@@ -2954,9 +3218,15 @@ function App() {
                 Delete saved query
               </button>
             )}
-            <button className="secondary-button" type="button" onClick={analyzePanel === 'matrix' ? exportMatrixCsv : exportAnalyzeCsv}>
+            <button className="secondary-button" type="button" onClick={exportActiveAnalysisCsv}>
               <Download size={17} aria-hidden="true" />
-              {analyzePanel === 'matrix' ? 'Export matrix CSV' : 'Export query CSV'}
+              {analyzePanel === 'matrix'
+                ? 'Export matrix CSV'
+                : analyzePanel === 'frequency'
+                  ? 'Export word CSV'
+                  : analyzePanel === 'cooccurrence'
+                    ? 'Export pairs CSV'
+                    : 'Export query CSV'}
             </button>
           </section>
         )}
@@ -3027,6 +3297,8 @@ function ListView({
   onUseCurrentQuery,
   onOpenSavedQuery,
   onOpenMatrix,
+  onOpenFrequency,
+  onOpenCoOccurrence,
 }: {
   activeView: WorkspaceView
   activeSourceId: string
@@ -3044,6 +3316,8 @@ function ListView({
   onUseCurrentQuery: () => void
   onOpenSavedQuery: (query: SavedQuery) => void
   onOpenMatrix: () => void
+  onOpenFrequency: () => void
+  onOpenCoOccurrence: () => void
 }) {
   const orderedCodes = buildCodeTree(codes)
 
@@ -3124,6 +3398,20 @@ function ListView({
             <div>
               <strong>Matrix coding</strong>
               <span>Codes by case or attribute</span>
+            </div>
+          </button>
+          <button className={analyzePanel === 'frequency' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenFrequency}>
+            <BookOpenText size={17} aria-hidden="true" />
+            <div>
+              <strong>Word frequency</strong>
+              <span>Terms in filtered excerpts</span>
+            </div>
+          </button>
+          <button className={analyzePanel === 'cooccurrence' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenCoOccurrence}>
+            <ListTree size={17} aria-hidden="true" />
+            <div>
+              <strong>Co-occurrence</strong>
+              <span>Codes that appear together</span>
             </div>
           </button>
         </>

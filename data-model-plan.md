@@ -806,7 +806,8 @@ Current app coverage:
 
 - saved coded-excerpt queries are persisted in `fieldnote_queries`
 - first-pass matrix coding is computed client-side from normalized codes, cases, attributes, and coded references
-- matrix results are exportable as CSV, but not yet stored as `fieldnote_query_results`
+- first-pass word frequency and code co-occurrence are computed client-side from the active filtered coded excerpts
+- matrix, word frequency, and co-occurrence results are exportable as CSV, but not yet stored as `fieldnote_query_results`
 
 Create:
 
