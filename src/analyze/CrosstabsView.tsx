@@ -2,7 +2,7 @@
 import { useMemo } from 'react'
 import { ChartViewToggle } from './ChartViewToggle'
 import { TopNControlDual } from './TopNControl'
-import { type CrosstabResult } from './crosstabs'
+import { CROSSTAB_NONE, type CrosstabResult } from './crosstabs'
 import {
   TOP_N_BOUNDS,
   type CrosstabPercentMode,
@@ -24,6 +24,7 @@ type Props = {
   onTopNRowsChange: (n: number) => void
   onTopNColsChange: (n: number) => void
   onExportCsv?: () => void
+  onCellSelect?: (rowCodeId: string, col1Value: string, col2Value: string) => void
 }
 
 function format(count: number, total: number, mode: CrosstabPercentMode): string {
@@ -40,6 +41,7 @@ export function CrosstabsView({
   onAttr1Change, onAttr2Change, onPercentModeChange,
   onTopNRowsChange, onTopNColsChange,
   onExportCsv,
+  onCellSelect,
 }: Props) {
   const isReady = result !== null && result.rows.length > 0 && result.cols.length > 0
   const totalsByRow = result?.rowTotals ?? new Map<string, number>()
@@ -156,8 +158,17 @@ export function CrosstabsView({
                       const colTotal = totalsByCol.get(col.key) ?? 0
                       const denom = percentMode === 'row' ? rowTotal : percentMode === 'col' ? colTotal : 0
                       const text = format(count, denom, percentMode)
+                      const isNoneCell = col.col1 === CROSSTAB_NONE || col.col2 === CROSSTAB_NONE
+                      const drillable = !!onCellSelect && !isNoneCell
                       return (
-                        <td key={col.key}>{text}</td>
+                        <td
+                          key={col.key}
+                          onClick={drillable ? () => onCellSelect!(row.id, col.col1, col.col2) : undefined}
+                          style={drillable ? { cursor: 'pointer' } : undefined}
+                          title={isNoneCell ? 'Filtering on (none) is not supported yet.' : undefined}
+                        >
+                          {text}
+                        </td>
                       )
                     })}
                     <td className="crosstab-total">{rowTotal}</td>
