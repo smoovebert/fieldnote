@@ -2432,7 +2432,7 @@ function App() {
 
   return (
     <>
-    <main className="app-shell">
+    <main className="app-shell" data-shell="new">
       <header className="app-header">
         <div className="brand-block">
           <div className="brand-mark">F</div>
