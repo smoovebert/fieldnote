@@ -2255,3 +2255,25 @@ textarea {
     font-size: 16px;
   }
 }
+
+.chart-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-subtle, #d8d8d8);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.chart-view-toggle button {
+  padding: 4px 10px;
+  border: 0;
+  border-right: 1px solid var(--border-subtle, #d8d8d8);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+.chart-view-toggle button:last-child { border-right: 0; }
+.chart-view-toggle button.active {
+  background: var(--accent-subtle, #eef3ff);
+  font-weight: 600;
+}
+.chart-view-toggle-icon { margin-right: 4px; display: inline-flex; }
