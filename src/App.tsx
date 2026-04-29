@@ -29,7 +29,6 @@ import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import {
   DEFAULT_ANALYZE_VIEW,
-  deserialize as deserializeAnalyzeView,
   serialize as serializeAnalyzeView,
   type AnalyzeViewState,
 } from './analyze/analyzeViewState'
@@ -38,6 +37,12 @@ import { CooccurrenceView, type CooccurPair } from './analyze/CooccurrenceView'
 import { MatrixView, type MatrixCellInput } from './analyze/MatrixView'
 import { CrosstabsView } from './analyze/CrosstabsView'
 import { buildCrosstab, crosstabCsvRows, type CrosstabResult } from './analyze/crosstabs'
+import { excerptMatchesAttributeFilters } from './analyze/excerptFilters'
+import {
+  normalizeQueryDefinition,
+  type AttributeFilter,
+  type QueryDefinition,
+} from './analyze/queryDefinition'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
@@ -83,14 +88,7 @@ type AttributeValue = {
   value: string
 }
 
-type QueryDefinition = {
-  text: string
-  codeId: string
-  caseId: string
-  attributeId: string
-  attributeValue: string
-  analyzeView?: AnalyzeViewState
-}
+
 
 type SavedQuery = {
   id: string
@@ -447,18 +445,7 @@ function casesFromSources(sources: Source[]): Case[] {
   return Array.from(casesByName.values())
 }
 
-function normalizeQueryDefinition(definition?: Partial<QueryDefinition> | null): QueryDefinition {
-  return {
-    text: definition?.text ?? '',
-    codeId: definition?.codeId ?? '',
-    caseId: definition?.caseId ?? '',
-    attributeId: definition?.attributeId ?? '',
-    attributeValue: definition?.attributeValue ?? '',
-    analyzeView: deserializeAnalyzeView(
-      definition ? (definition as { analyzeView?: unknown }) : undefined,
-    ),
-  }
-}
+
 
 function buildCodeTree(codes: Code[]) {
   const byParent = new Map<string, Code[]>()
@@ -767,8 +754,7 @@ function App() {
   const [queryText, setQueryText] = useState('')
   const [queryCodeId, setQueryCodeId] = useState('')
   const [queryCaseId, setQueryCaseId] = useState('')
-  const [queryAttributeId, setQueryAttributeId] = useState('')
-  const [queryAttributeValue, setQueryAttributeValue] = useState('')
+  const [queryAttributes, setQueryAttributes] = useState<AttributeFilter[]>([])
   const [queryName, setQueryName] = useState('')
   const [activeSavedQueryId, setActiveSavedQueryId] = useState('')
   const [analyzePanel, setAnalyzePanel] = useState<AnalyzePanel>('query')
@@ -827,8 +813,7 @@ function App() {
     text: queryText,
     codeId: queryCodeId,
     caseId: queryCaseId,
-    attributeId: queryAttributeId,
-    attributeValue: queryAttributeValue,
+    attributes: queryAttributes,
     analyzeView: serializeAnalyzeView(analyzeView),
   }
   const activeSavedQuery = savedQueries.find((query) => query.id === activeSavedQueryId)
@@ -846,17 +831,23 @@ function App() {
     cases.forEach((item) => item.sourceIds.forEach((sourceId) => map.set(sourceId, item)))
     return map
   }, [cases])
-  const queryAttributeOptions = useMemo(
-    () =>
-      Array.from(
+  const valuesForAttribute = useMemo(() => {
+    const cache = new Map<string, string[]>()
+    return (attributeId: string): string[] => {
+      if (!attributeId) return []
+      const cached = cache.get(attributeId)
+      if (cached) return cached
+      const values = Array.from(
         new Set(
           attributeValues
-            .filter((attributeValue) => attributeValue.attributeId === queryAttributeId && attributeValue.value.trim())
-            .map((attributeValue) => attributeValue.value.trim())
-        )
-      ),
-    [attributeValues, queryAttributeId]
-  )
+            .filter((av) => av.attributeId === attributeId && av.value.trim())
+            .map((av) => av.value),
+        ),
+      ).sort()
+      cache.set(attributeId, values)
+      return values
+    }
+  }, [attributeValues])
 
   async function loadProjectData(project: ProjectRow) {
     try {
@@ -1107,8 +1098,7 @@ function App() {
     setQueryText('')
     setQueryCodeId('')
     setQueryCaseId('')
-    setQueryAttributeId('')
-    setQueryAttributeValue('')
+    setQueryAttributes([])
     setQueryName('')
     setActiveSavedQueryId('')
     setAnalyzePanel('query')
@@ -1333,16 +1323,11 @@ function App() {
       if (queryCodeId && !excerpt.codeIds.includes(queryCodeId)) return false
       if (queryCaseId && linkedCase?.id !== queryCaseId) return false
 
-      if (queryAttributeId) {
-        if (!linkedCase) return false
-        const value = attributeValues.find((item) => item.caseId === linkedCase.id && item.attributeId === queryAttributeId)?.value.trim() ?? ''
-        if (!value) return false
-        if (queryAttributeValue && value !== queryAttributeValue) return false
-      }
+      if (!excerptMatchesAttributeFilters(queryAttributes, linkedCase?.id, attributeValues)) return false
 
       return true
     })
-  }, [attributeValues, caseBySourceId, codes, excerpts, queryAttributeId, queryAttributeValue, queryCaseId, queryCodeId, queryText, sourceById])
+  }, [attributeValues, caseBySourceId, codes, excerpts, queryAttributes, queryCaseId, queryCodeId, queryText, sourceById])
 
   const analyzeMatchingCases = useMemo(() => {
     const matchingCases = analyzeResults.flatMap((excerpt) => {
@@ -1517,11 +1502,12 @@ function App() {
     queryText.trim() ? `Text contains "${queryText.trim()}"` : '',
     queryCodeId ? `Code: ${codes.find((code) => code.id === queryCodeId)?.name ?? 'Unknown code'}` : '',
     queryCaseId ? `Case: ${cases.find((item) => item.id === queryCaseId)?.name ?? 'Unknown case'}` : '',
-    queryAttributeId
-      ? `Attribute: ${attributes.find((attribute) => attribute.id === queryAttributeId)?.name ?? 'Unknown attribute'}${
-          queryAttributeValue ? ` = ${queryAttributeValue}` : ''
-        }`
-      : '',
+    ...queryAttributes
+      .filter((f) => f.attributeId && f.value)
+      .map((f) => {
+        const name = attributes.find((a) => a.id === f.attributeId)?.name ?? 'Unknown attribute'
+        return `${name} = ${f.value}`
+      }),
   ].filter(Boolean)
 
   const highlightedTranscript = useMemo(() => {
@@ -1901,8 +1887,7 @@ function App() {
     setQueryText(definition.text)
     setQueryCodeId(definition.codeId)
     setQueryCaseId(definition.caseId)
-    setQueryAttributeId(definition.attributeId)
-    setQueryAttributeValue(definition.attributeValue)
+    setQueryAttributes(definition.attributes)
     setAnalyzeView(definition.analyzeView ?? DEFAULT_ANALYZE_VIEW)
   }
 
@@ -3031,34 +3016,73 @@ function App() {
                   ))}
                 </select>
               </label>
-              <label className="property-field">
-                <span>Attribute</span>
-                <select
-                  value={queryAttributeId}
-                  onChange={(event) => {
-                    setQueryAttributeId(event.target.value)
-                    setQueryAttributeValue('')
+              <div className="property-field property-field-stack">
+                <span>Attributes</span>
+                {queryAttributes.length === 0 && (
+                  <div className="attribute-filter-empty">No attribute filters.</div>
+                )}
+                {queryAttributes.map((row, index) => {
+                  const usedElsewhere = new Set(
+                    queryAttributes.filter((_, i) => i !== index).map((r) => r.attributeId).filter(Boolean),
+                  )
+                  const valueOptions = valuesForAttribute(row.attributeId)
+                  return (
+                    <div key={index} className="attribute-filter-row">
+                      <select
+                        value={row.attributeId}
+                        onChange={(event) => {
+                          const nextId = event.target.value
+                          setQueryAttributes((current) =>
+                            current.map((r, i) => (i === index ? { attributeId: nextId, value: '' } : r)),
+                          )
+                        }}
+                      >
+                        <option value="">— pick attribute —</option>
+                        {attributes
+                          .filter((a) => a.id === row.attributeId || !usedElsewhere.has(a.id))
+                          .map((a) => (
+                            <option key={a.id} value={a.id}>{a.name}</option>
+                          ))}
+                      </select>
+                      <select
+                        value={row.value}
+                        disabled={!row.attributeId}
+                        onChange={(event) => {
+                          const nextValue = event.target.value
+                          setQueryAttributes((current) =>
+                            current.map((r, i) => (i === index ? { ...r, value: nextValue } : r)),
+                          )
+                        }}
+                      >
+                        <option value="">— pick value —</option>
+                        {valueOptions.map((value) => (
+                          <option key={value} value={value}>{value}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="attribute-filter-delete"
+                        aria-label="Remove this attribute filter"
+                        onClick={() => {
+                          setQueryAttributes((current) => current.filter((_, i) => i !== index))
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )
+                })}
+                <button
+                  type="button"
+                  className="secondary-button attribute-filter-add"
+                  disabled={queryAttributes.length >= attributes.length}
+                  onClick={() => {
+                    setQueryAttributes((current) => [...current, { attributeId: '', value: '' }])
                   }}
                 >
-                  <option value="">Any attribute</option>
-                  {attributes.map((attribute) => (
-                    <option key={attribute.id} value={attribute.id}>
-                      {attribute.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="property-field">
-                <span>Value</span>
-                <select value={queryAttributeValue} disabled={!queryAttributeId} onChange={(event) => setQueryAttributeValue(event.target.value)}>
-                  <option value="">Any filled value</option>
-                  {queryAttributeOptions.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  + Add attribute filter
+                </button>
+              </div>
               <button
                 className="secondary-button query-clear"
                 type="button"
@@ -3153,7 +3177,7 @@ function App() {
                     if (matrixColumnMode === 'case') setQueryCaseId(colId)
                     else {
                       const value = colId.includes(':') ? colId.split(':').slice(1).join(':') : colId
-                      setQueryAttributeValue(value)
+                      setQueryAttributes([{ attributeId: matrixAttributeId, value }])
                     }
                   }}
                   onExportCsv={() => exportMatrixCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
