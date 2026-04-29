@@ -2447,3 +2447,33 @@ textarea {
   color: #6f797a;
   cursor: not-allowed;
 }
+
+/* Crosstabs analyze view */
+.crosstabs-view .crosstab-attr-picker {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  margin-right: 8px;
+}
+.crosstabs-view .crosstab-attr-picker select {
+  padding: 4px 6px;
+  border: 1px solid #d6d8da;
+  border-radius: 4px;
+  background: #ffffff;
+}
+.crosstab-table th .crosstab-col-total,
+.crosstab-table th.crosstab-col-total {
+  font-weight: 500;
+  color: #5b6366;
+}
+.crosstab-table .crosstab-total {
+  font-weight: 600;
+  background: #f4f5f7;
+}
+.crosstab-table .crosstab-total-row td {
+  border-top: 2px solid #d6d8da;
+}
+.crosstab-table th.crosstab-row-header {
+  background: #fafbfc;
+}
