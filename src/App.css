@@ -2525,3 +2525,343 @@ textarea {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ============================================================
+   Phase 3a — Shell + Sidebar — scoped under [data-shell="new"]
+   Detail-view and properties-view internals stay on legacy
+   styling until Phase 3b/3c land.
+   ============================================================ */
+
+.app-shell[data-shell="new"] {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11", "calt";
+  letter-spacing: -0.005em;
+}
+
+/* ----- Sidebar shell ------------------------------------------------- */
+.app-shell[data-shell="new"] .workspace-sidebar {
+  background: var(--shell);
+  color: var(--shell-ink);
+  width: 232px;
+  min-width: 232px;
+  border-right: 1px solid var(--shell-rule);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-3);
+  transition: width 180ms ease, min-width 180ms ease;
+  overflow: hidden;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed {
+  width: 56px;
+  min-width: 56px;
+  padding: var(--s-4) var(--s-2);
+}
+
+/* ----- Brand block --------------------------------------------------- */
+.app-shell[data-shell="new"] .sidebar-brand {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-1) var(--s-3);
+  transition: opacity 120ms ease 60ms;
+}
+
+.app-shell[data-shell="new"] .sidebar-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app-shell[data-shell="new"] .sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-shell[data-shell="new"] .sidebar-eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-ink-3);
+  font-size: 9.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .sidebar-wordmark {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--shell-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .sidebar-collapse-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-1);
+  background: transparent;
+  color: var(--shell-ink-3);
+  border: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.app-shell[data-shell="new"] .sidebar-collapse-toggle:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-brand {
+  grid-template-columns: 32px;
+  justify-content: center;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-brand-text,
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-collapse-toggle {
+  display: none;
+}
+
+/* ----- Project switcher ---------------------------------------------- */
+.app-shell[data-shell="new"] .project-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  border: 0;
+  font: var(--t-ui-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.app-shell[data-shell="new"] .project-switcher:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .project-switcher-chevron {
+  font-size: 12px;
+  color: var(--shell-ink-3);
+}
+
+.app-shell[data-shell="new"] .project-switcher-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .project-switcher {
+  display: none;
+}
+
+/* ----- Mode list ----------------------------------------------------- */
+.app-shell[data-shell="new"] .mode-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  border: 0;
+  border-left: 2px solid transparent;
+  font: var(--t-ui);
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+}
+
+.app-shell[data-shell="new"] .mode-switcher button:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button.active {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  border-left-color: var(--c-cyan);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button .mode-icon {
+  color: var(--shell-ink-3);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button.active .mode-icon {
+  color: var(--c-cyan);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button .mode-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .mode-switcher button .mode-badge {
+  font: var(--t-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--shell-deep);
+  color: var(--shell-ink-3);
+  font-size: 9px;
+}
+
+.app-shell[data-shell="new"] .mode-switcher button.active .mode-badge {
+  background: oklch(0 0 0 / 0.25);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button {
+  grid-template-columns: 16px;
+  justify-content: center;
+  padding: var(--s-2) 0;
+  border-left: 0;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button.active {
+  background: var(--shell-deep);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button .mode-label,
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button .mode-badge {
+  display: none;
+}
+
+/* ----- Folder pane (Organize) and ListView container ----------------- */
+.app-shell[data-shell="new"] .folder-pane,
+.app-shell[data-shell="new"] .list-view {
+  background: transparent;
+  color: var(--shell-ink-2);
+}
+
+.app-shell[data-shell="new"] .folder-pane .pane-title {
+  color: var(--shell-ink-3);
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: var(--s-3) var(--s-2) var(--s-1);
+}
+
+.app-shell[data-shell="new"] .folder-pane .folder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  border: 0;
+  font: var(--t-ui-sm);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.app-shell[data-shell="new"] .folder-pane .folder-row:hover,
+.app-shell[data-shell="new"] .folder-pane .folder-row.active {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .folder-pane .folder-row > span {
+  margin-left: auto;
+  color: var(--shell-ink-3);
+  font: var(--t-meta);
+}
+
+.app-shell[data-shell="new"] .folder-pane .new-folder-row {
+  padding: var(--s-2) var(--s-2);
+}
+
+.app-shell[data-shell="new"] .folder-pane .new-folder-row input {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  border: 1px solid var(--shell-rule);
+  border-radius: var(--r-1);
+  padding: var(--s-1) var(--s-2);
+  font: var(--t-ui-sm);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .folder-pane,
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .list-view {
+  display: none;
+}
+
+/* ----- Account / sign-out ------------------------------------------- */
+.app-shell[data-shell="new"] .sidebar-account {
+  margin-top: auto;
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--shell-rule);
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  font: var(--t-ui-sm);
+  color: var(--shell-ink-2);
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box span {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  background: transparent;
+  border: 0;
+  color: var(--shell-ink-3);
+  cursor: pointer;
+  font: var(--t-ui-sm);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-1);
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box button:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-account .user-box span {
+  display: none;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-account .user-box {
+  justify-content: center;
+}
