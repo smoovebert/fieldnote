@@ -35,11 +35,13 @@ import {
 import { WordFreqView, type WordFreqRow } from './analyze/WordFreqView'
 import { CooccurrenceView, type CooccurPair } from './analyze/CooccurrenceView'
 import { MatrixView, type MatrixCellInput } from './analyze/MatrixView'
+import { CrosstabsView } from './analyze/CrosstabsView'
+import { buildCrosstab, crosstabCsvRows, type CrosstabResult } from './analyze/crosstabs'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 type SourceFolderFilter = 'All' | 'Archived' | string
-type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence'
+type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence' | 'crosstab'
 type MatrixColumnMode = 'case' | 'attribute'
 
 type Code = {
@@ -1477,6 +1479,22 @@ function App() {
       ),
     [matrixResults],
   )
+
+  const crosstabResult = useMemo<CrosstabResult | null>(() => {
+    const { attr1Id, attr2Id, topNRows, topNCols } = analyzeView.crosstab
+    if (!attr1Id || !attr2Id) return null
+    return buildCrosstab({
+      excerpts: analyzeResults,
+      codes,
+      cases,
+      attributeValues,
+      attr1Id,
+      attr2Id,
+      topNRows,
+      topNCols,
+    })
+  }, [analyzeResults, codes, cases, attributeValues, analyzeView.crosstab])
+
   const analyzePanelTitle =
     analyzePanel === 'matrix'
       ? 'Matrix coding'
@@ -2970,6 +2988,7 @@ function App() {
                 <ListTree size={15} aria-hidden="true" />
                 Co-occurrence
               </button>
+              <button className={analyzePanel === 'crosstab' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('crosstab')}>Crosstabs</button>
             </div>
 
             <div className="query-builder">
@@ -3159,9 +3178,34 @@ function App() {
                 onExportCsv={() => exportCoOccurrenceCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
               />
             )}
+            {analyzePanel === 'crosstab' && (
+              <div className="analyze-panel">
+                <CrosstabsView
+                  attributes={attributes.map((a) => ({ id: a.id, name: a.name }))}
+                  attr1Id={analyzeView.crosstab.attr1Id}
+                  attr2Id={analyzeView.crosstab.attr2Id}
+                  percentMode={analyzeView.crosstab.percentMode}
+                  topNRows={analyzeView.crosstab.topNRows}
+                  topNCols={analyzeView.crosstab.topNCols}
+                  result={crosstabResult}
+                  onAttr1Change={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, attr1Id: next } }))}
+                  onAttr2Change={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, attr2Id: next } }))}
+                  onPercentModeChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, percentMode: next } }))}
+                  onTopNRowsChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, topNRows: next } }))}
+                  onTopNColsChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, topNCols: next } }))}
+                  onExportCsv={() => {
+                    if (!crosstabResult) return
+                    const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
+                    const a2 = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
+                    const rows = crosstabCsvRows(crosstabResult, a1, a2)
+                    downloadCsv(rows, 'fieldnote-crosstabs.csv')
+                  }}
+                />
+              </div>
+            )}
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
-              <span>Crosstabs, saved analysis presets beyond coded excerpts, and matrix drill-down editing.</span>
+              <span>Saved analysis presets beyond coded excerpts and matrix drill-down editing.</span>
             </div>
           </article>
         )}
