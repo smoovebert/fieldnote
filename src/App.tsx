@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import {
+  BarChart3,
   BookOpenText,
+  ChevronLeft as _ChevronLeft, // eslint-disable-line @typescript-eslint/no-unused-vars
+  ChevronRight as _ChevronRight, // eslint-disable-line @typescript-eslint/no-unused-vars
   Cloud,
   Database,
   Download,
@@ -9,6 +12,7 @@ import {
   FileText,
   FolderInput,
   FolderOpen,
+  Folders,
   Grid3x3,
   Highlighter,
   ListTree,
@@ -24,6 +28,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import {
@@ -414,13 +419,19 @@ const defaultProject: ProjectData = {
   excerpts: initialExcerpts,
 }
 
-const modeItems: Array<{ id: WorkspaceView; label: string; description: string; status: 'ready' | 'partial' | 'soon' }> = [
-  { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.', status: 'ready' },
-  { id: 'code', label: 'Code', description: 'Close-read sources and code selected passages.', status: 'ready' },
-  { id: 'refine', label: 'Refine', description: 'Clean the codebook and review code references.', status: 'partial' },
-  { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.', status: 'partial' },
-  { id: 'analyze', label: 'Analyze', description: 'Run searches, matrices, and comparisons.', status: 'partial' },
-  { id: 'report', label: 'Report', description: 'Export excerpts, memos, and codebooks.', status: 'partial' },
+const modeItems: Array<{
+  id: WorkspaceView
+  label: string
+  description: string
+  status: 'ready' | 'partial' | 'soon'
+  icon: LucideIcon
+}> = [
+  { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.', status: 'ready',   icon: Folders },
+  { id: 'code',     label: 'Code',     description: 'Close-read sources and code selected passages.', status: 'ready',   icon: Highlighter },
+  { id: 'refine',   label: 'Refine',   description: 'Clean the codebook and review code references.', status: 'partial', icon: ListTree },
+  { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.', status: 'partial', icon: Tags },
+  { id: 'analyze',  label: 'Analyze',  description: 'Run searches, matrices, and comparisons.', status: 'partial', icon: BarChart3 },
+  { id: 'report',   label: 'Report',   description: 'Export excerpts, memos, and codebooks.', status: 'partial', icon: FileText },
 ]
 
 function slugId(value: string, fallback = 'item') {
@@ -758,6 +769,16 @@ function App() {
   const [matrixColumnMode, setMatrixColumnMode] = useState<MatrixColumnMode>('case')
   const [matrixAttributeId, setMatrixAttributeId] = useState('')
   const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [sidebarCollapsed, _setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem('fieldnote.sidebarCollapsed') === 'true'
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem('fieldnote.sidebarCollapsed', String(sidebarCollapsed))
+  }, [sidebarCollapsed])
   const [quickCodeMenu, setQuickCodeMenu] = useState<QuickCodeMenu | null>(null)
   const [quickNewCodeName, setQuickNewCodeName] = useState('')
   const [lineNumberingMode, setLineNumberingMode] = useState<LineNumberingMode>(DEFAULT_LINE_NUMBERING_MODE)
