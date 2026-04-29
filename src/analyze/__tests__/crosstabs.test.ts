@@ -142,6 +142,48 @@ describe('buildCrosstab', () => {
     expect(result.cols[0].col2).toBe('male')
     expect(result.totalColsBeforeTruncation).toBeGreaterThan(1)
   })
+
+  it('grandTotal reflects only visible cells after truncation', () => {
+    // With topNCols=1 only the urban/male column is visible (count 2 across c1+c2).
+    const result = build({ topNCols: 1 })
+    expect(result.grandTotal).toBe(2)
+    // Sum of visible row totals must equal grandTotal.
+    const sumRows = [...result.rowTotals.values()].reduce((a, b) => a + b, 0)
+    expect(sumRows).toBe(result.grandTotal)
+    // Sum of visible col totals must equal grandTotal.
+    const sumCols = [...result.colTotals.values()].reduce((a, b) => a + b, 0)
+    expect(sumCols).toBe(result.grandTotal)
+  })
+
+  it('uses ∥ separator so values containing spaces do not collide', () => {
+    // Two distinct (code, attr1, attr2) combos that would alias under a space
+    // delimiter: code "trust safety" + value "urban"  vs.  code "trust" + value "safety urban"
+    const result = buildCrosstab({
+      excerpts: [
+        { id: 'e1', codeIds: ['trust safety'], sourceId: 's1' },
+        { id: 'e2', codeIds: ['trust'],        sourceId: 's2' },
+      ],
+      codes: [
+        { id: 'trust safety', name: 'Trust Safety' },
+        { id: 'trust',        name: 'Trust' },
+      ],
+      cases: [
+        { id: 'A', sourceIds: ['s1'] },
+        { id: 'B', sourceIds: ['s2'] },
+      ],
+      attributeValues: [
+        { caseId: 'A', attributeId: 'region', value: 'urban' },
+        { caseId: 'A', attributeId: 'gender', value: 'female' },
+        { caseId: 'B', attributeId: 'region', value: 'safety urban' },
+        { caseId: 'B', attributeId: 'gender', value: 'female' },
+      ],
+      attr1Id: 'region', attr2Id: 'gender', topNRows: 30, topNCols: 40,
+    })
+    // Two distinct rows → two distinct codes still distinguished.
+    expect(result.rows).toHaveLength(2)
+    expect(result.cols).toHaveLength(2) // urban/female and safety urban/female
+    expect(result.grandTotal).toBe(2)
+  })
 })
 
 describe('crosstabCsvRows', () => {

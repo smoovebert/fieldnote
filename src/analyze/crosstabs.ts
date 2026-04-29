@@ -35,11 +35,11 @@ export type CrosstabResult = {
   rows: CrosstabRow[]
   cols: CrosstabCol[]
   cells: CrosstabCell[]                      // dense
-  rowTotals: Map<string, number>             // by rowId
-  colTotals: Map<string, number>             // by composite key
-  grandTotal: number
-  totalRowsBeforeTruncation: number
-  totalColsBeforeTruncation: number
+  rowTotals: Map<string, number>             // by rowId, over visible cells
+  colTotals: Map<string, number>             // by composite key, over visible cells
+  grandTotal: number                         // sum of visible cells (matches the corner cell of the table)
+  totalRowsBeforeTruncation: number          // count of distinct row IDs that had at least one bucket
+  totalColsBeforeTruncation: number          // count of distinct column keys that had at least one bucket
 }
 
 export function colKey(col1: string, col2: string): string {
@@ -73,7 +73,6 @@ export function buildCrosstab(input: CrosstabBuilderInput): CrosstabResult {
   // Raw cell counts, before any truncation.
   type Bucket = { rowId: string; col1: string; col2: string; count: number }
   const buckets = new Map<string, Bucket>()
-  let grandTotal = 0
 
   for (const exc of excerpts) {
     const caseId = caseBySource.get(exc.sourceId)
@@ -84,11 +83,10 @@ export function buildCrosstab(input: CrosstabBuilderInput): CrosstabResult {
 
     for (const codeId of exc.codeIds) {
       if (!codeNameById.has(codeId)) continue
-      const k = `${codeId} ${v1} ${v2}`
+      const k = `${codeId}${CROSSTAB_COL_KEY_SEPARATOR}${colKey(v1, v2)}`
       const b = buckets.get(k)
       if (b) b.count++
       else buckets.set(k, { rowId: codeId, col1: v1, col2: v2, count: 1 })
-      grandTotal++
     }
   }
 
@@ -129,13 +127,13 @@ export function buildCrosstab(input: CrosstabBuilderInput): CrosstabResult {
   // Dense cells — fill zeros for (row, col) without a bucket.
   const bucketByCell = new Map<string, number>()
   for (const b of buckets.values()) {
-    bucketByCell.set(`${b.rowId} ${colKey(b.col1, b.col2)}`, b.count)
+    bucketByCell.set(`${b.rowId}${CROSSTAB_COL_KEY_SEPARATOR}${colKey(b.col1, b.col2)}`, b.count)
   }
 
   const cells: CrosstabCell[] = []
   for (const row of rows) {
     for (const col of cols) {
-      const count = bucketByCell.get(`${row.id} ${col.key}`) ?? 0
+      const count = bucketByCell.get(`${row.id}${CROSSTAB_COL_KEY_SEPARATOR}${col.key}`) ?? 0
       cells.push({
         rowId: row.id,
         rowLabel: row.label,
@@ -146,13 +144,18 @@ export function buildCrosstab(input: CrosstabBuilderInput): CrosstabResult {
     }
   }
 
-  // Recompute row/col totals limited to the *visible* set so the table math closes.
+  // Recompute row/col totals + grand total limited to the *visible* set so the
+  // table math closes. The corner cell of the rendered table shows grandTotal,
+  // and it must equal the sum of either the visible row totals or the visible
+  // column totals.
   const rowTotals = new Map<string, number>()
   const colTotals = new Map<string, number>()
+  let grandTotal = 0
   for (const cell of cells) {
     rowTotals.set(cell.rowId, (rowTotals.get(cell.rowId) ?? 0) + cell.count)
     const ck = colKey(cell.col1Value, cell.col2Value)
     colTotals.set(ck, (colTotals.get(ck) ?? 0) + cell.count)
+    grandTotal += cell.count
   }
 
   return {
