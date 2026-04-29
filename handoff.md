@@ -307,6 +307,8 @@ Typing in a missing context memo creates it automatically.
 
 - Coded excerpts CSV export includes project, source, folder, case, codes, code descriptions, excerpt text, and notes.
 - Codebook CSV export includes code names, descriptions, reference counts, and an example excerpt.
+- Case sheet CSV export includes cases, linked sources, notes, and participant attributes.
+- Coded excerpts by case CSV export includes each coded excerpt with its linked case and case attribute values.
 - Memos CSV export includes project, memo title, linked type, linked source/code/project, and memo body.
 - Analyze mode can export the current query result set as CSV.
 
@@ -382,11 +384,11 @@ Still needed:
 
 Do **not** add more one-off UI panels.
 
-Next implementation should continue from the query foundation into report usefulness:
+Next implementation should continue from the export foundation into saved/reusable analysis:
 
 ```text
-Milestone 4: report/export case sheets and coded excerpts by case
 Milestone 5: saved queries or first matrix coding view
+Milestone 6: report preview / formatted Word-PDF outputs
 ```
 
 ## Design Direction

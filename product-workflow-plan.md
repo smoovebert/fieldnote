@@ -711,7 +711,21 @@ Right:
 
 ### Current App Gap
 
-Only CSV excerpt export exists.
+First MVP pass implemented:
+
+- coded excerpts CSV
+- codebook CSV
+- memo CSV
+- case sheet CSV
+- coded excerpts by case CSV
+- current Analyze query CSV
+
+Still missing:
+
+- report preview / builder
+- DOCX export
+- PDF export
+- full project archive
 
 ## Proposed Data Model
 

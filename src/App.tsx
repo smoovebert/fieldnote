@@ -1510,12 +1510,13 @@ function App() {
       ['Project', 'Source', 'Source folder', 'Case', 'Codes', 'Code descriptions', 'Excerpt', 'Note'],
       ...excerpts.map((excerpt) => {
         const source = sources.find((item) => item.id === excerpt.sourceId)
+        const linkedCase = caseBySourceId.get(excerpt.sourceId)
         const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
         return [
           projectTitle,
           excerpt.sourceTitle,
           source?.folder ?? '',
-          source?.caseName ?? '',
+          linkedCase?.name ?? source?.caseName ?? '',
           excerptCodes.map((code) => code.name).join('; '),
           excerptCodes.map((code) => code.description).join('; '),
           excerpt.text,
@@ -1525,6 +1526,51 @@ function App() {
     ]
 
     downloadCsv(rows, 'fieldnote-coded-excerpts.csv')
+  }
+
+  function exportCaseSheetCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const rows = [
+      ['Project', 'Case', 'Sources', 'Notes', ...attributes.map((attribute) => attribute.name)],
+      ...cases.map((item) => {
+        const linkedSources = sources.filter((source) => item.sourceIds.includes(source.id))
+        return [
+          projectTitle,
+          item.name,
+          linkedSources.map((source) => source.title).join('; '),
+          item.description,
+          ...attributes.map((attribute) => attributeValues.find((value) => value.caseId === item.id && value.attributeId === attribute.id)?.value ?? ''),
+        ]
+      }),
+    ]
+
+    downloadCsv(rows, 'fieldnote-case-sheet.csv')
+  }
+
+  function exportCaseExcerptCsv(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+
+    const rows = [
+      ['Project', 'Case', 'Source', 'Codes', 'Excerpt', 'Note', ...attributes.map((attribute) => attribute.name)],
+      ...excerpts.map((excerpt) => {
+        const linkedCase = caseBySourceId.get(excerpt.sourceId)
+        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
+        return [
+          projectTitle,
+          linkedCase?.name ?? '',
+          excerpt.sourceTitle,
+          excerptCodes.map((code) => code.name).join('; '),
+          excerpt.text,
+          excerpt.note,
+          ...attributes.map((attribute) =>
+            linkedCase ? attributeValues.find((value) => value.caseId === linkedCase.id && value.attributeId === attribute.id)?.value ?? '' : ''
+          ),
+        ]
+      }),
+    ]
+
+    downloadCsv(rows, 'fieldnote-coded-excerpts-by-case.csv')
   }
 
   function exportAnalyzeCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -2257,6 +2303,27 @@ function App() {
                 <small>Code names, descriptions, counts, and example excerpts.</small>
               </span>
             </button>
+            <button className="report-card" type="button" onClick={exportCaseSheetCsv}>
+              <Database size={20} aria-hidden="true" />
+              <span>
+                <strong>Case sheet CSV</strong>
+                <small>Cases, linked sources, notes, and participant attributes.</small>
+              </span>
+            </button>
+            <button className="report-card" type="button" onClick={exportCaseExcerptCsv}>
+              <Rows3 size={20} aria-hidden="true" />
+              <span>
+                <strong>Coded excerpts by case CSV</strong>
+                <small>Each coded excerpt with its case and attribute values.</small>
+              </span>
+            </button>
+            <button className="report-card" type="button" onClick={exportAnalyzeCsv}>
+              <Search size={20} aria-hidden="true" />
+              <span>
+                <strong>Current query CSV</strong>
+                <small>Exports the active Analyze filters and matching results.</small>
+              </span>
+            </button>
             <button className="report-card" type="button" onClick={exportMemosCsv}>
               <MessageSquareText size={20} aria-hidden="true" />
               <span>
@@ -2477,6 +2544,14 @@ function App() {
               <div>
                 <dt>References</dt>
                 <dd>{excerpts.length}</dd>
+              </div>
+              <div>
+                <dt>Cases</dt>
+                <dd>{cases.length}</dd>
+              </div>
+              <div>
+                <dt>Attributes</dt>
+                <dd>{attributes.length}</dd>
               </div>
             </dl>
           </section>
