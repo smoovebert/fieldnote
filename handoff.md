@@ -288,6 +288,8 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 - Refine mode can add new codes directly to the codebook and select them for definition editing.
 - Refine mode can merge the active code into another code, moving coded references and removing the merged code.
 - Refine mode can split selected text out of an existing coded reference into a new reference with the same codes.
+- Refine mode now supports parent/child code hierarchy: code lists render as a tree, each code can be assigned a parent, new Refine-created codes become children of the active code, and codebook CSV includes parent code.
+- Parent codes show aggregate references from their child codes in the Refine reference surface.
 
 ### Memos
 
@@ -340,7 +342,7 @@ Typing in a missing context memo creates it automatically.
 - Analyze is first-pass only: it has useful filters, saved queries, and basic matrix coding, but not word frequency or co-occurrence yet.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
-- Code hierarchy and parent-child nodes are not implemented.
+- Code hierarchy is first-pass only: parent assignment and tree display exist, but hierarchy drag-and-drop and code splitting are not implemented.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
 
@@ -379,6 +381,7 @@ Implemented:
 - Moved close reading/coding into Code mode.
 - Moved code reference review into Refine mode.
 - Tightened the Code -> Refine -> Report MVP loop with duplicate-reference merging, better code editing, and stronger CSV exports.
+- Added first-pass parent/child code hierarchy in Refine with tree display, parent assignment, child-code creation, parent-aware merge/delete behavior, and parent code in codebook export.
 - Added memo export to complete the basic source/code/memo reporting loop.
 - Added initial Classify, Analyze, and Report work surfaces.
 - Rebuilt Analyze into a query builder with text/code/case/attribute filters, result table, query summary, and query CSV export.
@@ -390,7 +393,7 @@ Still needed:
 - Project rename/delete/share controls.
 - Mode-specific right rails outside Organize need another design pass.
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
-- Refine mode still needs hierarchy tools.
+- Refine mode still needs hierarchy drag-and-drop, stronger code splitting, and deeper codebook cleanup tools.
 - Classify still needs attribute import, case groups, and better filtering.
 - Advanced Analyze/Report features like word frequency, co-occurrence, report preview, and Word/PDF export are intentionally placeholders for MVP.
 
@@ -398,7 +401,7 @@ Still needed:
 
 Do **not** add more one-off UI panels.
 
-Next implementation should continue from basic analysis into either co-occurrence/word-frequency or richer report outputs:
+Next implementation should continue from basic analysis/refinement into either co-occurrence/word-frequency or richer report outputs:
 
 ```text
 Milestone 5: co-occurrence or word frequency

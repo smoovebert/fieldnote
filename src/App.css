@@ -924,6 +924,33 @@ button {
   gap: 10px;
 }
 
+.code-hierarchy-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, auto);
+  align-items: end;
+  gap: 10px;
+}
+
+.code-family-summary {
+  min-height: 54px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+
+.code-family-summary span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.code-family-summary small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .code-maintenance-row .secondary-button {
   width: auto;
   margin: 0;
@@ -1627,6 +1654,11 @@ mark {
   cursor: pointer;
   white-space: nowrap;
   font-size: 13px;
+}
+
+.code-picker button small {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .code-picker button.selected {

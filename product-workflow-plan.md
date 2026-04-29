@@ -551,7 +551,7 @@ Right:
 
 ### Current App Gap
 
-The current Codes view shows references, but does not support hierarchy, merging, splitting, definitions as first-class objects, or codebook review.
+Refine now supports first-pass hierarchy, merging, splitting selected text out of references, code definitions, and code memos. It still needs stronger tree manipulation, code splitting workflows, and codebook review states.
 
 ## Mode 4: Classify
 
@@ -897,12 +897,12 @@ Goal: make codebook work real.
 
 Tasks:
 
-- Left: codebook list/tree.
-- Center: references for selected code.
-- Right: code definition + code memo.
-- Add parent/child UI shape.
-- Add rename and description editing.
-- Later: merge/split.
+- Left: codebook list/tree. First pass done.
+- Center: references for selected code. First pass done.
+- Right: code definition + code memo. First pass done.
+- Add parent/child UI shape. First pass done.
+- Add rename and description editing. Done.
+- Later: richer merge/split and review states.
 
 Acceptance criteria:
 
@@ -978,4 +978,4 @@ Best candidates:
 
 - Analyze: word frequency or code co-occurrence.
 - Report: report preview and formatted Word/PDF exports.
-- Refine: parent-child code hierarchy.
+- Refine: hierarchy drag-and-drop and richer codebook cleanup.

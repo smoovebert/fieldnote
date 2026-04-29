@@ -309,7 +309,7 @@ process
 attribute_marker
 ```
 
-Parent/child hierarchy belongs here through `parent_code_id`.
+Parent/child hierarchy belongs here through `parent_code_id`. The current app now reads and writes this field for first-pass codebook trees, parent assignment, and parent-aware codebook export.
 
 ### Coded References
 

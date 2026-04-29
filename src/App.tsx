@@ -36,6 +36,7 @@ type Code = {
   name: string
   color: string
   description: string
+  parentCodeId?: string
 }
 
 type Source = {
@@ -362,6 +363,53 @@ function normalizeQueryDefinition(definition?: Partial<QueryDefinition> | null):
   }
 }
 
+function buildCodeTree(codes: Code[]) {
+  const byParent = new Map<string, Code[]>()
+  codes.forEach((code) => {
+    const parentId = code.parentCodeId && codes.some((item) => item.id === code.parentCodeId) ? code.parentCodeId : 'root'
+    byParent.set(parentId, [...(byParent.get(parentId) ?? []), code])
+  })
+
+  const ordered: Array<Code & { depth: number }> = []
+  const visit = (parentId: string, depth: number, seen: Set<string>) => {
+    const children = [...(byParent.get(parentId) ?? [])].sort((a, b) => a.name.localeCompare(b.name))
+    children.forEach((code) => {
+      if (seen.has(code.id)) return
+      const nextSeen = new Set(seen).add(code.id)
+      ordered.push({ ...code, depth })
+      visit(code.id, depth + 1, nextSeen)
+    })
+  }
+
+  visit('root', 0, new Set())
+  codes.forEach((code) => {
+    if (!ordered.some((item) => item.id === code.id)) ordered.push({ ...code, depth: 0 })
+  })
+
+  return ordered
+}
+
+function descendantCodeIds(codes: Code[], codeId: string) {
+  const childrenByParent = new Map<string, string[]>()
+  codes.forEach((code) => {
+    if (!code.parentCodeId) return
+    childrenByParent.set(code.parentCodeId, [...(childrenByParent.get(code.parentCodeId) ?? []), code.id])
+  })
+
+  const ids: string[] = []
+  const visit = (parentId: string, seen = new Set<string>()) => {
+    const childIds = childrenByParent.get(parentId) ?? []
+    childIds.forEach((childId) => {
+      if (seen.has(childId)) return
+      ids.push(childId)
+      visit(childId, new Set(seen).add(childId))
+    })
+  }
+
+  visit(codeId)
+  return ids
+}
+
 function normalizeProject(project: ProjectRow): ProjectData {
   const fallbackSource: Source = {
     id: 'interview-03',
@@ -459,6 +507,7 @@ function composeProjectFromNormalized(
     name: code.name,
     color: code.color,
     description: code.description,
+    parentCodeId: code.parent_code_id ?? undefined,
   }))
   const memos = memoRows.map<Memo>((memo) => ({
     id: memo.id,
@@ -574,7 +623,8 @@ function App() {
   const selectedCodes = codes.filter((code) => selectedCodeIds.includes(code.id))
   const selectedCodeNames = selectedCodes.map((code) => code.name).join(', ')
   const sourceExcerpts = excerpts.filter((excerpt) => excerpt.sourceId === activeSource.id)
-  const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id))
+  const activeCodeTreeIds = [activeCode.id, ...descendantCodeIds(codes, activeCode.id)]
+  const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.some((codeId) => activeCodeTreeIds.includes(codeId)))
   const activeSources = sources.filter((source) => !source.archived)
   const archivedSources = sources.filter((source) => source.archived)
   const sourceFolders = Array.from(new Set(['Internals', 'Externals', ...activeSources.map((source) => source.folder).filter(Boolean)]))
@@ -616,6 +666,11 @@ function App() {
     .map(() => 'minmax(120px, 0.75fr)')
     .join(' ')} minmax(160px, 1fr) 36px`
   const sourceById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources])
+  const codeById = useMemo(() => new Map(codes.map((code) => [code.id, code])), [codes])
+  const sortedCodes = useMemo(() => buildCodeTree(codes), [codes])
+  const activeCodeParent = activeCode.parentCodeId ? codeById.get(activeCode.parentCodeId) : undefined
+  const activeCodeChildren = codes.filter((code) => code.parentCodeId === activeCode.id)
+  const parentCodeOptions = sortedCodes.filter((code) => code.id !== activeCode.id && !descendantCodeIds(codes, activeCode.id).includes(code.id))
   const caseBySourceId = useMemo(() => {
     const map = new Map<string, Case>()
     cases.forEach((item) => item.sourceIds.forEach((sourceId) => map.set(sourceId, item)))
@@ -759,6 +814,7 @@ function App() {
     const codeRows = nextProjectData.codes.map((code) => ({
       id: code.id,
       project_id: nextProjectId,
+      parent_code_id: code.parentCodeId ?? null,
       name: code.name,
       color: code.color,
       description: code.description,
@@ -1126,8 +1182,8 @@ function App() {
       const selectedCode = codes.find((code) => code.id === queryCodeId)
       return selectedCode ? [selectedCode] : []
     }
-    return codes
-  }, [codes, queryCodeId])
+    return sortedCodes
+  }, [codes, queryCodeId, sortedCodes])
   const matrixColumns = useMemo<MatrixColumn[]>(() => {
     if (matrixColumnMode === 'case') {
       return cases.map((item) => ({
@@ -1224,23 +1280,37 @@ function App() {
     if (!name) return
 
     const addToActiveCodingSet = activeView === 'code'
+    const addAsChild = activeView === 'refine'
     const palette = ['#d9892b', '#2f7ebc', '#9b5a9f', '#5c8f42', '#c45173']
     const code: Code = {
       id: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
       name,
       color: palette[codes.length % palette.length],
       description: 'New research code. Add a short meaning once the pattern becomes clear.',
+      parentCodeId: addAsChild ? activeCode.id : undefined,
     }
 
     setCodes((current) => [...current, code])
     if (addToActiveCodingSet) setSelectedCodeIds((current) => [...current, code.id])
     setActiveCodeId(code.id)
-    setSelectionHint(addToActiveCodingSet ? `Created "${name}" and added it to the active coding set.` : `Created "${name}" in the codebook.`)
+    setSelectionHint(
+      addToActiveCodingSet
+        ? `Created "${name}" and added it to the active coding set.`
+        : addAsChild
+          ? `Created "${name}" under "${activeCode.name}".`
+          : `Created "${name}" in the codebook.`
+    )
     setNewCodeName('')
   }
 
   function updateCode(codeId: string, patch: Partial<Code>) {
     setCodes((current) => current.map((code) => (code.id === codeId ? { ...code, ...patch } : code)))
+  }
+
+  function updateCodeParent(codeId: string, parentCodeId: string) {
+    const invalidParentIds = new Set([codeId, ...descendantCodeIds(codes, codeId)])
+    if (parentCodeId && invalidParentIds.has(parentCodeId)) return
+    updateCode(codeId, { parentCodeId: parentCodeId || undefined })
   }
 
   function deleteActiveCode() {
@@ -1256,7 +1326,7 @@ function App() {
       return
     }
 
-    setCodes(remainingCodes)
+    setCodes(remainingCodes.map((code) => (code.parentCodeId === activeCode.id ? { ...code, parentCodeId: activeCode.parentCodeId } : code)))
     setExcerpts((current) =>
       current
         .map((excerpt) => ({ ...excerpt, codeIds: excerpt.codeIds.filter((codeId) => codeId !== activeCode.id) }))
@@ -1273,6 +1343,7 @@ function App() {
   function mergeActiveCodeIntoTarget() {
     const targetCode = codes.find((code) => code.id === mergeTargetCodeId)
     if (!activeCode || !targetCode || activeCode.id === targetCode.id) return
+    if (descendantCodeIds(codes, activeCode.id).includes(targetCode.id)) return
 
     const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id)).length
     const shouldMerge = window.confirm(
@@ -1290,7 +1361,11 @@ function App() {
           : excerpt
       )
     )
-    setCodes((current) => current.filter((code) => code.id !== activeCode.id))
+    setCodes((current) =>
+      current
+        .filter((code) => code.id !== activeCode.id)
+        .map((code) => (code.parentCodeId === activeCode.id ? { ...code, parentCodeId: targetCode.id } : code))
+    )
     setMemos((current) => current.filter((memo) => !(memo.linkedType === 'code' && memo.linkedId === activeCode.id)))
     setSelectedCodeIds((current) => Array.from(new Set(current.map((codeId) => (codeId === activeCode.id ? targetCode.id : codeId)))))
     setActiveCodeId(targetCode.id)
@@ -1831,10 +1906,10 @@ function App() {
     event.preventDefault()
 
     const rows = [
-      ['Project', 'Code', 'Description', 'References', 'Example excerpt'],
-      ...codes.map((code) => {
+      ['Project', 'Parent code', 'Code', 'Description', 'References', 'Example excerpt'],
+      ...sortedCodes.map((code) => {
         const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id))
-        return [projectTitle, code.name, code.description, String(references.length), references[0]?.text ?? '']
+        return [projectTitle, code.parentCodeId ? codeById.get(code.parentCodeId)?.name ?? '' : '', code.name, code.description, String(references.length), references[0]?.text ?? '']
       }),
     ]
 
@@ -2274,6 +2349,24 @@ function App() {
               </label>
             </div>
 
+            <div className="code-hierarchy-row">
+              <label className="property-field">
+                <span>Parent code</span>
+                <select value={activeCode.parentCodeId ?? ''} onChange={(event) => updateCodeParent(activeCode.id, event.target.value)}>
+                  <option value="">Top-level code</option>
+                  {parentCodeOptions.map((code) => (
+                    <option key={code.id} value={code.id}>
+                      {'-'.repeat(code.depth)} {code.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="code-family-summary">
+                <span>{activeCodeParent ? `Under ${activeCodeParent.name}` : 'Top-level'}</span>
+                <small>{activeCodeChildren.length} child code{activeCodeChildren.length === 1 ? '' : 's'}</small>
+              </div>
+            </div>
+
             <label className="property-field">
               <span>Description</span>
               <textarea
@@ -2289,11 +2382,10 @@ function App() {
                 <span>Merge into</span>
                 <select value={mergeTargetCodeId} onChange={(event) => setMergeTargetCodeId(event.target.value)}>
                   <option value="">Choose another code</option>
-                  {codes
-                    .filter((code) => code.id !== activeCode.id)
+                  {parentCodeOptions
                     .map((code) => (
                       <option key={code.id} value={code.id}>
-                        {code.name}
+                        {'-'.repeat(code.depth)} {code.name}
                       </option>
                     ))}
                 </select>
@@ -2314,7 +2406,7 @@ function App() {
             <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} onSplit={splitExcerpt} />
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
-              <span>Parent/child codes, hierarchy views, and deeper codebook cleanup tools.</span>
+              <span>Code splitting, hierarchy drag-and-drop, and deeper codebook cleanup tools.</span>
             </div>
           </article>
         )}
@@ -2452,9 +2544,9 @@ function App() {
                 <span>Code</span>
                 <select value={queryCodeId} onChange={(event) => setQueryCodeId(event.target.value)}>
                   <option value="">Any code</option>
-                  {codes.map((code) => (
+                  {sortedCodes.map((code) => (
                     <option key={code.id} value={code.id}>
-                      {code.name}
+                      {'-'.repeat(code.depth)} {code.name}
                     </option>
                   ))}
                 </select>
@@ -2778,10 +2870,11 @@ function App() {
               <h2>{activeView === 'code' ? 'Active Codes' : 'Codebook'}</h2>
             </div>
             <div className="code-picker">
-              {codes.map((code) => (
+              {sortedCodes.map((code) => (
                 <button
                   key={code.id}
                   className={(activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id) ? 'selected' : ''}
+                  style={{ marginLeft: activeView === 'refine' ? code.depth * 14 : 0 }}
                   type="button"
                   aria-pressed={activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id}
                   onClick={() => {
@@ -2794,6 +2887,7 @@ function App() {
                 >
                   <span style={{ background: code.color }} />
                   {code.name}
+                  {code.depth > 0 && activeView === 'refine' && <small>Child</small>}
                 </button>
               ))}
             </div>
@@ -2951,6 +3045,8 @@ function ListView({
   onOpenSavedQuery: (query: SavedQuery) => void
   onOpenMatrix: () => void
 }) {
+  const orderedCodes = buildCodeTree(codes)
+
   return (
     <>
       <div className="pane-title">
@@ -2970,12 +3066,12 @@ function ListView({
           </button>
         ))}
       {activeView === 'refine' &&
-        codes.map((code) => (
-          <button className={code.id === activeCodeId ? 'list-item active' : 'list-item'} key={code.id} type="button" onClick={() => onSelectCode(code.id)}>
+        orderedCodes.map((code) => (
+          <button className={code.id === activeCodeId ? 'list-item active' : 'list-item'} key={code.id} type="button" style={{ paddingLeft: 14 + code.depth * 16 }} onClick={() => onSelectCode(code.id)}>
             <span className="code-dot" style={{ background: code.color }} />
             <div>
               <strong>{code.name}</strong>
-              <span>{excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length} references</span>
+              <span>{excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length} direct references</span>
             </div>
           </button>
         ))}
