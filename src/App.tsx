@@ -2471,15 +2471,6 @@ function App() {
             <span className="sidebar-eyebrow">Qualitative workspace</span>
             <span className="sidebar-wordmark">Fieldnote</span>
           </div>
-          <button
-            type="button"
-            className="sidebar-collapse-toggle"
-            onClick={() => setSidebarCollapsed((current) => !current)}
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {sidebarCollapsed ? <ChevronRight size={14} aria-hidden="true" /> : <ChevronLeft size={14} aria-hidden="true" />}
-          </button>
         </div>
 
         <button className="project-switcher project-nav-link" type="button" onClick={returnToProjects} title="Back to project home">
@@ -2595,6 +2586,16 @@ function App() {
               Sign out
             </button>
           </div>
+          <button
+            type="button"
+            className="sidebar-collapse-toggle"
+            onClick={() => setSidebarCollapsed((current) => !current)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <ChevronRight size={14} aria-hidden="true" /> : <ChevronLeft size={14} aria-hidden="true" />}
+            <span className="sidebar-collapse-label">{sidebarCollapsed ? 'Expand' : 'Collapse'}</span>
+          </button>
         </div>
       </aside>
 

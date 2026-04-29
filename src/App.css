@@ -2565,7 +2565,7 @@ textarea {
 /* ----- Brand block --------------------------------------------------- */
 .app-shell[data-shell="new"] .sidebar-brand {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
+  grid-template-columns: 32px 1fr;
   align-items: center;
   gap: var(--s-2);
   padding: 0 var(--s-1) var(--s-3);
@@ -2614,15 +2614,19 @@ textarea {
 }
 
 .app-shell[data-shell="new"] .sidebar-collapse-toggle {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  margin-top: var(--s-1);
+  border-radius: var(--r-2);
   background: transparent;
   color: var(--shell-ink-3);
   border: 0;
   cursor: pointer;
-  display: grid;
-  place-items: center;
+  font: var(--t-ui-sm);
+  text-align: left;
 }
 
 .app-shell[data-shell="new"] .sidebar-collapse-toggle:hover {
@@ -2635,8 +2639,16 @@ textarea {
   justify-content: center;
 }
 
-.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-brand-text,
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-brand-text {
+  display: none;
+}
+
 .app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-collapse-toggle {
+  justify-content: center;
+  padding: var(--s-2) 0;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-collapse-label {
   display: none;
 }
 
