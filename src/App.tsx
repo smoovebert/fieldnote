@@ -12,7 +12,6 @@ import {
   Grid3x3,
   Highlighter,
   ListTree,
-  LogIn,
   LogOut,
   MessageSquareText,
   Plus,
@@ -43,6 +42,7 @@ import {
   type AttributeFilter,
   type QueryDefinition,
 } from './analyze/queryDefinition'
+import { Landing } from './Landing'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
@@ -723,10 +723,6 @@ async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kin
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
-  const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [authStatus, setAuthStatus] = useState('Sign in to sync your research workspace.')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projectTitle, setProjectTitle] = useState('Student Access Study')
   const [projectRows, setProjectRows] = useState<ProjectRow[]>([])
@@ -2095,27 +2091,6 @@ function App() {
     })
   }
 
-  async function submitAuth(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault()
-
-    if (!isSupabaseConfigured) {
-      setAuthStatus('Supabase env variables are missing.')
-      return
-    }
-
-    setAuthStatus(authMode === 'sign-in' ? 'Signing in...' : 'Creating account...')
-    const credentials = { email, password }
-    const { error } =
-      authMode === 'sign-in' ? await supabase.auth.signInWithPassword(credentials) : await supabase.auth.signUp(credentials)
-
-    if (error) {
-      setAuthStatus(error.message)
-      return
-    }
-
-    setAuthStatus(authMode === 'sign-in' ? 'Signed in.' : 'Account created. Check email confirmation settings if needed.')
-  }
-
   async function signOut() {
     await supabase.auth.signOut()
     setSaveStatus('Sign in to sync.')
@@ -2338,45 +2313,7 @@ function App() {
   }
 
   if (!session) {
-    return (
-      <main className="auth-shell">
-        <section className="auth-card">
-          <div className="brand-block">
-            <div className="brand-mark">F</div>
-            <div>
-              <p className="eyebrow">Qualitative workspace</p>
-              <h1>Fieldnote</h1>
-            </div>
-          </div>
-
-          <div className="auth-copy">
-            <h2>{authMode === 'sign-in' ? 'Sign in' : 'Create account'}</h2>
-            <p>Use an account so each researcher has their own synced project. Sharing can build on this next.</p>
-          </div>
-
-          <label className="auth-field">
-            <span>Email</span>
-            <input value={email} type="email" onChange={(event) => setEmail(event.target.value)} />
-          </label>
-
-          <label className="auth-field">
-            <span>Password</span>
-            <input value={password} type="password" onChange={(event) => setPassword(event.target.value)} />
-          </label>
-
-          <button className="auth-submit" type="button" onClick={submitAuth} disabled={!isSupabaseConfigured}>
-            {authMode === 'sign-in' ? <LogIn size={18} aria-hidden="true" /> : <UserPlus size={18} aria-hidden="true" />}
-            {authMode === 'sign-in' ? 'Sign in' : 'Create account'}
-          </button>
-
-          <button className="auth-switch" type="button" onClick={() => setAuthMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'))}>
-            {authMode === 'sign-in' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
-          </button>
-
-          <p className="auth-status">{isSupabaseConfigured ? authStatus : 'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.'}</p>
-        </section>
-      </main>
-    )
+    return <Landing />
   }
 
   if (!projectId) {
