@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   DEFAULT_ANALYZE_VIEW,
+  TOP_N_BOUNDS,
   serialize,
   deserialize,
   clampTopN,
@@ -28,6 +29,7 @@ describe('serialize / deserialize round-trip', () => {
       wordFreq: { view: 'cloud', topN: 50 },
       cooccur:  { view: 'network', topN: 15 },
       matrix:   { view: 'bars', topNRows: 20, topNCols: 25 },
+      crosstab: { attr1Id: null, attr2Id: null, percentMode: 'count', topNRows: 30, topNCols: 40 },
     }
     expect(deserialize({ analyzeView: serialize(state) })).toEqual(state)
   })
@@ -67,4 +69,59 @@ describe('clampTopN', () => {
   it('clamps above max', () => { expect(clampTopN(500, 5, 100)).toBe(100) })
   it('passes through valid values', () => { expect(clampTopN(42, 5, 100)).toBe(42) })
   it('handles non-finite inputs', () => { expect(clampTopN(NaN, 5, 100)).toBe(5) })
+})
+
+describe('analyzeViewState — crosstab', () => {
+  it('exposes crosstab defaults', () => {
+    expect(DEFAULT_ANALYZE_VIEW.crosstab).toEqual({
+      attr1Id: null,
+      attr2Id: null,
+      percentMode: 'count',
+      topNRows: 30,
+      topNCols: 40,
+    })
+  })
+
+  it('exposes crosstab top-N bounds', () => {
+    expect(TOP_N_BOUNDS.crosstabRows).toEqual({ min: 5, max: 30 })
+    expect(TOP_N_BOUNDS.crosstabCols).toEqual({ min: 5, max: 40 })
+  })
+
+  it('roundtrips a crosstab config through serialize/deserialize', () => {
+    const state = {
+      ...DEFAULT_ANALYZE_VIEW,
+      crosstab: {
+        attr1Id: 'attr-a',
+        attr2Id: 'attr-b',
+        percentMode: 'row' as const,
+        topNRows: 25,
+        topNCols: 35,
+      },
+    }
+    expect(deserialize({ analyzeView: serialize(state) })).toEqual(state)
+  })
+
+  it('falls back to defaults when crosstab is missing or malformed', () => {
+    const result = deserialize({ analyzeView: { crosstab: 'nope' } })
+    expect(result.crosstab).toEqual(DEFAULT_ANALYZE_VIEW.crosstab)
+  })
+
+  it('clamps crosstab topN values within bounds', () => {
+    const result = deserialize({
+      analyzeView: {
+        crosstab: { attr1Id: null, attr2Id: null, percentMode: 'count', topNRows: 999, topNCols: 1 },
+      },
+    })
+    expect(result.crosstab.topNRows).toBe(TOP_N_BOUNDS.crosstabRows.max)
+    expect(result.crosstab.topNCols).toBe(TOP_N_BOUNDS.crosstabCols.min)
+  })
+
+  it('rejects unknown percentMode and falls back to count', () => {
+    const result = deserialize({
+      analyzeView: {
+        crosstab: { attr1Id: null, attr2Id: null, percentMode: 'bogus', topNRows: 30, topNCols: 40 },
+      },
+    })
+    expect(result.crosstab.percentMode).toBe('count')
+  })
 })
