@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { exportCanvasPng } from '../exportImage'
 
@@ -20,21 +20,23 @@ type NodeLike = { id?: string | number }
 export function NetworkGraph({ nodes, links, width, height, onSelect, onExporterReady }: Props) {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
 
+  useEffect(() => {
+    if (!onExporterReady) return
+    onExporterReady(async () => {
+      const node = wrapperRef.current
+      if (!node) return null
+      const canvas = node.querySelector('canvas')
+      return canvas ? exportCanvasPng(canvas) : null
+    })
+  }, [onExporterReady])
+
   if (nodes.length < 2) {
     return <div className="chart-empty-state">Network needs &ge; 2 connected codes &mdash; adjust filters.</div>
   }
 
   return (
     <div
-      ref={(node) => {
-        wrapperRef.current = node
-        if (node && onExporterReady) {
-          onExporterReady(async () => {
-            const canvas = node.querySelector('canvas')
-            return canvas ? exportCanvasPng(canvas) : null
-          })
-        }
-      }}
+      ref={wrapperRef}
       style={{ width, height }}
     >
       <ForceGraph2D
