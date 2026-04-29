@@ -1,11 +1,15 @@
 // src/analyze/CooccurrenceView.tsx
-import { useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useMemo, useRef, useState } from 'react'
 import { ChartViewToggle } from './ChartViewToggle'
 import { TopNControl } from './TopNControl'
 import { ExportImageButton } from './ExportImageButton'
 import { Heatmap, type HeatmapCell } from './charts/Heatmap'
-import { NetworkGraph, type NetworkLink, type NetworkNode } from './charts/NetworkGraph'
+import type { NetworkLink, NetworkNode } from './charts/NetworkGraph'
 import { TOP_N_BOUNDS, type CooccurView as ViewKind } from './analyzeViewState'
+
+const NetworkGraph = lazy(() =>
+  import('./charts/NetworkGraph').then((m) => ({ default: m.NetworkGraph })),
+)
 
 export type CooccurPair = {
   codeAId: string; codeAName: string
@@ -116,17 +120,19 @@ export function CooccurrenceView({
           />
         ) : null}
         {view === 'network' ? (
-          <NetworkGraph
-            nodes={networkData.nodes.slice(0, NETWORK_SOFT_CAP)}
-            links={networkData.links.filter((l) =>
-              networkData.nodes.slice(0, NETWORK_SOFT_CAP).some((n) => n.id === l.source) &&
-              networkData.nodes.slice(0, NETWORK_SOFT_CAP).some((n) => n.id === l.target),
-            )}
-            width={640}
-            height={420}
-            onSelect={onCodeSelect}
-            onExporterReady={setExportOverride}
-          />
+          <Suspense fallback={<div className="analyze-view-loading">Loading network…</div>}>
+            <NetworkGraph
+              nodes={networkData.nodes.slice(0, NETWORK_SOFT_CAP)}
+              links={networkData.links.filter((l) =>
+                networkData.nodes.slice(0, NETWORK_SOFT_CAP).some((n) => n.id === l.source) &&
+                networkData.nodes.slice(0, NETWORK_SOFT_CAP).some((n) => n.id === l.target),
+              )}
+              width={640}
+              height={420}
+              onSelect={onCodeSelect}
+              onExporterReady={setExportOverride}
+            />
+          </Suspense>
         ) : null}
         {view === 'table' ? (
           <table className="analyze-table">
