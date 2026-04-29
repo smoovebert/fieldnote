@@ -24,6 +24,15 @@ import {
 } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
+import {
+  DEFAULT_ANALYZE_VIEW,
+  deserialize as deserializeAnalyzeView,
+  serialize as serializeAnalyzeView,
+  type AnalyzeViewState,
+} from './analyze/analyzeViewState'
+import { WordFreqView, type WordFreqRow } from './analyze/WordFreqView'
+import { CooccurrenceView, type CooccurPair } from './analyze/CooccurrenceView'
+import { MatrixView, type MatrixCellInput } from './analyze/MatrixView'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
@@ -75,6 +84,7 @@ type QueryDefinition = {
   caseId: string
   attributeId: string
   attributeValue: string
+  analyzeView?: AnalyzeViewState
 }
 
 type SavedQuery = {
@@ -430,6 +440,9 @@ function normalizeQueryDefinition(definition?: Partial<QueryDefinition> | null):
     caseId: definition?.caseId ?? '',
     attributeId: definition?.attributeId ?? '',
     attributeValue: definition?.attributeValue ?? '',
+    analyzeView: deserializeAnalyzeView(
+      definition ? (definition as { analyzeView?: unknown }) : undefined,
+    ),
   }
 }
 
@@ -681,6 +694,7 @@ function App() {
   const [queryName, setQueryName] = useState('')
   const [activeSavedQueryId, setActiveSavedQueryId] = useState('')
   const [analyzePanel, setAnalyzePanel] = useState<AnalyzePanel>('query')
+  const [analyzeView, setAnalyzeView] = useState<AnalyzeViewState>(DEFAULT_ANALYZE_VIEW)
   const [matrixColumnMode, setMatrixColumnMode] = useState<MatrixColumnMode>('case')
   const [matrixAttributeId, setMatrixAttributeId] = useState('')
   const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
@@ -734,6 +748,7 @@ function App() {
     caseId: queryCaseId,
     attributeId: queryAttributeId,
     attributeValue: queryAttributeValue,
+    analyzeView: serializeAnalyzeView(analyzeView),
   }
   const activeSavedQuery = savedQueries.find((query) => query.id === activeSavedQueryId)
   const caseGridTemplate = `minmax(170px, 1fr) minmax(160px, 1fr) ${attributes
@@ -1344,6 +1359,40 @@ function App() {
 
     return Array.from(pairMap.values()).sort((a, b) => b.count - a.count || a.codes.map((code) => code.name).join(' + ').localeCompare(b.codes.map((code) => code.name).join(' + ')))
   }, [analyzeResults, codeById])
+  const wordFrequencyViewRows = useMemo<WordFreqRow[]>(
+    () => wordFrequencyRows.map((row) => ({ word: row.word, count: row.count, excerptCount: row.excerptCount })),
+    [wordFrequencyRows],
+  )
+  const cooccurrencePairs = useMemo<CooccurPair[]>(
+    () =>
+      coOccurrenceRows.flatMap((row) => {
+        const [a, b] = row.codes
+        if (!a || !b) return []
+        return [{
+          codeAId: a.id,
+          codeAName: a.name,
+          codeBId: b.id,
+          codeBName: b.name,
+          count: row.count,
+          sampleExcerpt: row.excerpts[0]?.text,
+        }]
+      }),
+    [coOccurrenceRows],
+  )
+  const matrixCellInputs = useMemo<MatrixCellInput[]>(
+    () =>
+      matrixResults.flatMap((row) =>
+        row.cells.map((cell) => ({
+          rowId: row.code.id,
+          rowLabel: row.code.name,
+          colId: cell.column.id,
+          colLabel: cell.column.label,
+          count: cell.excerpts.length,
+          sampleExcerpt: cell.excerpts[0]?.text,
+        })),
+      ),
+    [matrixResults],
+  )
   const analyzePanelTitle =
     analyzePanel === 'matrix'
       ? 'Matrix coding'
@@ -1760,6 +1809,7 @@ function App() {
     setQueryCaseId(definition.caseId)
     setQueryAttributeId(definition.attributeId)
     setQueryAttributeValue(definition.attributeValue)
+    setAnalyzeView(definition.analyzeView ?? DEFAULT_ANALYZE_VIEW)
   }
 
   function saveCurrentQuery() {
@@ -2968,132 +3018,59 @@ function App() {
                       ))}
                     </select>
                   </label>
-                  <button className="secondary-button" type="button" onClick={exportMatrixCsv}>
-                    <Download size={16} aria-hidden="true" />
-                    Export matrix CSV
-                  </button>
                 </div>
-                <div className="matrix-table" role="table" aria-label="Matrix coding results">
-                  <div className="matrix-row matrix-head" role="row" style={{ gridTemplateColumns: `minmax(190px, 220px) repeat(${Math.max(matrixColumns.length, 1)}, minmax(190px, 1fr))` }}>
-                    <span>Code</span>
-                    {matrixColumns.map((column) => (
-                      <span key={column.id}>{column.label}</span>
-                    ))}
-                    {!matrixColumns.length && <span>No columns</span>}
-                  </div>
-                  {matrixResults.map((row) => (
-                    <div key={row.code.id} className="matrix-row" role="row" style={{ gridTemplateColumns: `minmax(190px, 220px) repeat(${Math.max(matrixColumns.length, 1)}, minmax(190px, 1fr))` }}>
-                      <div className="matrix-code-label">
-                        <span className="code-dot" style={{ background: row.code.color }} />
-                        <strong>{row.code.name}</strong>
-                      </div>
-                      {row.cells.map((cell) => (
-                        <div className={cell.excerpts.length ? 'matrix-cell has-results' : 'matrix-cell'} key={cell.column.id}>
-                          <strong>{cell.excerpts.length}</strong>
-                          {cell.excerpts.slice(0, 3).map((excerpt) => (
-                            <button key={excerpt.id} type="button" onClick={() => selectActiveSource(excerpt.sourceId)}>
-                              {excerpt.text}
-                            </button>
-                          ))}
-                          {cell.excerpts.length > 3 && <small>+{cell.excerpts.length - 3} more</small>}
-                        </div>
-                      ))}
-                      {!row.cells.length && <div className="matrix-cell">No case or attribute columns yet.</div>}
-                    </div>
-                  ))}
-                  {!matrixResults.length && (
-                    <div className="empty-table-state">
-                      <strong>No matrix rows yet</strong>
-                      <span>Add codes and coded excerpts, then return to this matrix.</span>
-                    </div>
-                  )}
-                </div>
+                <MatrixView
+                  rowLabels={matrixRows.map((code) => code.name)}
+                  colLabels={matrixColumns.map((column) => column.label)}
+                  cells={matrixCellInputs}
+                  view={analyzeView.matrix.view}
+                  topNRows={analyzeView.matrix.topNRows}
+                  topNCols={analyzeView.matrix.topNCols}
+                  onViewChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, view: next } }))}
+                  onTopNRowsChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, topNRows: next } }))}
+                  onTopNColsChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, topNCols: next } }))}
+                  onCellSelect={(rowId, colId) => {
+                    setQueryCodeId(rowId)
+                    if (matrixColumnMode === 'case') setQueryCaseId(colId)
+                    else {
+                      const value = colId.includes(':') ? colId.split(':').slice(1).join(':') : colId
+                      setQueryAttributeValue(value)
+                    }
+                  }}
+                  onExportCsv={() => exportMatrixCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
+                  classifyEmptyMessage={
+                    cases.length === 0 && attributes.length === 0
+                      ? 'Matrix needs cases or attribute values — go to Classify mode.'
+                      : undefined
+                  }
+                />
               </>
             )}
 
             {analyzePanel === 'frequency' && (
-              <>
-                <div className="analysis-toolbar">
-                  <span>Terms are counted from the current filtered excerpts.</span>
-                  <button className="secondary-button" type="button" onClick={exportWordFrequencyCsv}>
-                    <Download size={16} aria-hidden="true" />
-                    Export word CSV
-                  </button>
-                </div>
-                <div className="analysis-table" role="table" aria-label="Word frequency results">
-                  <div className="analysis-row analysis-head" role="row">
-                    <span>Word</span>
-                    <span>Count</span>
-                    <span>Excerpts</span>
-                    <span>Weight</span>
-                  </div>
-                  {wordFrequencyRows.map((row) => {
-                    const maxCount = wordFrequencyRows[0]?.count || 1
-                    return (
-                      <div key={row.word} className="analysis-row" role="row">
-                        <strong>{row.word}</strong>
-                        <span>{row.count}</span>
-                        <span>{row.excerptCount}</span>
-                        <div className="frequency-bar" aria-label={`${row.word} weight`}>
-                          <span style={{ width: `${Math.max(8, (row.count / maxCount) * 100)}%` }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {!wordFrequencyRows.length && (
-                    <div className="empty-table-state">
-                      <strong>No terms found</strong>
-                      <span>Loosen the filters or add longer coded excerpts.</span>
-                    </div>
-                  )}
-                </div>
-              </>
+              <WordFreqView
+                rows={wordFrequencyViewRows}
+                totalExcerpts={analyzeResults.length}
+                view={analyzeView.wordFreq.view}
+                topN={analyzeView.wordFreq.topN}
+                onViewChange={(next) => setAnalyzeView((s) => ({ ...s, wordFreq: { ...s.wordFreq, view: next } }))}
+                onTopNChange={(next) => setAnalyzeView((s) => ({ ...s, wordFreq: { ...s.wordFreq, topN: next } }))}
+                onWordSelect={(word) => setQueryText(word)}
+                onExportCsv={() => exportWordFrequencyCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
+              />
             )}
 
             {analyzePanel === 'cooccurrence' && (
-              <>
-                <div className="analysis-toolbar">
-                  <span>Pairs count coded excerpts that carry both codes.</span>
-                  <button className="secondary-button" type="button" onClick={exportCoOccurrenceCsv}>
-                    <Download size={16} aria-hidden="true" />
-                    Export pairs CSV
-                  </button>
-                </div>
-                <div className="cooccurrence-table" role="table" aria-label="Code co-occurrence results">
-                  <div className="cooccurrence-row cooccurrence-head" role="row">
-                    <span>Code pair</span>
-                    <span>Count</span>
-                    <span>Example excerpts</span>
-                  </div>
-                  {coOccurrenceRows.map((row) => (
-                    <div key={row.key} className="cooccurrence-row" role="row">
-                      <div className="cooccurrence-pair">
-                        {row.codes.map((code) => (
-                          <span key={code.id}>
-                            <i style={{ background: code.color }} />
-                            {code.name}
-                          </span>
-                        ))}
-                      </div>
-                      <strong>{row.count}</strong>
-                      <div className="cooccurrence-excerpts">
-                        {row.excerpts.slice(0, 3).map((excerpt) => (
-                          <button key={excerpt.id} type="button" onClick={() => selectActiveSource(excerpt.sourceId)}>
-                            {excerpt.text}
-                          </button>
-                        ))}
-                        {row.excerpts.length > 3 && <small>+{row.excerpts.length - 3} more</small>}
-                      </div>
-                    </div>
-                  ))}
-                  {!coOccurrenceRows.length && (
-                    <div className="empty-table-state">
-                      <strong>No co-occurring codes yet</strong>
-                      <span>Co-occurrence appears when the same excerpt has two or more codes.</span>
-                    </div>
-                  )}
-                </div>
-              </>
+              <CooccurrenceView
+                pairs={cooccurrencePairs}
+                view={analyzeView.cooccur.view}
+                topN={analyzeView.cooccur.topN}
+                onViewChange={(next) => setAnalyzeView((s) => ({ ...s, cooccur: { ...s.cooccur, view: next } }))}
+                onTopNChange={(next) => setAnalyzeView((s) => ({ ...s, cooccur: { ...s.cooccur, topN: next } }))}
+                onPairSelect={(a) => setQueryCodeId(a)}
+                onCodeSelect={(id) => setQueryCodeId(id)}
+                onExportCsv={() => exportCoOccurrenceCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
+              />
             )}
             <div className="coming-soon-strip">
               <strong>Coming soon</strong>
