@@ -24,6 +24,14 @@ data-model-plan.md
 
 Use that before implementing collaboration, media imports, transcription, serious Analyze mode, AI, or rich exports.
 
+Visual / design direction lives in:
+
+```bash
+docs/design-system.md
+```
+
+That spec ("Modern QDA System") is the source of truth for the creative direction pass: color tokens, typography (Manrope / Newsreader / Inter), spacing, components, and the three-pane layout. Rollout is phased — read the Rollout Plan section before touching styling code.
+
 ## Core Product Correction
 
 Fieldnote should use the full workflow map with MVP depth:
