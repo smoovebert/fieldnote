@@ -104,6 +104,12 @@ spacing:
   inspector-width: 320px
 ---
 
+> **Superseded as of 2026-04-29.** The aesthetic direction now lives in
+> `docs/superpowers/specs/2026-04-29-aesthetic-foundations-landing-design.md`
+> and the design bundle exported from claude.ai/design (Variant A — "Quiet").
+> The body of this file is kept for historical reference only and should not
+> drive new styling work.
+
 ## Brand & Style
 The design system is engineered for the intellectual rigor of qualitative research. It prioritizes a "Zen-like" focus, transforming complex data density into a structured, navigable landscape. The brand personality is scholarly yet technologically advanced—think of it as a digital laboratory where the software recedes to let the researcher's insights take center stage.
 
