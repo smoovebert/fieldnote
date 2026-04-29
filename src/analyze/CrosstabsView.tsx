@@ -48,8 +48,8 @@ export function CrosstabsView({
 
   const colHeaderTotals = useMemo(() => {
     if (!result) return [] as number[]
-    return result.cols.map((c) => totalsByCol.get(c.key) ?? 0)
-  }, [result, totalsByCol])
+    return result.cols.map((c) => result.colTotals.get(c.key) ?? 0)
+  }, [result])
 
   const softCap =
     result &&
@@ -137,21 +137,21 @@ export function CrosstabsView({
                 <th rowSpan={2} className="crosstab-total">Total</th>
               </tr>
               <tr>
-                {result!.cols.map((c) => (
-                  <th key={`${c.key}-total`} className="crosstab-col-total">{colHeaderTotals[result!.cols.indexOf(c)]}</th>
+                {result!.cols.map((c, colIdx) => (
+                  <th key={`${c.key}-total`} className="crosstab-col-total">{colHeaderTotals[colIdx]}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {result!.rows.map((row) => {
+              {result!.rows.map((row, rowIdx) => {
                 const rowTotal = totalsByRow.get(row.id) ?? 0
+                const colCount = result!.cols.length
                 return (
                   <tr key={row.id}>
                     <td>{row.label}</td>
-                    {result!.cols.map((col) => {
-                      const cell = result!.cells.find(
-                        (c) => c.rowId === row.id && c.col1Value === col.col1 && c.col2Value === col.col2,
-                      )
+                    {result!.cols.map((col, colIdx) => {
+                      // cells is dense row-major (rows outer, cols inner) per buildCrosstab
+                      const cell = result!.cells[rowIdx * colCount + colIdx]
                       const count = cell?.count ?? 0
                       const colTotal = totalsByCol.get(col.key) ?? 0
                       const denom = percentMode === 'row' ? rowTotal : percentMode === 'col' ? colTotal : 0
@@ -160,9 +160,7 @@ export function CrosstabsView({
                         <td key={col.key}>{text}</td>
                       )
                     })}
-                    <td className="crosstab-total">
-                      {format(rowTotal, grand, percentMode === 'col' ? 'count' : percentMode === 'row' ? 'count' : 'count')}
-                    </td>
+                    <td className="crosstab-total">{rowTotal}</td>
                   </tr>
                 )
               })}
