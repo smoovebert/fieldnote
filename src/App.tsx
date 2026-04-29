@@ -18,9 +18,11 @@ import {
   Rows3,
   Scissors,
   Search,
+  Settings,
   Tags,
   Trash2,
   UserPlus,
+  X,
 } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -148,6 +150,13 @@ type ProjectData = {
   excerpts: Excerpt[]
 }
 
+type LineNumberingMode = 'paragraph' | 'fixed-width'
+
+const DEFAULT_LINE_NUMBERING_MODE: LineNumberingMode = 'fixed-width'
+const DEFAULT_LINE_NUMBERING_WIDTH = 80
+const LINE_NUMBERING_WIDTH_MIN = 40
+const LINE_NUMBERING_WIDTH_MAX = 160
+
 type ProjectRow = {
   id: string
   title: string
@@ -160,6 +169,8 @@ type ProjectRow = {
   codes: Code[]
   memos?: Memo[] | null
   excerpts: Excerpt[]
+  line_numbering_mode?: LineNumberingMode | null
+  line_numbering_width?: number | null
 }
 
 type NormalizedSourceRow = {
@@ -643,6 +654,70 @@ function postgrestInList(values: string[]) {
   return `(${values.map((value) => value.replaceAll(',', '')).join(',')})`
 }
 
+type TranscriptPiece = { text: string; codes?: Code[] }
+
+function wrapHighlightedTranscript(
+  pieces: TranscriptPiece[],
+  mode: LineNumberingMode,
+  width: number,
+): TranscriptPiece[][] {
+  const lines: TranscriptPiece[][] = [[]]
+  let currentLength = 0
+
+  const pushNewLine = () => {
+    lines.push([])
+    currentLength = 0
+  }
+
+  const pushSegment = (piece: TranscriptPiece, text: string) => {
+    if (!text) return
+    lines[lines.length - 1].push({ ...piece, text })
+    currentLength += text.length
+  }
+
+  for (const piece of pieces) {
+    const paragraphs = piece.text.split('\n')
+    paragraphs.forEach((paragraph, paragraphIndex) => {
+      if (paragraphIndex > 0) pushNewLine()
+
+      if (mode === 'paragraph' || paragraph.length === 0) {
+        pushSegment(piece, paragraph)
+        return
+      }
+
+      let remaining = paragraph
+      while (remaining.length > 0) {
+        const room = width - currentLength
+        if (remaining.length <= room) {
+          pushSegment(piece, remaining)
+          break
+        }
+        // Break at the last space within the remaining room (word-aware).
+        // -1 means no space found at or before `room`.
+        const breakIndex = remaining.lastIndexOf(' ', room)
+        if (breakIndex <= 0) {
+          // No usable break point. If the current line already has content,
+          // wrap to a fresh line and try again. Otherwise hard-break at room
+          // to make progress on a single very long word.
+          if (currentLength > 0) {
+            pushNewLine()
+            continue
+          }
+          pushSegment(piece, remaining.slice(0, room))
+          remaining = remaining.slice(room)
+          pushNewLine()
+          continue
+        }
+        pushSegment(piece, remaining.slice(0, breakIndex))
+        remaining = remaining.slice(breakIndex + 1) // drop the space at the break
+        pushNewLine()
+      }
+    })
+  }
+
+  return lines
+}
+
 async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kind'>> {
   if (file.name.toLowerCase().endsWith('.docx')) {
     const mammoth = await import('mammoth/mammoth.browser')
@@ -700,6 +775,9 @@ function App() {
   const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
   const [quickCodeMenu, setQuickCodeMenu] = useState<QuickCodeMenu | null>(null)
   const [quickNewCodeName, setQuickNewCodeName] = useState('')
+  const [lineNumberingMode, setLineNumberingMode] = useState<LineNumberingMode>(DEFAULT_LINE_NUMBERING_MODE)
+  const [lineNumberingWidth, setLineNumberingWidth] = useState(DEFAULT_LINE_NUMBERING_WIDTH)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
@@ -1008,6 +1086,8 @@ function App() {
 
     setProjectId(project.id)
     setProjectTitle(project.title || 'Untitled project')
+    setLineNumberingMode(project.line_numbering_mode ?? DEFAULT_LINE_NUMBERING_MODE)
+    setLineNumberingWidth(project.line_numbering_width ?? DEFAULT_LINE_NUMBERING_WIDTH)
     setActiveView('organize')
     setActiveSourceId(nextProject.activeSourceId)
     setSources(nextProject.sources)
@@ -1172,6 +1252,8 @@ function App() {
               codes: projectData.codes,
               memos: projectData.memos,
               excerpts: projectData.excerpts,
+              line_numbering_mode: lineNumberingMode,
+              line_numbering_width: lineNumberingWidth,
             })
             .eq('id', currentProjectId)
 
@@ -1195,6 +1277,8 @@ function App() {
                     codes: projectData.codes,
                     memos: projectData.memos,
                     excerpts: projectData.excerpts,
+                    line_numbering_mode: lineNumberingMode,
+                    line_numbering_width: lineNumberingWidth,
                   }
                 : project
             )
@@ -1209,7 +1293,7 @@ function App() {
     }, 700)
 
     return () => window.clearTimeout(timeout)
-  }, [activeSource.content, activeSource.title, projectData, projectId, projectMemo.body, projectTitle, session])
+  }, [activeSource.content, activeSource.title, lineNumberingMode, lineNumberingWidth, projectData, projectId, projectMemo.body, projectTitle, session])
 
   const visibleExcerpts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -1445,17 +1529,8 @@ function App() {
     return pieces
   }, [activeSource.content, codes, sourceExcerpts])
   const highlightedTranscriptLines = useMemo(() => {
-    const lines: Array<Array<{ text: string; codes?: Code[] }>> = [[]]
-
-    highlightedTranscript.forEach((piece) => {
-      piece.text.split('\n').forEach((linePart, partIndex) => {
-        if (partIndex > 0) lines.push([])
-        if (linePart) lines[lines.length - 1].push({ ...piece, text: linePart })
-      })
-    })
-
-    return lines
-  }, [highlightedTranscript])
+    return wrapHighlightedTranscript(highlightedTranscript, lineNumberingMode, lineNumberingWidth)
+  }, [highlightedTranscript, lineNumberingMode, lineNumberingWidth])
 
   function addCode() {
     const name = newCodeName.trim()
@@ -2368,6 +2443,7 @@ function App() {
   }
 
   return (
+    <>
     <main className="app-shell">
       <header className="app-header">
         <div className="brand-block">
@@ -2383,6 +2459,17 @@ function App() {
             <Cloud size={16} aria-hidden="true" />
             <span>{saveStatus}</span>
           </div>
+          {projectId && (
+            <button
+              type="button"
+              className="header-icon-button"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Project settings"
+              title="Project settings"
+            >
+              <Settings size={18} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </header>
 
@@ -3375,6 +3462,101 @@ function App() {
         )}
       </aside>
     </main>
+    {settingsOpen && (
+      <ProjectSettingsModal
+        mode={lineNumberingMode}
+        width={lineNumberingWidth}
+        onModeChange={setLineNumberingMode}
+        onWidthChange={setLineNumberingWidth}
+        onClose={() => setSettingsOpen(false)}
+      />
+    )}
+    </>
+  )
+}
+
+function ProjectSettingsModal({
+  mode,
+  width,
+  onModeChange,
+  onWidthChange,
+  onClose,
+}: {
+  mode: LineNumberingMode
+  width: number
+  onModeChange: (next: LineNumberingMode) => void
+  onWidthChange: (next: number) => void
+  onClose: () => void
+}) {
+  useEffect(() => {
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose} role="presentation">
+      <div
+        className="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-settings-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="modal-header">
+          <h2 id="project-settings-title">Project settings</h2>
+          <button
+            type="button"
+            className="header-icon-button"
+            onClick={onClose}
+            aria-label="Close settings"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </header>
+
+        <section className="modal-section">
+          <h3>Display</h3>
+          <p className="modal-section-help">
+            Controls how line numbers are assigned in the source reader.
+          </p>
+
+          <label className="modal-field">
+            <span>Line numbering</span>
+            <select
+              value={mode}
+              onChange={(event) => onModeChange(event.target.value as LineNumberingMode)}
+            >
+              <option value="fixed-width">Fixed width (citation-stable)</option>
+              <option value="paragraph">Per paragraph</option>
+            </select>
+          </label>
+
+          <label className="modal-field">
+            <span>Line width (characters)</span>
+            <input
+              type="number"
+              min={LINE_NUMBERING_WIDTH_MIN}
+              max={LINE_NUMBERING_WIDTH_MAX}
+              step={1}
+              value={width}
+              disabled={mode !== 'fixed-width'}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                if (!Number.isFinite(next)) return
+                const clamped = Math.min(
+                  LINE_NUMBERING_WIDTH_MAX,
+                  Math.max(LINE_NUMBERING_WIDTH_MIN, Math.round(next)),
+                )
+                onWidthChange(clamped)
+              }}
+            />
+          </label>
+        </section>
+      </div>
+    </div>
   )
 }
 

@@ -12,6 +12,10 @@ create table if not exists public.fieldnote_projects (
   memos jsonb not null default '[]'::jsonb,
   codes jsonb not null default '[]'::jsonb,
   excerpts jsonb not null default '[]'::jsonb,
+  line_numbering_mode text not null default 'fixed-width'
+    check (line_numbering_mode in ('paragraph', 'fixed-width')),
+  line_numbering_width integer not null default 80
+    check (line_numbering_width between 40 and 160),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

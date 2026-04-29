@@ -2337,3 +2337,113 @@ textarea {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
 .soft-cap-banner button { margin-left: auto; }
+
+/* Header icon button (gear, modal close) */
+.header-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e1e3e4;
+  background: #ffffff;
+  border-radius: 6px;
+  color: #3f484a;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.header-icon-button:hover {
+  background: #f3f4f5;
+  border-color: #bfc8c9;
+  color: #191c1d;
+}
+.header-icon-button:focus-visible {
+  outline: 2px solid #20686f;
+  outline-offset: 2px;
+}
+
+/* Project settings modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(25, 28, 29, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+  padding: 24px;
+}
+.modal-card {
+  background: #ffffff;
+  border: 1px solid #e1e3e4;
+  border-radius: 8px;
+  box-shadow: 0 12px 24px rgba(25, 28, 29, 0.10);
+  width: min(520px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 0;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #e1e3e4;
+}
+.modal-header h2 {
+  font-family: Manrope, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #191c1d;
+}
+.modal-section {
+  padding: 20px 24px 24px;
+}
+.modal-section h3 {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #3f484a;
+  margin: 0 0 8px;
+}
+.modal-section-help {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #3f484a;
+}
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.modal-field > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #191c1d;
+}
+.modal-field select,
+.modal-field input[type='number'] {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #bfc8c9;
+  border-radius: 4px;
+  background: #ffffff;
+  font-size: 14px;
+  color: #191c1d;
+  transition: border-color 150ms ease;
+}
+.modal-field select:focus,
+.modal-field input[type='number']:focus {
+  outline: none;
+  border-color: #20686f;
+}
+.modal-field input[type='number']:disabled {
+  background: #f3f4f5;
+  color: #6f797a;
+  cursor: not-allowed;
+}
