@@ -826,6 +826,22 @@ This unlocks:
 - matrix coding
 - charts and visualizations
 
+#### Saved Query View Persistence (M5.1)
+
+`fieldnote_queries.definition` JSON now includes an optional `analyzeView` key:
+
+```json
+{
+  "analyzeView": {
+    "wordFreq": { "view": "bar | cloud | table", "topN": 25 },
+    "cooccur":  { "view": "heatmap | network | table", "topN": 30 },
+    "matrix":   { "view": "heatmap | bars | table", "topNRows": 30, "topNCols": 30 }
+  }
+}
+```
+
+This is additive and requires no migration. Legacy queries (no `analyzeView`) deserialize to defaults via `src/analyze/analyzeViewState.ts`. Future first-class viz objects (named, shareable) will live in `fieldnote_visualizations` per the rest of this Phase; `analyzeView` is the lightweight predecessor for per-saved-query view memory.
+
 ### Phase 5: Collaboration And Review
 
 Expand:

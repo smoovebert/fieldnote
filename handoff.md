@@ -336,6 +336,14 @@ Typing in a missing context memo creates it automatically.
 - Word frequency is implemented as a first MVP pass over the current filtered coded excerpts, with term counts, excerpt counts, weight bars, and CSV export.
 - Code co-occurrence is implemented as a first MVP pass over the current filtered coded excerpts, counting code pairs that appear on the same excerpt, with excerpt previews and CSV export.
 - The Analyze right rail now summarizes result count, matching cases, matching codes, active filters, and exports the active Analyze surface.
+- Word frequency, code co-occurrence, and matrix coding each have a 3-way toggle: Table / Chart A / Chart B.
+  - Word frequency → Bar chart, Word cloud, Table.
+  - Co-occurrence → Heatmap, Network graph (force-directed), Table.
+  - Matrix → Heatmap, Grouped bars, Table.
+- Each chart supports click-to-drill — clicking a bar/cell/node adds the corresponding filter chip.
+- PNG export per chart, in addition to existing CSV export.
+- Top-N controls per chart (defaults: word freq 25, co-occurrence 30, matrix 30 × 30). Network view shows a soft-cap banner past 20 codes.
+- Saved queries persist the active view per analysis on `fieldnote_queries.definition.analyzeView`. No migration; legacy queries deserialize to defaults.
 
 ## Current Known Issues
 
@@ -400,18 +408,17 @@ Still needed:
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
 - Refine mode still needs hierarchy drag-and-drop, stronger code splitting, and deeper codebook cleanup tools.
 - Classify still needs attribute import, case groups, and better filtering.
-- Advanced Analyze/Report features like crosstabs, visualizations, report preview, and Word/PDF export are intentionally placeholders for MVP.
+- M5.2 (crosstabs): codes × N attribute groups, totals, percentages.
+- M5.3 (query result snapshots): persist `fieldnote_query_results` rows for point-in-time captures.
+- Report preview and Word/PDF export remain placeholders for MVP.
 
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should continue from basic analysis/refinement into either crosstabs/visualization scaffolding or richer report outputs:
-
-```text
-Milestone 5: crosstabs or analysis visualization scaffolding
-Milestone 6: report preview / formatted Word-PDF outputs
-```
+Next implementation should pick up either:
+- Milestone B (M6 Report mode): report preview / formatted Word/PDF outputs, reusing `src/analyze/exportImage.ts`.
+- Or M5.2 (crosstabs) before Milestone B if the analysis depth matters more than report depth right now.
 
 ## Design Direction
 
@@ -442,6 +449,7 @@ https://fieldnote-seven.vercel.app
 
 ## Recent Commits
 
+- `5339fd2` Add M5.1 Analyze visualizations (integrate views, lazy NetworkGraph chunk)
 - `d7ee415` Document mode-based product plan
 - `5589edd` Add handoff and enlarge memo rail
 - `254523b` Make right rail memo context aware
