@@ -800,6 +800,8 @@ This phase should introduce Supabase Storage or another durable file store.
 
 ### Phase 4: Queries And Analysis
 
+Status: first MVP pass started in `20260429010000_add_saved_queries.sql`.
+
 Create:
 
 ```text

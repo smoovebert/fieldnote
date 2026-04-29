@@ -199,6 +199,11 @@ Supabase tables currently used:
 - `fieldnote_source_segments`
 - `fieldnote_coded_references`
 - `fieldnote_memos`
+- `fieldnote_cases`
+- `fieldnote_case_sources`
+- `fieldnote_attributes`
+- `fieldnote_attribute_values`
+- `fieldnote_queries`
 
 Schema:
 
@@ -219,6 +224,7 @@ Applied migrations:
 - `20260428000000_fix_fieldnote_rls_recursion.sql`
 - `20260428010000_normalize_core_objects.sql`
 - `20260428020000_add_cases_and_attributes.sql`
+- `20260429010000_add_saved_queries.sql`
 
 Current project data is now dual-written:
 
@@ -227,6 +233,7 @@ Current project data is now dual-written:
 - `case_sources`
 - `attributes`
 - `attribute_values`
+- `saved_queries`
 - `codes`
 - `memos`
 - `excerpts`
@@ -318,6 +325,7 @@ Typing in a missing context memo creates it automatically.
 - Analyze mode now has a first-pass query builder instead of duplicating excerpt panels.
 - Query filters include text search, code, case/participant, attribute, and attribute value.
 - Query results show source, case, codes, excerpt text, and note in a structured table.
+- Users can save the current Analyze filter setup as a named saved query, reopen it from the Analyze left rail, update it, delete it, and export its current results.
 - The Analyze right rail now summarizes result count, matching cases, matching codes, active filters, and query export.
 
 ## Current Known Issues
@@ -326,7 +334,7 @@ Typing in a missing context memo creates it automatically.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
-- Analyze is first-pass only: it has useful filters, but not saved queries, matrix coding, word frequency, or co-occurrence yet.
+- Analyze is first-pass only: it has useful filters and saved queries, but not matrix coding, word frequency, or co-occurrence yet.
 - Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
 - Code hierarchy and parent-child nodes are not implemented.
@@ -386,10 +394,10 @@ Still needed:
 
 Do **not** add more one-off UI panels.
 
-Next implementation should continue from the export foundation into saved/reusable analysis:
+Next implementation should continue from saved/reusable analysis into the first matrix-style comparison:
 
 ```text
-Milestone 5: saved queries or first matrix coding view
+Milestone 5: first matrix coding view
 Milestone 6: report preview / formatted Word-PDF outputs
 ```
 

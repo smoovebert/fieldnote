@@ -249,6 +249,17 @@ create table if not exists public.fieldnote_attribute_values (
   foreign key (project_id, attribute_id) references public.fieldnote_attributes(project_id, id) on delete cascade
 );
 
+create table if not exists public.fieldnote_queries (
+  id text not null,
+  project_id uuid not null references public.fieldnote_projects(id) on delete cascade,
+  name text not null default 'Untitled query',
+  query_type text not null default 'coded_excerpt',
+  definition jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (project_id, id)
+);
+
 alter table public.fieldnote_sources enable row level security;
 alter table public.fieldnote_folders enable row level security;
 alter table public.fieldnote_codes enable row level security;
@@ -259,6 +270,7 @@ alter table public.fieldnote_cases enable row level security;
 alter table public.fieldnote_case_sources enable row level security;
 alter table public.fieldnote_attributes enable row level security;
 alter table public.fieldnote_attribute_values enable row level security;
+alter table public.fieldnote_queries enable row level security;
 
 create trigger set_fieldnote_cases_updated_at
 before update on public.fieldnote_cases
@@ -270,6 +282,10 @@ for each row execute function public.set_fieldnote_updated_at();
 
 create trigger set_fieldnote_attribute_values_updated_at
 before update on public.fieldnote_attribute_values
+for each row execute function public.set_fieldnote_updated_at();
+
+create trigger set_fieldnote_queries_updated_at
+before update on public.fieldnote_queries
 for each row execute function public.set_fieldnote_updated_at();
 
 create policy "Project members can read sources" on public.fieldnote_sources for select to authenticated
@@ -370,4 +386,14 @@ create policy "Project editors can update attribute values" on public.fieldnote_
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor')
 with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
 create policy "Project editors can delete attribute values" on public.fieldnote_attribute_values for delete to authenticated
+using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
+
+create policy "Project members can read queries" on public.fieldnote_queries for select to authenticated
+using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) is not null);
+create policy "Project editors can insert queries" on public.fieldnote_queries for insert to authenticated
+with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
+create policy "Project editors can update queries" on public.fieldnote_queries for update to authenticated
+using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor')
+with check (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');
+create policy "Project editors can delete queries" on public.fieldnote_queries for delete to authenticated
 using (public.fieldnote_project_owner_id(project_id) = auth.uid() or public.fieldnote_project_member_role(project_id, auth.uid()) = 'editor');

@@ -1030,6 +1030,22 @@ button {
   white-space: nowrap;
 }
 
+.query-save-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.query-save-row .secondary-button {
+  width: auto;
+  margin: 0;
+  padding: 0 13px;
+  white-space: nowrap;
+}
+
 .query-results-table {
   overflow-x: auto;
   border-top: 1px solid var(--line);

@@ -661,10 +661,10 @@ First MVP pass implemented:
 - structured result table
 - query summary rail
 - query result CSV export
+- saved named queries
 
 Still missing:
 
-- saved queries
 - word frequency
 - code co-occurrence
 - matrix coding

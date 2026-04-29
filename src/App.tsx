@@ -66,6 +66,21 @@ type AttributeValue = {
   value: string
 }
 
+type QueryDefinition = {
+  text: string
+  codeId: string
+  caseId: string
+  attributeId: string
+  attributeValue: string
+}
+
+type SavedQuery = {
+  id: string
+  name: string
+  queryType: 'coded_excerpt'
+  definition: QueryDefinition
+}
+
 type Memo = {
   id: string
   title: string
@@ -89,6 +104,7 @@ type ProjectData = {
   cases: Case[]
   attributes: Attribute[]
   attributeValues: AttributeValue[]
+  savedQueries: SavedQuery[]
   codes: Code[]
   memos: Memo[]
   excerpts: Excerpt[]
@@ -180,6 +196,14 @@ type NormalizedAttributeValueRow = {
   value: string
 }
 
+type NormalizedQueryRow = {
+  id: string
+  project_id: string
+  name: string
+  query_type: SavedQuery['queryType']
+  definition: Partial<QueryDefinition> | null
+}
+
 const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
 
 Participant: It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else. After a while it felt like the system was testing whether I would give up.
@@ -247,6 +271,8 @@ const initialAttributes: Attribute[] = [
 
 const initialAttributeValues: AttributeValue[] = []
 
+const initialSavedQueries: SavedQuery[] = []
+
 const initialMemos: Memo[] = [
   {
     id: 'project-memo',
@@ -281,6 +307,7 @@ const defaultProject: ProjectData = {
   cases: initialCases,
   attributes: initialAttributes,
   attributeValues: initialAttributeValues,
+  savedQueries: initialSavedQueries,
   codes: initialCodes,
   memos: initialMemos,
   excerpts: initialExcerpts,
@@ -317,6 +344,16 @@ function casesFromSources(sources: Source[]): Case[] {
   return Array.from(casesByName.values())
 }
 
+function normalizeQueryDefinition(definition?: Partial<QueryDefinition> | null): QueryDefinition {
+  return {
+    text: definition?.text ?? '',
+    codeId: definition?.codeId ?? '',
+    caseId: definition?.caseId ?? '',
+    attributeId: definition?.attributeId ?? '',
+    attributeValue: definition?.attributeValue ?? '',
+  }
+}
+
 function normalizeProject(project: ProjectRow): ProjectData {
   const fallbackSource: Source = {
     id: 'interview-03',
@@ -343,6 +380,7 @@ function normalizeProject(project: ProjectRow): ProjectData {
     cases: casesFromSources(sources),
     attributes: initialAttributes,
     attributeValues: initialAttributeValues,
+    savedQueries: initialSavedQueries,
     codes: project.codes?.length ? project.codes : defaultProject.codes,
     memos,
     excerpts: (project.excerpts ?? []).map((excerpt) => ({
@@ -362,7 +400,8 @@ function composeProjectFromNormalized(
   caseRows: NormalizedCaseRow[] = [],
   caseSourceRows: NormalizedCaseSourceRow[] = [],
   attributeRows: NormalizedAttributeRow[] = [],
-  attributeValueRows: NormalizedAttributeValueRow[] = []
+  attributeValueRows: NormalizedAttributeValueRow[] = [],
+  queryRows: NormalizedQueryRow[] = []
 ): ProjectData {
   const caseNameBySourceId = new Map<string, string>()
   const caseNameById = new Map(caseRows.map((caseRow) => [caseRow.id, caseRow.name]))
@@ -400,6 +439,12 @@ function composeProjectFromNormalized(
     caseId: attributeValue.case_id,
     attributeId: attributeValue.attribute_id,
     value: attributeValue.value,
+  }))
+  const savedQueries = queryRows.map<SavedQuery>((query) => ({
+    id: query.id,
+    name: query.name,
+    queryType: query.query_type,
+    definition: normalizeQueryDefinition(query.definition),
   }))
   const codes = codeRows.map<Code>((code) => ({
     id: code.id,
@@ -441,6 +486,7 @@ function composeProjectFromNormalized(
     cases: cases.length ? cases : casesFromSources(sources),
     attributes: attributes.length ? attributes : initialAttributes,
     attributeValues,
+    savedQueries,
     codes: codes.length ? codes : normalizeProject(project).codes,
     memos: memos.length ? memos : normalizeProject(project).memos,
     excerpts,
@@ -491,6 +537,7 @@ function App() {
   const [cases, setCases] = useState(defaultProject.cases)
   const [attributes, setAttributes] = useState(defaultProject.attributes)
   const [attributeValues, setAttributeValues] = useState(defaultProject.attributeValues)
+  const [savedQueries, setSavedQueries] = useState(defaultProject.savedQueries)
   const [codes, setCodes] = useState(defaultProject.codes)
   const [memos, setMemos] = useState(defaultProject.memos)
   const [excerpts, setExcerpts] = useState(defaultProject.excerpts)
@@ -504,6 +551,8 @@ function App() {
   const [queryCaseId, setQueryCaseId] = useState('')
   const [queryAttributeId, setQueryAttributeId] = useState('')
   const [queryAttributeValue, setQueryAttributeValue] = useState('')
+  const [queryName, setQueryName] = useState('')
+  const [activeSavedQueryId, setActiveSavedQueryId] = useState('')
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
@@ -541,9 +590,17 @@ function App() {
         ? `${activeCode.name} memo`
         : 'Project memo'
   const projectData = useMemo<ProjectData>(
-    () => ({ activeSourceId, sources, cases, attributes, attributeValues, codes, memos, excerpts }),
-    [activeSourceId, attributeValues, attributes, cases, codes, excerpts, memos, sources]
+    () => ({ activeSourceId, sources, cases, attributes, attributeValues, savedQueries, codes, memos, excerpts }),
+    [activeSourceId, attributeValues, attributes, cases, codes, excerpts, memos, savedQueries, sources]
   )
+  const currentQueryDefinition: QueryDefinition = {
+    text: queryText,
+    codeId: queryCodeId,
+    caseId: queryCaseId,
+    attributeId: queryAttributeId,
+    attributeValue: queryAttributeValue,
+  }
+  const activeSavedQuery = savedQueries.find((query) => query.id === activeSavedQueryId)
   const caseGridTemplate = `minmax(170px, 1fr) minmax(160px, 1fr) ${attributes
     .map(() => 'minmax(120px, 0.75fr)')
     .join(' ')} minmax(160px, 1fr) 36px`
@@ -567,7 +624,7 @@ function App() {
 
   async function loadProjectData(project: ProjectRow) {
     try {
-      const [sourceResult, codeResult, memoResult, segmentResult, referenceResult, caseResult, caseSourceResult, attributeResult, attributeValueResult] = await Promise.all([
+      const [sourceResult, codeResult, memoResult, segmentResult, referenceResult, caseResult, caseSourceResult, attributeResult, attributeValueResult, queryResult] = await Promise.all([
         supabase.from('fieldnote_sources').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_codes').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_memos').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
@@ -577,6 +634,7 @@ function App() {
         supabase.from('fieldnote_case_sources').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_attributes').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
         supabase.from('fieldnote_attribute_values').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
+        supabase.from('fieldnote_queries').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
       ])
 
       const normalizedError =
@@ -588,7 +646,8 @@ function App() {
         caseResult.error ??
         caseSourceResult.error ??
         attributeResult.error ??
-        attributeValueResult.error
+        attributeValueResult.error ??
+        queryResult.error
       if (normalizedError) throw normalizedError
 
       const normalizedSources = (sourceResult.data ?? []) as NormalizedSourceRow[]
@@ -600,6 +659,7 @@ function App() {
       const normalizedCaseSources = (caseSourceResult.data ?? []) as NormalizedCaseSourceRow[]
       const normalizedAttributes = (attributeResult.data ?? []) as NormalizedAttributeRow[]
       const normalizedAttributeValues = (attributeValueResult.data ?? []) as NormalizedAttributeValueRow[]
+      const normalizedQueries = (queryResult.data ?? []) as NormalizedQueryRow[]
 
       if (
         normalizedSources.length ||
@@ -608,7 +668,8 @@ function App() {
         normalizedSegments.length ||
         normalizedReferences.length ||
         normalizedCases.length ||
-        normalizedAttributes.length
+        normalizedAttributes.length ||
+        normalizedQueries.length
       ) {
         return composeProjectFromNormalized(
           project,
@@ -620,7 +681,8 @@ function App() {
           normalizedCases,
           normalizedCaseSources,
           normalizedAttributes,
-          normalizedAttributeValues
+          normalizedAttributeValues,
+          normalizedQueries
         )
       }
     } catch (error) {
@@ -676,6 +738,13 @@ function App() {
         attribute_id: attributeValue.attributeId,
         value: attributeValue.value,
       }))
+    const queryRows = nextProjectData.savedQueries.map((query) => ({
+      id: query.id,
+      project_id: nextProjectId,
+      name: query.name,
+      query_type: query.queryType,
+      definition: query.definition,
+    }))
     const codeRows = nextProjectData.codes.map((code) => ({
       id: code.id,
       project_id: nextProjectId,
@@ -713,6 +782,7 @@ function App() {
       sourceRows.length ? supabase.from('fieldnote_sources').upsert(sourceRows, { onConflict: 'project_id,id' }) : undefined,
       caseRows.length ? supabase.from('fieldnote_cases').upsert(caseRows, { onConflict: 'project_id,id' }) : undefined,
       attributeRows.length ? supabase.from('fieldnote_attributes').upsert(attributeRows, { onConflict: 'project_id,id' }) : undefined,
+      queryRows.length ? supabase.from('fieldnote_queries').upsert(queryRows, { onConflict: 'project_id,id' }) : undefined,
       codeRows.length ? supabase.from('fieldnote_codes').upsert(codeRows, { onConflict: 'project_id,id' }) : undefined,
       memoRows.length ? supabase.from('fieldnote_memos').upsert(memoRows, { onConflict: 'project_id,id' }) : undefined,
       segmentRows.length ? supabase.from('fieldnote_source_segments').upsert(segmentRows, { onConflict: 'project_id,id' }) : undefined,
@@ -725,6 +795,7 @@ function App() {
     const existingSourceIds = nextProjectData.sources.map((source) => source.id)
     const existingCaseIds = nextProjectData.cases.map((item) => item.id)
     const existingAttributeIds = nextProjectData.attributes.map((attribute) => attribute.id)
+    const existingQueryIds = nextProjectData.savedQueries.map((query) => query.id)
     const existingCodeIds = nextProjectData.codes.map((code) => code.id)
     const existingMemoIds = nextProjectData.memos.map((memo) => memo.id)
     const existingSegmentIds = nextProjectData.excerpts.map((excerpt) => excerpt.id)
@@ -753,6 +824,9 @@ function App() {
       existingAttributeIds.length
         ? supabase.from('fieldnote_attributes').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingAttributeIds))
         : supabase.from('fieldnote_attributes').delete().eq('project_id', nextProjectId),
+      existingQueryIds.length
+        ? supabase.from('fieldnote_queries').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingQueryIds))
+        : supabase.from('fieldnote_queries').delete().eq('project_id', nextProjectId),
       existingCodeIds.length
         ? supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingCodeIds))
         : supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId),
@@ -784,12 +858,20 @@ function App() {
     setCases(nextProject.cases)
     setAttributes(nextProject.attributes)
     setAttributeValues(nextProject.attributeValues)
+    setSavedQueries(nextProject.savedQueries)
     setCodes(nextProject.codes)
     setMemos(nextProject.memos)
     setExcerpts(nextProject.excerpts)
     setActiveCodeId(nextProject.codes[0]?.id ?? initialCodes[0].id)
     setActiveMemoId(nextProject.memos[0]?.id ?? initialMemos[0].id)
     setSelectedCodeIds(nextProject.codes[0]?.id ? [nextProject.codes[0].id] : [initialCodes[0].id])
+    setQueryText('')
+    setQueryCodeId('')
+    setQueryCaseId('')
+    setQueryAttributeId('')
+    setQueryAttributeValue('')
+    setQueryName('')
+    setActiveSavedQueryId('')
     setSourceFolderFilter('All')
     hasLoadedRemoteProject.current = true
     setSaveStatus('Project open.')
@@ -1345,6 +1427,55 @@ function App() {
     })
   }
 
+  function applyQueryDefinition(definition: QueryDefinition) {
+    setQueryText(definition.text)
+    setQueryCodeId(definition.codeId)
+    setQueryCaseId(definition.caseId)
+    setQueryAttributeId(definition.attributeId)
+    setQueryAttributeValue(definition.attributeValue)
+  }
+
+  function saveCurrentQuery() {
+    const name = queryName.trim() || activeSavedQuery?.name || 'Untitled query'
+    const nextQuery: SavedQuery = {
+      id: activeSavedQueryId || `query-${Date.now()}`,
+      name,
+      queryType: 'coded_excerpt',
+      definition: currentQueryDefinition,
+    }
+
+    setSavedQueries((current) => {
+      const exists = current.some((query) => query.id === nextQuery.id)
+      return exists ? current.map((query) => (query.id === nextQuery.id ? nextQuery : query)) : [nextQuery, ...current]
+    })
+    setActiveSavedQueryId(nextQuery.id)
+    setQueryName(nextQuery.name)
+  }
+
+  function openSavedQuery(query: SavedQuery) {
+    applyQueryDefinition(query.definition)
+    setActiveSavedQueryId(query.id)
+    setQueryName(query.name)
+  }
+
+  function deleteSavedQuery(queryId: string) {
+    const query = savedQueries.find((item) => item.id === queryId)
+    const shouldDelete = window.confirm(`Delete saved query "${query?.name ?? 'Untitled query'}"? This cannot be undone.`)
+    if (!shouldDelete) return
+
+    setSavedQueries((current) => current.filter((item) => item.id !== queryId))
+    if (activeSavedQueryId === queryId) {
+      setActiveSavedQueryId('')
+      setQueryName('')
+    }
+  }
+
+  function clearQueryFilters() {
+    applyQueryDefinition(normalizeQueryDefinition())
+    setActiveSavedQueryId('')
+    setQueryName('')
+  }
+
   function archiveActiveSource() {
     updateSource(activeSource.id, { archived: true })
     const nextSource = activeSources.find((source) => source.id !== activeSource.id) ?? sources.find((source) => source.id !== activeSource.id)
@@ -1876,6 +2007,8 @@ function App() {
             sources={activeSources}
             visibleSources={activeView === 'organize' ? visibleSources : sources}
             cases={cases}
+            savedQueries={savedQueries}
+            activeSavedQueryId={activeSavedQueryId}
             codes={codes}
             excerpts={excerpts}
             onSelectSource={(id) => {
@@ -1887,6 +2020,11 @@ function App() {
               setActiveCodeId(id)
               setActiveView('refine')
             }}
+            onUseCurrentQuery={() => {
+              setActiveSavedQueryId('')
+              setQueryName('')
+            }}
+            onOpenSavedQuery={openSavedQuery}
           />
         </section>
 
@@ -2198,7 +2336,7 @@ function App() {
             <div className="source-register-heading">
               <div>
                 <p className="detail-kicker">Query builder</p>
-                <h2>Coded excerpt query</h2>
+                <h2>{activeSavedQuery?.name ?? 'Coded excerpt query'}</h2>
               </div>
               <span className="reference-count">{analyzeResults.length} results</span>
             </div>
@@ -2261,15 +2399,20 @@ function App() {
               <button
                 className="secondary-button query-clear"
                 type="button"
-                onClick={() => {
-                  setQueryText('')
-                  setQueryCodeId('')
-                  setQueryCaseId('')
-                  setQueryAttributeId('')
-                  setQueryAttributeValue('')
-                }}
+                onClick={clearQueryFilters}
               >
                 Clear filters
+              </button>
+            </div>
+
+            <div className="query-save-row">
+              <label className="property-field">
+                <span>Saved query name</span>
+                <input value={queryName} placeholder="Name this analytic question" onChange={(event) => setQueryName(event.target.value)} />
+              </label>
+              <button className="secondary-button" type="button" onClick={saveCurrentQuery}>
+                <Plus size={16} aria-hidden="true" />
+                {activeSavedQuery ? 'Update query' : 'Save query'}
               </button>
             </div>
 
@@ -2540,6 +2683,12 @@ function App() {
                 <span>None. Showing all coded excerpts.</span>
               )}
             </div>
+            {activeSavedQuery && (
+              <button className="danger-button" type="button" onClick={() => deleteSavedQuery(activeSavedQuery.id)}>
+                <Trash2 size={17} aria-hidden="true" />
+                Delete saved query
+              </button>
+            )}
             <button className="secondary-button" type="button" onClick={exportAnalyzeCsv}>
               <Download size={17} aria-hidden="true" />
               Export query CSV
@@ -2603,10 +2752,14 @@ function ListView({
   sources,
   visibleSources,
   cases,
+  savedQueries,
+  activeSavedQueryId,
   codes,
   excerpts,
   onSelectSource,
   onSelectCode,
+  onUseCurrentQuery,
+  onOpenSavedQuery,
 }: {
   activeView: WorkspaceView
   activeSourceId: string
@@ -2614,10 +2767,14 @@ function ListView({
   sources: Source[]
   visibleSources: Source[]
   cases: Case[]
+  savedQueries: SavedQuery[]
+  activeSavedQueryId: string
   codes: Code[]
   excerpts: Excerpt[]
   onSelectSource: (id: string) => void
   onSelectCode: (id: string) => void
+  onUseCurrentQuery: () => void
+  onOpenSavedQuery: (query: SavedQuery) => void
 }) {
   return (
     <>
@@ -2671,13 +2828,26 @@ function ListView({
       )}
       {activeView === 'analyze' && (
         <>
-          <button className="list-item active" type="button">
+          <button
+            className={activeSavedQueryId ? 'list-item' : 'list-item active'}
+            type="button"
+            onClick={onUseCurrentQuery}
+          >
             <Search size={17} aria-hidden="true" />
             <div>
-              <strong>Text search</strong>
-              <span>Search across coded excerpts</span>
+              <strong>Current query</strong>
+              <span>Filter coded excerpts</span>
             </div>
           </button>
+          {savedQueries.map((query) => (
+            <button className={query.id === activeSavedQueryId ? 'list-item active' : 'list-item'} key={query.id} type="button" onClick={() => onOpenSavedQuery(query)}>
+              <FileText size={17} aria-hidden="true" />
+              <div>
+                <strong>{query.name}</strong>
+                <span>Saved query</span>
+              </div>
+            </button>
+          ))}
           <button className="list-item" type="button">
             <Rows3 size={17} aria-hidden="true" />
             <div>
