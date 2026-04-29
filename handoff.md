@@ -269,6 +269,7 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 ### Coding
 
 - Users can select source text and code it.
+- Code mode displays source text with line numbers; line numbers are not part of the source text.
 - One excerpt can have multiple codes.
 - Coding the same exact source passage again now merges new codes into the existing reference instead of creating a duplicate.
 - Codes can be created from the right rail.

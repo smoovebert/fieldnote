@@ -1060,6 +1060,18 @@ function App() {
 
     return pieces
   }, [activeSource.content, codes, sourceExcerpts])
+  const highlightedTranscriptLines = useMemo(() => {
+    const lines: Array<Array<{ text: string; codes?: Code[] }>> = [[]]
+
+    highlightedTranscript.forEach((piece) => {
+      piece.text.split('\n').forEach((linePart, partIndex) => {
+        if (partIndex > 0) lines.push([])
+        if (linePart) lines[lines.length - 1].push({ ...piece, text: linePart })
+      })
+    })
+
+    return lines
+  }, [highlightedTranscript])
 
   function addCode() {
     const name = newCodeName.trim()
@@ -1973,28 +1985,41 @@ function App() {
               </button>
             </div>
 
-            <div className="transcript" aria-label="Source text">
-              {highlightedTranscript.map((piece, index) =>
-                piece.codes ? (
-                  <mark
-                    key={`${piece.text}-${index}`}
-                    className="multi-code-mark"
-                    style={{
-                      backgroundColor: `${piece.codes[0].color}28`,
-                      borderColor: piece.codes[0].color,
-                      boxShadow: piece.codes
-                        .slice(1, 4)
-                        .map((code, shadowIndex) => `inset 0 ${-2 - shadowIndex * 3}px 0 ${code.color}70`)
-                        .join(', '),
-                    }}
-                    title={piece.codes.map((code) => code.name).join(', ')}
-                  >
-                    {piece.text}
-                  </mark>
-                ) : (
-                  <span key={`${piece.text}-${index}`}>{piece.text}</span>
-                )
-              )}
+            <div className="transcript" aria-label="Source text with line numbers">
+              {highlightedTranscriptLines.map((line, lineIndex) => (
+                <div className="transcript-line" key={`${activeSource.id}-line-${lineIndex}`}>
+                  <span className="line-number" aria-hidden="true">
+                    {lineIndex + 1}
+                  </span>
+                  <span className="line-text">
+                    {line.length ? (
+                      line.map((piece, pieceIndex) =>
+                        piece.codes ? (
+                          <mark
+                            key={`${piece.text}-${lineIndex}-${pieceIndex}`}
+                            className="multi-code-mark"
+                            style={{
+                              backgroundColor: `${piece.codes[0].color}28`,
+                              borderColor: piece.codes[0].color,
+                              boxShadow: piece.codes
+                                .slice(1, 4)
+                                .map((code, shadowIndex) => `inset 0 ${-2 - shadowIndex * 3}px 0 ${code.color}70`)
+                                .join(', '),
+                            }}
+                            title={piece.codes.map((code) => code.name).join(', ')}
+                          >
+                            {piece.text}
+                          </mark>
+                        ) : (
+                          <span key={`${piece.text}-${lineIndex}-${pieceIndex}`}>{piece.text}</span>
+                        )
+                      )
+                    ) : (
+                      <br />
+                    )}
+                  </span>
+                </div>
+              ))}
             </div>
           </article>
         )}

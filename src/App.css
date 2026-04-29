@@ -1391,12 +1391,39 @@ button {
 
 .transcript {
   overflow: auto;
-  padding: 28px 34px;
+  padding: 20px 0 28px;
   white-space: pre-wrap;
   color: #20222a;
   font-size: 17px;
   line-height: 1.78;
   text-align: left;
+}
+
+.transcript-line {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  min-height: 30px;
+}
+
+.line-number {
+  user-select: none;
+  padding: 0 14px 0 18px;
+  border-right: 1px solid var(--line);
+  color: #9aa4b2;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 30px;
+  text-align: right;
+}
+
+.line-text {
+  min-width: 0;
+  padding: 0 34px 0 18px;
+  white-space: pre-wrap;
+}
+
+.transcript-line:hover {
+  background: #f8fafc;
 }
 
 mark {
