@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, MouseEvent } from 'react'
+import type { ChangeEvent, CSSProperties, MouseEvent } from 'react'
 import {
   BarChart3,
   BookOpenText,
@@ -257,6 +257,24 @@ type NormalizedQueryRow = {
   name: string
   query_type: SavedQuery['queryType']
   definition: Partial<QueryDefinition> | null
+}
+
+function markBackground(codes: { color: string }[]): CSSProperties {
+  if (codes.length === 0) return {}
+  if (codes.length === 1) {
+    return {
+      background: `color-mix(in oklch, ${codes[0].color} 22%, transparent)`,
+    }
+  }
+  const stops = codes
+    .map((c, i) => {
+      const a = (i * 100) / codes.length
+      const b = ((i + 1) * 100) / codes.length
+      const tint = `color-mix(in oklch, ${c.color} 22%, transparent)`
+      return `${tint} ${a}% ${b}%`
+    })
+    .join(', ')
+  return { background: `linear-gradient(${stops})` }
 }
 
 const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
@@ -1567,6 +1585,15 @@ function App() {
 
     return pieces
   }, [activeSource.content, codes, sourceExcerpts])
+  const readerWordCount = useMemo(() => {
+    const text = activeSource.content || ''
+    return text.split(/\s+/).filter(Boolean).length
+  }, [activeSource.content])
+
+  const readerRefCount = useMemo(() => {
+    return excerpts.filter((e) => e.sourceId === activeSource.id).length
+  }, [excerpts, activeSource.id])
+
   const highlightedTranscriptLines = useMemo(() => {
     return wrapHighlightedTranscript(highlightedTranscript, lineNumberingMode, lineNumberingWidth)
   }, [highlightedTranscript, lineNumberingMode, lineNumberingWidth])
@@ -2625,12 +2652,20 @@ function App() {
             />
           </div>
 
-          {activeView !== 'analyze' && (
-            <div className="search-box">
-              <Search size={17} aria-hidden="true" />
-              <input value={searchTerm} placeholder="Find coded work" aria-label="Search coded work" onChange={(event) => setSearchTerm(event.target.value)} />
-            </div>
-          )}
+          <div className="detail-toolbar-tools">
+            {activeView !== 'analyze' && (
+              <div className="search-box">
+                <Search size={17} aria-hidden="true" />
+                <input value={searchTerm} placeholder="Find coded work" aria-label="Search coded work" onChange={(event) => setSearchTerm(event.target.value)} />
+              </div>
+            )}
+            {activeView === 'code' && (
+              <button type="button" className="primary-button toolbar-code-action" onClick={() => codeSelection()}>
+                <Highlighter size={18} aria-hidden="true" />
+                Code selection
+              </button>
+            )}
+          </div>
         </header>
 
         {activeView === 'organize' && (
@@ -2683,31 +2718,34 @@ function App() {
 
         {activeView === 'code' && (
           <article className="document-panel">
-            <div className="document-actions">
-              <div>
-                <strong>{selectedCodeNames}</strong>
-                <p>{selectionHint} Active codes can be combined.</p>
+            <div className="active-codes-bar">
+              <div className="active-codes-bar-text">
+                <strong className="active-codes-title">{selectedCodeNames}</strong>
+                <p className="active-codes-hint">{selectionHint} Active codes can be combined.</p>
               </div>
-              <div className="coding-action-group">
-                <label className="quick-toggle">
-                  <input
-                    type="checkbox"
-                    checked={quickCodingEnabled}
-                    onChange={(event) => {
-                      setQuickCodingEnabled(event.target.checked)
-                      setQuickCodeMenu(null)
-                    }}
-                  />
-                  Quick menu
-                </label>
-                <button type="button" className="primary-button" onClick={() => codeSelection()}>
-                  <Highlighter size={18} aria-hidden="true" />
-                  Code selection
-                </button>
-              </div>
+              <label className="quick-toggle">
+                <input
+                  type="checkbox"
+                  checked={quickCodingEnabled}
+                  onChange={(event) => {
+                    setQuickCodingEnabled(event.target.checked)
+                    setQuickCodeMenu(null)
+                  }}
+                />
+                Quick menu
+              </label>
             </div>
 
-            <div className="transcript" ref={transcriptRef} aria-label="Source text with line numbers" onMouseUp={captureQuickCodeSelection} onKeyUp={captureQuickCodeSelection}>
+            <div className="reader-column">
+              <div className="reader-meta-strip fn-meta">
+                <span>{activeSource.caseName || activeSource.kind}</span>
+                <span aria-hidden="true">·</span>
+                <span>{readerWordCount.toLocaleString()} words</span>
+                <span aria-hidden="true">·</span>
+                <span>{readerRefCount} codes applied</span>
+              </div>
+
+              <div className="transcript" ref={transcriptRef} aria-label="Source text with line numbers" onMouseUp={captureQuickCodeSelection} onKeyUp={captureQuickCodeSelection}>
               {highlightedTranscriptLines.map((line, lineIndex) => (
                 <div className="transcript-line" key={`${activeSource.id}-line-${lineIndex}`}>
                   <span className="line-number" aria-hidden="true">
@@ -2720,14 +2758,7 @@ function App() {
                           <mark
                             key={`${piece.text}-${lineIndex}-${pieceIndex}`}
                             className="multi-code-mark"
-                            style={{
-                              backgroundColor: `${piece.codes[0].color}28`,
-                              borderColor: piece.codes[0].color,
-                              boxShadow: piece.codes
-                                .slice(1, 4)
-                                .map((code, shadowIndex) => `inset 0 ${-2 - shadowIndex * 3}px 0 ${code.color}70`)
-                                .join(', '),
-                            }}
+                            style={markBackground(piece.codes)}
                             title={piece.codes.map((code) => code.name).join(', ')}
                           >
                             {piece.text}
@@ -2742,6 +2773,7 @@ function App() {
                   </span>
                 </div>
               ))}
+            </div>
             </div>
             {quickCodingEnabled && quickCodeMenu && activeView === 'code' && (
               <div className="quick-code-menu" style={{ left: quickCodeMenu.x, top: quickCodeMenu.y }}>
