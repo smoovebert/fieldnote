@@ -3831,33 +3831,46 @@ textarea {
 .overview-empty-create { display: flex; gap: 8px; }
 .overview-empty-create input { flex: 1 1 auto; }
 
-.project-switcher { position: relative; }
-.project-switcher-trigger {
+/* Header project switcher (hps) — must read clearly on the dark app header. */
+.hps { position: relative; }
+.hps-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 6px 12px;
   border-radius: 8px;
-  background: transparent;
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   cursor: pointer;
   font: 600 14px/1 inherit;
 }
-.project-switcher-trigger:hover { background: var(--hover, #f3f4f6); border-color: var(--border, #e5e7eb); }
-.project-switcher-menu {
+.hps-trigger:hover,
+.hps-trigger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+.hps-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+.hps-menu {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   z-index: 30;
-  min-width: 280px;
-  border: 1px solid var(--border, #e5e7eb);
+  min-width: 320px;
+  border: 1px solid var(--line, #e5e7eb);
   border-radius: 12px;
-  background: var(--surface, #ffffff);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  color: var(--ink, #1f2937);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
   padding: 8px;
 }
-.project-switcher-list { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; }
-.project-switcher-list button {
+.hps-list { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; }
+.hps-list button {
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -3869,16 +3882,32 @@ textarea {
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
+  color: inherit;
+  font: inherit;
 }
-.project-switcher-list button:hover { background: var(--hover, #f3f4f6); }
-.project-switcher-list button.active { background: var(--accent-soft, #eef2ff); }
-.project-switcher-meta { font-size: 12px; color: var(--muted, #6b7280); }
-.project-switcher-empty { padding: 12px 10px; color: var(--muted, #6b7280); font-size: 13px; }
-.project-switcher-create {
+.hps-list button:hover { background: #f3f4f6; }
+.hps-list button.active { background: #eef2ff; }
+.hps-title { font-weight: 600; }
+.hps-meta { font-size: 12px; color: #6b7280; }
+.hps-empty { padding: 12px 10px; color: #6b7280; font-size: 13px; }
+.hps-create {
   display: flex;
   gap: 6px;
   padding: 8px 4px 4px;
-  border-top: 1px solid var(--border, #e5e7eb);
+  border-top: 1px solid var(--line, #e5e7eb);
   margin-top: 8px;
 }
-.project-switcher-create input { flex: 1 1 auto; min-width: 0; }
+.hps-create input { flex: 1 1 auto; min-width: 0; padding: 6px 8px; border: 1px solid var(--line, #e5e7eb); border-radius: 6px; }
+.hps-create button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent, #4a6cf7);
+  color: #ffffff;
+  font: 600 13px/1 inherit;
+  cursor: pointer;
+}
+.hps-create button:disabled { opacity: 0.5; cursor: not-allowed; }

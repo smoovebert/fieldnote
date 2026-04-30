@@ -30,22 +30,22 @@ export function ProjectSwitcher(props: Props) {
   const triggerLabel = props.activeProjectId ? props.activeProjectTitle || 'Untitled project' : 'No project selected'
 
   return (
-    <div className="project-switcher" ref={containerRef}>
+    <div className="hps" ref={containerRef}>
       <button
         type="button"
-        className="project-switcher-trigger"
+        className="hps-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="project-switcher-label">{triggerLabel}</span>
+        <span className="hps-label">{triggerLabel}</span>
         <ChevronDown size={14} aria-hidden="true" />
       </button>
       {open && (
-        <div className="project-switcher-menu" role="menu">
-          <ul className="project-switcher-list">
+        <div className="hps-menu" role="menu">
+          <ul className="hps-list">
             {props.projects.length === 0 && (
-              <li className="project-switcher-empty">No projects yet.</li>
+              <li className="hps-empty">No projects yet.</li>
             )}
             {props.projects.map((project) => (
               <li key={project.id}>
@@ -57,15 +57,15 @@ export function ProjectSwitcher(props: Props) {
                     setOpen(false)
                   }}
                 >
-                  <span className="project-switcher-title">{project.title || 'Untitled project'}</span>
-                  <span className="project-switcher-meta">
+                  <span className="hps-title">{project.title || 'Untitled project'}</span>
+                  <span className="hps-meta">
                     {project.updated_at ? new Date(project.updated_at).toLocaleDateString() : '-'}
                   </span>
                 </button>
               </li>
             ))}
           </ul>
-          <div className="project-switcher-create">
+          <div className="hps-create">
             <input
               value={props.newProjectTitle}
               placeholder="New project title"
