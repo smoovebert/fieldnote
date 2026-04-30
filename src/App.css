@@ -3176,12 +3176,19 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--ink);
+  width: auto;
+  height: auto;
+  border-radius: 0;
 }
 
 .app-shell[data-shell="new"] .properties-view .code-picker .code-pick-refs {
   color: var(--ink-3);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  text-align: right;
 }
 
 .app-shell[data-shell="new"] .properties-view .code-picker .code-pick-child {
