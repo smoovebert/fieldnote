@@ -669,8 +669,13 @@ function errorMessage(error: unknown, fallback: string) {
   return fallback
 }
 
-function postgrestInList(values: string[]) {
-  return `(${values.map((value) => value.replaceAll(',', '')).join(',')})`
+function postgrestInList(values: string[]): string {
+  // PostgREST IN-list — quote each value so commas / quotes / spaces in IDs
+  // can't break the filter. See https://docs.postgrest.org/en/stable/api.html#operators
+  const escaped = values.map((value) =>
+    `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`,
+  )
+  return `(${escaped.join(',')})`
 }
 
 type TranscriptPiece = { text: string; codes?: Code[] }
@@ -805,6 +810,12 @@ function App() {
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
   const transcriptRef = useRef<HTMLDivElement>(null)
+  // Autosave guard: while a save is in flight, the most recent next-save closure
+  // is parked here. When the in-flight save resolves, the queue runs at most one
+  // more save (with the latest captured state). Prevents two saves' deletes-then-
+  // upserts from interleaving on fast typing.
+  const saveInFlightRef = useRef(false)
+  const savePendingRef = useRef<(() => Promise<void>) | null>(null)
 
   const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
   const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
@@ -1265,7 +1276,7 @@ function App() {
     const currentProjectId = projectId
     setSaveStatus('Saving...')
     const timeout = window.setTimeout(() => {
-      async function saveProject() {
+      const saveProject = async () => {
         try {
           const { error } = await supabase
             .from('fieldnote_projects')
@@ -1316,7 +1327,22 @@ function App() {
         }
       }
 
-      void saveProject()
+      const runSaveCycle = async () => {
+        savePendingRef.current = saveProject
+        if (saveInFlightRef.current) return
+        saveInFlightRef.current = true
+        try {
+          while (savePendingRef.current) {
+            const fn = savePendingRef.current
+            savePendingRef.current = null
+            await fn()
+          }
+        } finally {
+          saveInFlightRef.current = false
+        }
+      }
+
+      void runSaveCycle()
     }, 700)
 
     return () => window.clearTimeout(timeout)
