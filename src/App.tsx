@@ -260,6 +260,7 @@ const initialExcerpts: Excerpt[] = [
 ]
 
 const defaultProject: ProjectData = {
+  description: '',
   activeSourceId: initialSources[0].id,
   sources: initialSources,
   cases: initialCases,
@@ -344,6 +345,7 @@ function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projectTitle, setProjectTitle] = useState('Student Access Study')
+  const [description, setDescription] = useState('')
   const [projectRows, setProjectRows] = useState<ProjectRow[]>([])
   const [newProjectTitle, setNewProjectTitle] = useState('')
   const [isCreatingProject, setIsCreatingProject] = useState(false)
@@ -424,8 +426,8 @@ function App() {
         ? `${activeCode.name} memo`
         : 'Project memo'
   const projectData = useMemo<ProjectData>(
-    () => ({ activeSourceId, sources, cases, attributes, attributeValues, savedQueries, codes, memos, excerpts }),
-    [activeSourceId, attributeValues, attributes, cases, codes, excerpts, memos, savedQueries, sources]
+    () => ({ description, activeSourceId, sources, cases, attributes, attributeValues, savedQueries, codes, memos, excerpts }),
+    [description, activeSourceId, attributeValues, attributes, cases, codes, excerpts, memos, savedQueries, sources]
   )
   const currentQueryDefinition: QueryDefinition = {
     text: queryText,
@@ -473,6 +475,7 @@ function App() {
 
     setProjectId(project.id)
     setProjectTitle(project.title || 'Untitled project')
+    setDescription(project.description ?? '')
     setLineNumberingMode((project.line_numbering_mode ?? DEFAULT_LINE_NUMBERING_MODE) as LineNumberingMode)
     setLineNumberingWidth(project.line_numbering_width ?? DEFAULT_LINE_NUMBERING_WIDTH)
     setActiveView('organize')
@@ -513,6 +516,7 @@ function App() {
   function returnToProjects() {
     hasLoadedRemoteProject.current = false
     setProjectId(null)
+    setDescription('')
     setSaveStatus('Choose or create a project.')
     void loadProjectRows().catch((error: Error) => setSaveStatus(error.message))
   }
@@ -554,6 +558,7 @@ function App() {
       const nextProject = createdProject as ProjectRow
       await saveProject(nextProject.id, {
         title,
+        description: '',
         active_source_id: defaultProject.activeSourceId,
         source_title: defaultProject.sources[0].title,
         transcript: defaultProject.sources[0].content,
@@ -596,6 +601,7 @@ function App() {
       hasLoadedRemoteProject.current = false
       queueMicrotask(() => {
         setProjectId(null)
+        setDescription('')
         setProjectRows([])
         setSaveStatus('Sign in to sync.')
       })
@@ -606,6 +612,7 @@ function App() {
     hasLoadedRemoteProject.current = false
     queueMicrotask(() => {
       setProjectId(null)
+      setDescription('')
       setSaveStatus('Loading projects...')
     })
 
@@ -639,6 +646,7 @@ function App() {
     if (!projectId) return null
     return {
       title: projectTitle,
+      description,
       active_source_id: activeSourceId,
       source_title: activeSource?.title ?? '',
       transcript: activeSource?.content ?? '',
@@ -655,7 +663,7 @@ function App() {
       line_numbering_width: lineNumberingWidth,
       projectData,
     }
-  }, [projectId, projectTitle, activeSourceId, activeSource, projectMemo, sources, codes, memos, excerpts, cases, attributes, attributeValues, savedQueries, lineNumberingMode, lineNumberingWidth, projectData])
+  }, [projectId, projectTitle, description, activeSourceId, activeSource, projectMemo, sources, codes, memos, excerpts, cases, attributes, attributeValues, savedQueries, lineNumberingMode, lineNumberingWidth, projectData])
 
   useAutosave({
     enabled: Boolean(session?.user && projectId && hasLoadedRemoteProject.current),
