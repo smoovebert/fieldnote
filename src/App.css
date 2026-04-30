@@ -3549,29 +3549,166 @@ textarea {
   color: var(--ink);
 }
 
-/* Phase 3a follow-up — sync + settings now live inside the detail-toolbar.
-   The legacy .app-header is fully redundant under the new shell. */
+/* ============================================================
+   Phase 3 — Top nav (replaces sidebar mode list)
+   ============================================================ */
+
 .app-shell[data-shell="new"] .app-header {
-  display: none;
+  grid-column: 1 / -1;
+  background: var(--shell);
+  color: var(--shell-ink);
+  border-bottom: 1px solid var(--shell-rule);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-4);
+  padding: 0 var(--s-4);
+  min-height: 0;
+  height: auto;
 }
 
-.app-shell[data-shell="new"] .detail-toolbar .toolbar-status {
+.app-shell[data-shell="new"] .app-header .app-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.app-shell[data-shell="new"] .app-header .brand-block {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-2);
+  color: var(--shell-ink);
+  text-align: left;
+}
+
+.app-shell[data-shell="new"] .app-header .brand-block:hover {
+  background: var(--shell-deep);
+}
+
+.app-shell[data-shell="new"] .app-header .brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-2);
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.app-shell[data-shell="new"] .app-header .brand-block .eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-ink-3);
+  font-size: 9.5px;
+  margin: 0;
+}
+
+.app-shell[data-shell="new"] .app-header .brand-block h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shell-ink);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.app-shell[data-shell="new"] .app-header .app-header-project {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  background: var(--shell-deep);
+  color: var(--shell-ink-2);
+  border: 1px solid var(--shell-rule);
+  border-radius: 99px;
+  font: var(--t-ui-sm);
+  cursor: pointer;
+}
+
+.app-shell[data-shell="new"] .app-header .app-header-project:hover {
+  background: oklch(0.24 0.012 235);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .app-header .project-chevron {
+  color: var(--shell-ink-3);
+}
+
+/* Mode tabs */
+.app-shell[data-shell="new"] .app-header-modes {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  justify-self: center;
+}
+
+.app-shell[data-shell="new"] .app-header-modes button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  cursor: pointer;
+  font: var(--t-ui);
+  font-weight: 500;
+}
+
+.app-shell[data-shell="new"] .app-header-modes button:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .app-header-modes button.active {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  box-shadow: inset 0 -2px 0 0 var(--c-cyan);
+}
+
+.app-shell[data-shell="new"] .app-header-modes button svg {
+  color: var(--shell-ink-3);
+}
+
+.app-shell[data-shell="new"] .app-header-modes button.active svg {
+  color: var(--c-cyan);
+}
+
+/* Right-side tools — sync indicator, settings, sign-out */
+.app-shell[data-shell="new"] .app-header .header-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .app-header .toolbar-status,
+.app-shell[data-shell="new"] .app-header .sync-box {
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
   padding: var(--s-1) var(--s-3);
   border-radius: 99px;
-  background: var(--pane);
-  color: var(--ink-3);
+  background: var(--shell-deep);
+  color: var(--shell-ink-3);
   font: var(--t-ui-sm);
-  border: 1px solid var(--rule-soft);
+  border: 0;
 }
 
-.app-shell[data-shell="new"] .detail-toolbar .header-icon-button {
+.app-shell[data-shell="new"] .app-header .header-icon-button {
   background: transparent;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--shell-rule);
   border-radius: var(--r-2);
-  color: var(--ink-3);
+  color: var(--shell-ink-3);
   width: 32px;
   height: 32px;
   display: grid;
@@ -3579,7 +3716,7 @@ textarea {
   cursor: pointer;
 }
 
-.app-shell[data-shell="new"] .detail-toolbar .header-icon-button:hover {
-  background: var(--pane);
-  color: var(--ink);
+.app-shell[data-shell="new"] .app-header .header-icon-button:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
 }

@@ -2472,17 +2472,57 @@ function App() {
     <>
     <main className="app-shell" data-shell="new">
       <header className="app-header">
-        <div className="brand-block">
-          <div className="brand-mark">F</div>
-          <div>
-            <p className="eyebrow">Qualitative workspace</p>
-            <h1>Fieldnote</h1>
-          </div>
+        <div className="app-header-left">
+          <button
+            type="button"
+            className="brand-block"
+            onClick={returnToProjects}
+            title="Back to project home"
+            aria-label="Back to project home"
+          >
+            <div className="brand-mark">F</div>
+            <div>
+              <p className="eyebrow">Qualitative workspace</p>
+              <h1>Fieldnote</h1>
+            </div>
+          </button>
+
+          {projectId && (
+            <button
+              type="button"
+              className="app-header-project"
+              onClick={returnToProjects}
+              title="Switch project"
+            >
+              <span className="project-chevron" aria-hidden="true">▾</span>
+              <span className="project-name">{projectTitle}</span>
+            </button>
+          )}
         </div>
 
+        {projectId && (
+          <nav className="app-header-modes" aria-label="Research modes">
+            {modeItems.map((mode) => {
+              const Icon = mode.icon
+              return (
+                <button
+                  key={mode.id}
+                  className={activeView === mode.id ? 'active' : ''}
+                  type="button"
+                  title={`${mode.label} — ${mode.description}`}
+                  onClick={() => selectView(mode.id)}
+                >
+                  <Icon size={15} aria-hidden="true" />
+                  <span>{mode.label}</span>
+                </button>
+              )
+            })}
+          </nav>
+        )}
+
         <div className="header-tools">
-          <div className="sync-box">
-            <Cloud size={16} aria-hidden="true" />
+          <div className="sync-box toolbar-status" aria-live="polite">
+            <Cloud size={14} aria-hidden="true" />
             <span>{saveStatus}</span>
           </div>
           {projectId && (
@@ -2496,6 +2536,17 @@ function App() {
               <Settings size={18} aria-hidden="true" />
             </button>
           )}
+          {projectId && (
+            <button
+              type="button"
+              className="header-icon-button"
+              onClick={signOut}
+              aria-label="Sign out"
+              title={`Sign out (${session.user.email})`}
+            >
+              <LogOut size={16} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </header>
 
@@ -2503,40 +2554,6 @@ function App() {
         className={`workspace-sidebar ${sidebarCollapsed ? 'is-collapsed' : ''}`}
         aria-label="Workspace sidebar"
       >
-        <div className="sidebar-brand">
-          <div className="sidebar-mark">F</div>
-          <div className="sidebar-brand-text">
-            <span className="sidebar-eyebrow">Qualitative workspace</span>
-            <span className="sidebar-wordmark">Fieldnote</span>
-          </div>
-        </div>
-
-        <button className="project-switcher project-nav-link" type="button" onClick={returnToProjects} title="Back to project home">
-          <span className="project-switcher-chevron" aria-hidden="true">▾</span>
-          <span className="project-switcher-name">{projectTitle}</span>
-        </button>
-
-        <nav className="mode-switcher" aria-label="Research modes">
-          {modeItems.map((mode) => {
-            const Icon = mode.icon
-            return (
-              <button
-                key={mode.id}
-                className={activeView === mode.id ? 'active' : ''}
-                type="button"
-                title={`${mode.label} — ${mode.description}`}
-                onClick={() => selectView(mode.id)}
-              >
-                <Icon size={15} className="mode-icon" aria-hidden="true" />
-                <span className="mode-label">{mode.label}</span>
-                <small className={`mode-badge ${mode.status}`}>
-                  {mode.status === 'ready' ? 'Now' : mode.status === 'partial' ? 'MVP' : 'Soon'}
-                </small>
-              </button>
-            )
-          })}
-        </nav>
-
         {activeView === 'organize' && (
           <section className="folder-pane" aria-label="Source folders">
             <div className="pane-title">
@@ -2617,13 +2634,6 @@ function App() {
         </section>
 
         <div className="sidebar-account">
-          <div className="user-box">
-            <span>{session.user.email}</span>
-            <button type="button" onClick={signOut}>
-              <LogOut size={15} aria-hidden="true" />
-              Sign out
-            </button>
-          </div>
           <button
             type="button"
             className="sidebar-collapse-toggle"
@@ -2663,21 +2673,6 @@ function App() {
               <button type="button" className="primary-button toolbar-code-action" onClick={() => codeSelection()}>
                 <Highlighter size={18} aria-hidden="true" />
                 Code selection
-              </button>
-            )}
-            <div className="toolbar-status sync-box" aria-live="polite">
-              <Cloud size={14} aria-hidden="true" />
-              <span>{saveStatus}</span>
-            </div>
-            {projectId && (
-              <button
-                type="button"
-                className="header-icon-button"
-                onClick={() => setSettingsOpen(true)}
-                aria-label="Project settings"
-                title="Project settings"
-              >
-                <Settings size={18} aria-hidden="true" />
               </button>
             )}
           </div>
