@@ -12,6 +12,7 @@ import {
   Folders,
   Grid3x3,
   Highlighter,
+  LayoutDashboard,
   ListTree,
   LogOut,
   MessageSquareText,
@@ -80,7 +81,7 @@ import type {
 } from './lib/types'
 import './App.css'
 
-type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
+type WorkspaceView = 'overview' | 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 type SourceFolderFilter = 'All' | 'Archived' | string
 type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence' | 'crosstab'
 type MatrixColumnMode = 'case' | 'attribute'
@@ -279,6 +280,7 @@ const modeItems: Array<{
   status: 'ready' | 'partial' | 'soon'
   icon: LucideIcon
 }> = [
+  { id: 'overview', label: 'Overview', description: 'Project summary, project memo, and quick stats.', status: 'ready', icon: LayoutDashboard },
   { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.', status: 'ready',   icon: Folders },
   { id: 'code',     label: 'Code',     description: 'Close-read sources and code selected passages.', status: 'ready',   icon: Highlighter },
   { id: 'refine',   label: 'Refine',   description: 'Clean the codebook and review code references.', status: 'partial', icon: ListTree },
@@ -349,7 +351,7 @@ function App() {
   const [projectRows, setProjectRows] = useState<ProjectRow[]>([])
   const [newProjectTitle, setNewProjectTitle] = useState('')
   const [isCreatingProject, setIsCreatingProject] = useState(false)
-  const [activeView, setActiveView] = useState<WorkspaceView>('organize')
+  const [activeView, setActiveView] = useState<WorkspaceView>('overview')
   const [sourceFolderFilter, setSourceFolderFilter] = useState<SourceFolderFilter>('All')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
@@ -478,7 +480,7 @@ function App() {
     setDescription(project.description ?? '')
     setLineNumberingMode((project.line_numbering_mode ?? DEFAULT_LINE_NUMBERING_MODE) as LineNumberingMode)
     setLineNumberingWidth(project.line_numbering_width ?? DEFAULT_LINE_NUMBERING_WIDTH)
-    setActiveView('organize')
+    setActiveView('overview')
     setActiveSourceId(nextProject.activeSourceId)
     setSources(nextProject.sources)
     setCases(nextProject.cases)
