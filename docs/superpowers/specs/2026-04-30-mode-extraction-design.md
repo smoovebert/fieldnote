@@ -98,22 +98,13 @@ The detail-toolbar (eyebrow + title + search + Code-selection button + Report ex
 
 **Migrates to mode components** — ephemeral UI state:
 
-| State | Owner |
-|---|---|
-| `sourceFolderFilter`, `newFolderName` | `OrganizeSidebar` (filter is what drives `visibleSources` — see Data flow note below) |
-| `quickCodingEnabled`, `quickCodeMenu`, `quickNewCodeName`, `selectedCodeIds`, `selectionHint` | `CodeDetail` (and `CodeInspector` reads `selectedCodeIds` via prop from App's selection state — see flow note) |
-| `mergeTargetCodeId` | `RefineDetail` |
-
-**Note on `selectedCodeIds` and `selectionHint`:** these straddle modes — Code mode writes them, Refine displays things that depend on them. Since they're consumed across the boundary, lift them to App after all but actually they're really only consumed within Code mode (the Inspector's Active Codes picker reads them, and Inspector lives next to Detail). Keeping them in `CodeDetail` and passing into `CodeInspector` via App is one option; the cleaner option is lifting them to App so both `CodeDetail` and `CodeInspector` receive them as props. **Decision: lift to App** so they're trivially available to both Code-mode components without re-introducing a parent-child relationship inside the mode folder.
-
-Updated migration plan:
-
-| State | Owner |
-|---|---|
-| `sourceFolderFilter`, `newFolderName` | `OrganizeSidebar` |
-| `quickCodingEnabled`, `quickCodeMenu`, `quickNewCodeName`, `selectionHint` | `CodeDetail` |
-| `selectedCodeIds` | App (consumed by CodeDetail and CodeInspector — too cross-cutting) |
-| `mergeTargetCodeId` | `RefineDetail` |
+| State | Owner | Reason |
+|---|---|---|
+| `newFolderName` | `OrganizeSidebar` | Pure ephemeral input value, only Sidebar uses it |
+| `sourceFolderFilter` | **App** | Drives `visibleSources` which `OrganizeDetail` consumes — splitting ownership across mode folders requires either Sidebar lifting up to App via setter (which means App still has to re-derive `visibleSources` whenever the filter changes, partially defeating the extraction) or moving `visibleSources` computation inside Sidebar (which forces Detail to also live in Sidebar's tree). Cleanest answer is to leave the filter in App and pass `sourceFolderFilter` + `setSourceFolderFilter` down to Sidebar as props (same pattern as `selectedCodeIds` below). |
+| `quickCodingEnabled`, `quickCodeMenu`, `quickNewCodeName`, `selectionHint` | `CodeDetail` | All consumed solely within Detail |
+| `selectedCodeIds` | **App** | Consumed by both `CodeDetail` and `CodeInspector` — keeping it in App lets both receive it as props without one mode-folder file owning state another mode-folder file reads |
+| `mergeTargetCodeId` | `RefineDetail` | Refine-only ephemeral picker state |
 
 ### Data flow
 
@@ -123,7 +114,7 @@ Destructive op wrappers (`deleteActiveCode`, `mergeActiveCodeIntoTarget`, `split
 
 Pure-function helpers like `descendantCodeIds`, `excerptMatchesAttributeFilters`, `wrapHighlightedTranscript`, `markBackground` either stay where they are or get co-located with their consumer:
 
-- `wrapHighlightedTranscript` and `markBackground` are Code-mode only — move into `src/modes/code/transcript.ts` (small file, unit-testable).
+- `wrapHighlightedTranscript` and `markBackground` are Code-mode only — move into `src/modes/code/transcript.ts` (small file, unit-testable). **`wrapHighlightedTranscript` MUST get unit tests on relocation.** It does word-aware fixed-width line breaking — the exact kind of function where an off-by-one or a whitespace-handling regression would only surface on specific transcript content and survive a manual smoke test. Cover at minimum: paragraph mode (no wrapping), fixed-width below width (no wrapping), fixed-width above width (single break point), word-aware break across a long word, multi-paragraph with mixed coded segments preserving codes across breaks.
 - `descendantCodeIds` is shared (App + Refine + multiple ops). Stays in `src/lib/codeOperations.ts` where it already lives.
 - `excerptMatchesAttributeFilters` lives in `src/analyze/excerptFilters.ts` — already extracted, leave it.
 
@@ -154,25 +145,32 @@ Smallest → largest, so the pattern is established on low-risk modes first. Eac
 1. **Report** — mostly mechanical (ReportPreview already exists; just collect into ReportDetail + ReportSidebar). Establishes the `src/modes/{name}/` folder convention.
 2. **Refine** — meaningful detail block (code edit form + merge UI). Exercises `mergeTargetCodeId` migration. Inspector takes the existing Codebook tree + memo block.
 3. **Classify** — case sheet table. Inspector takes the case properties panel.
-4. **Organize** — folder filter migration is the trickiest piece because `sourceFolderFilter` filters the source list shown in `OrganizeDetail`. Detail receives `visibleSources` as a prop computed by Sidebar's filter — pattern: Sidebar lifts `sourceFolderFilter` via a setter prop to App, Detail consumes the resulting filtered list. Or App owns the filter; either works. **Plan the call when implementing.**
+4. **Organize** — `sourceFolderFilter` stays in App per the migration table; only `newFolderName` migrates into Sidebar. App computes `visibleSources` (already does) and passes it to Detail as a prop, while passing `sourceFolderFilter` + `setSourceFolderFilter` down to Sidebar.
 5. **Code** — largest, last. Transcript reader, marker rendering, active-codes-bar, quick-code menu. By this point the pattern is settled.
 
 After Phase 3, App.tsx is estimated at ~1500–1800 lines (currently ~3500), with the bulk being shared state + autosave plumbing + shell JSX.
 
 ## Verification per extraction
 
+**Baseline (verified 2026-04-30):** 103 tests across 10 test files pass on `main`. Each extraction commit must hold this baseline OR add tests (see below) and add to it.
+
 Each commit must:
 
 1. `npm run lint` — clean.
 2. `npm run build` — clean.
-3. `npx vitest run` — all 103 tests pass (test count is unchanged; this is pure refactor).
+3. `npx vitest run` — at least 103 tests pass; new tests for relocated `wrapHighlightedTranscript` increase the count when Code mode lands.
 4. Manual smoke test in dev for the extracted mode: perform the mode's core actions (Organize: import a source, switch folder; Code: select text → code it, merge codes; Refine: edit a code, merge two, split an excerpt; Classify: edit a case, change an attribute; Report: open the preview, click Export PDF + Word). Behavior identical to current `main`.
 
-No new tests required for the refactor itself. The pure-function tests in `src/lib/__tests__/` and `src/analyze/__tests__/` and `src/report/__tests__/` continue to apply.
+**Code mode is the highest-regression-risk extraction.** Manual smoke alone is unreliable for the transcript-marker rendering, the selection-to-quick-code flow, and highlight composition. Mitigations:
+
+- Unit tests for `wrapHighlightedTranscript` on relocation (mandated above).
+- Side-by-side dev check: open `main` and the feature branch in two browser tabs, compare a sample transcript with multi-coded segments — same word breaks, same highlight composition, same line numbers. Catches off-by-one regressions a single-tab smoke test would miss.
+
+The pure-function tests in `src/lib/__tests__/`, `src/analyze/__tests__/`, and `src/report/__tests__/` continue to apply unchanged.
 
 ## Out-of-scope follow-ups
 
 - Refactor of Analyze mode internals (already partially extracted).
-- Splitting App.tsx's autosave / persistence logic into its own module.
+- **Splitting App.tsx's autosave / persistence logic into its own module — this is likely Phase 4.** With ~1500–1800 lines remaining in App.tsx after this refactor, the bulk is shared state declarations, the autosave `useEffect` (with the in-flight guard from Phase 1), the project-load `useEffect`, and the shell JSX. The autosave block in particular is dense — the guard pattern, the sequential save plumbing, and the dependency array are all tightly coupled. Expect this to feel like the next obvious cleanup once Phase 3 ships. Don't pre-design it now (the right shape will be more obvious once shared state is the only thing in App), but plan to brainstorm it as Phase 4 immediately after.
 - Eliminating cross-mode prop bundles via context once the pattern proves out.
 - Per-mode test suites (component-level tests). The pure-function safety net already covers data correctness.
