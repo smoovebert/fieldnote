@@ -1,5 +1,11 @@
 /* Scoped under .report-preview so it can't leak. */
 
+.report-scroll {
+  overflow-y: auto;
+  min-height: 0;
+  height: 100%;
+}
+
 .report-preview {
   max-width: var(--reader-measure);
   margin: 0 auto;

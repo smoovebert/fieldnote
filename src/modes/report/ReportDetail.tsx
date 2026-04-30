@@ -4,5 +4,11 @@ import { ReportPreview } from '../../report/ReportPreview'
 type Props = { model: ReportModel }
 
 export function ReportDetail({ model }: Props) {
-  return <ReportPreview model={model} />
+  return (
+    <article className="document-panel">
+      <div className="report-scroll">
+        <ReportPreview model={model} />
+      </div>
+    </article>
+  )
 }
