@@ -47,6 +47,10 @@ import {
   type AttributeFilter,
   type QueryDefinition,
 } from './analyze/queryDefinition'
+import { buildReport } from './report/buildReport'
+import { exportReportPdf } from './report/exportPdf'
+import { exportReportDocx } from './report/exportDocx'
+import { ReportPreview } from './report/ReportPreview'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
 import {
@@ -1530,6 +1534,21 @@ function App() {
     })
   }, [analyzeResults, codes, cases, attributeValues, analyzeView.crosstab])
 
+  const reportModel = useMemo(
+    () =>
+      buildReport({
+        projectTitle,
+        sources,
+        codes,
+        excerpts,
+        cases,
+        attributes,
+        attributeValues,
+        memos,
+      }),
+    [projectTitle, sources, codes, excerpts, cases, attributes, attributeValues, memos],
+  )
+
   function handleCrosstabCellSelect(codeId: string, v1: string, v2: string) {
     const attr1Id = analyzeView.crosstab.attr1Id
     const attr2Id = analyzeView.crosstab.attr2Id
@@ -2585,39 +2604,70 @@ function App() {
           </section>
         )}
 
-        {activeView !== 'organize' && activeView !== 'report' && (
+        {activeView !== 'organize' && (
         <section className="list-view" aria-label="Objects">
-          <ListView
-            activeView={activeView}
-            activeSourceId={activeSource.id}
-            activeCodeId={activeCode.id}
-            sources={activeSources}
-            visibleSources={sources}
-            cases={cases}
-            savedQueries={savedQueries}
-            activeSavedQueryId={activeSavedQueryId}
-            analyzePanel={analyzePanel}
-            codes={codes}
-            excerpts={excerpts}
-            onSelectSource={(id) => {
-              selectActiveSource(id)
-              if (activeView === 'classify') return
-              setActiveView('code')
-            }}
-            onSelectCode={(id) => {
-              setActiveCodeId(id)
-              setActiveView('refine')
-            }}
-            onUseCurrentQuery={() => {
-              setAnalyzePanel('query')
-              setActiveSavedQueryId('')
-              setQueryName('')
-            }}
-            onOpenSavedQuery={openSavedQuery}
-            onOpenMatrix={() => setAnalyzePanel('matrix')}
-            onOpenFrequency={() => setAnalyzePanel('frequency')}
-            onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
-          />
+          {activeView === 'report' && (
+            <div className="raw-data-panel">
+              <p className="fn-label raw-data-heading">Raw data</p>
+              <button type="button" className="raw-data-row" onClick={(event) => exportCsv(event)}>
+                <Download size={14} aria-hidden="true" />
+                <span>Coded excerpts CSV</span>
+              </button>
+              <button type="button" className="raw-data-row" onClick={(event) => exportCodebookCsv(event)}>
+                <FileText size={14} aria-hidden="true" />
+                <span>Codebook CSV</span>
+              </button>
+              <button type="button" className="raw-data-row" onClick={(event) => exportCaseSheetCsv(event)}>
+                <Database size={14} aria-hidden="true" />
+                <span>Case sheet CSV</span>
+              </button>
+              <button type="button" className="raw-data-row" onClick={(event) => exportCaseExcerptCsv(event)}>
+                <Rows3 size={14} aria-hidden="true" />
+                <span>Coded excerpts by case CSV</span>
+              </button>
+              <button type="button" className="raw-data-row" onClick={(event) => exportAnalyzeCsv(event)}>
+                <Search size={14} aria-hidden="true" />
+                <span>Current query CSV</span>
+              </button>
+              <button type="button" className="raw-data-row" onClick={(event) => exportMemosCsv(event)}>
+                <MessageSquareText size={14} aria-hidden="true" />
+                <span>Memos CSV</span>
+              </button>
+            </div>
+          )}
+          {activeView !== 'report' && (
+            <ListView
+              activeView={activeView}
+              activeSourceId={activeSource.id}
+              activeCodeId={activeCode.id}
+              sources={activeSources}
+              visibleSources={sources}
+              cases={cases}
+              savedQueries={savedQueries}
+              activeSavedQueryId={activeSavedQueryId}
+              analyzePanel={analyzePanel}
+              codes={codes}
+              excerpts={excerpts}
+              onSelectSource={(id) => {
+                selectActiveSource(id)
+                if (activeView === 'classify') return
+                setActiveView('code')
+              }}
+              onSelectCode={(id) => {
+                setActiveCodeId(id)
+                setActiveView('refine')
+              }}
+              onUseCurrentQuery={() => {
+                setAnalyzePanel('query')
+                setActiveSavedQueryId('')
+                setQueryName('')
+              }}
+              onOpenSavedQuery={openSavedQuery}
+              onOpenMatrix={() => setAnalyzePanel('matrix')}
+              onOpenFrequency={() => setAnalyzePanel('frequency')}
+              onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
+            />
+          )}
         </section>
         )}
 
@@ -2662,6 +2712,26 @@ function App() {
                 <Highlighter size={18} aria-hidden="true" />
                 Code selection
               </button>
+            )}
+            {activeView === 'report' && (
+              <>
+                <button
+                  type="button"
+                  className="primary-button toolbar-code-action"
+                  onClick={() => void exportReportPdf(reportModel, projectTitle)}
+                >
+                  <Download size={18} aria-hidden="true" />
+                  Export PDF
+                </button>
+                <button
+                  type="button"
+                  className="primary-button toolbar-code-action"
+                  onClick={() => void exportReportDocx(reportModel, projectTitle)}
+                >
+                  <FileText size={18} aria-hidden="true" />
+                  Export Word
+                </button>
+              </>
             )}
           </div>
         </header>
@@ -3305,55 +3375,7 @@ function App() {
         )}
 
         {activeView === 'report' && (
-          <article className="detail-card report-surface">
-            <p className="detail-kicker">Exports</p>
-            <button className="report-card" type="button" onClick={exportCsv}>
-              <Download size={20} aria-hidden="true" />
-              <span>
-                <strong>Coded excerpts CSV</strong>
-                <small>Source, codes, excerpt text, and notes.</small>
-              </span>
-            </button>
-            <button className="report-card" type="button" onClick={exportCodebookCsv}>
-              <FileText size={20} aria-hidden="true" />
-              <span>
-                <strong>Codebook CSV</strong>
-                <small>Code names, descriptions, counts, and example excerpts.</small>
-              </span>
-            </button>
-            <button className="report-card" type="button" onClick={exportCaseSheetCsv}>
-              <Database size={20} aria-hidden="true" />
-              <span>
-                <strong>Case sheet CSV</strong>
-                <small>Cases, linked sources, notes, and participant attributes.</small>
-              </span>
-            </button>
-            <button className="report-card" type="button" onClick={exportCaseExcerptCsv}>
-              <Rows3 size={20} aria-hidden="true" />
-              <span>
-                <strong>Coded excerpts by case CSV</strong>
-                <small>Each coded excerpt with its case and attribute values.</small>
-              </span>
-            </button>
-            <button className="report-card" type="button" onClick={exportAnalyzeCsv}>
-              <Search size={20} aria-hidden="true" />
-              <span>
-                <strong>Current query CSV</strong>
-                <small>Exports the active Analyze filters and matching results.</small>
-              </span>
-            </button>
-            <button className="report-card" type="button" onClick={exportMemosCsv}>
-              <MessageSquareText size={20} aria-hidden="true" />
-              <span>
-                <strong>Memos CSV</strong>
-                <small>Project, source, and code memos with their linked items.</small>
-              </span>
-            </button>
-            <div className="coming-soon-strip">
-              <strong>Coming soon</strong>
-              <span>Report preview and formatted Word/PDF outputs.</span>
-            </div>
-          </article>
+          <ReportPreview model={reportModel} />
         )}
       </section>
 

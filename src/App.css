@@ -3720,3 +3720,40 @@ textarea {
   background: var(--shell-deep);
   color: var(--shell-ink);
 }
+
+/* Report-mode Raw-data sidebar list */
+.app-shell[data-shell="new"] .raw-data-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3) var(--s-3) var(--s-2);
+}
+
+.app-shell[data-shell="new"] .raw-data-heading {
+  color: var(--shell-ink-3);
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 10px;
+  margin: 0 0 var(--s-2);
+  padding: 0 var(--s-2);
+}
+
+.app-shell[data-shell="new"] .raw-data-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  border: 0;
+  font: var(--t-ui-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.app-shell[data-shell="new"] .raw-data-row:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
