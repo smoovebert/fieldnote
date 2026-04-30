@@ -20,7 +20,6 @@ import {
   MessageSquareText,
   Plus,
   Rows3,
-  Scissors,
   Search,
   Settings,
   Tags,
@@ -52,6 +51,8 @@ import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportSidebar } from './modes/report/ReportSidebar'
+import { RefineDetail } from './modes/refine/RefineDetail'
+import { ReferenceList } from './ReferenceList'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
 import {
@@ -773,7 +774,6 @@ function App() {
   const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([initialCodes[0].id])
   const [newCodeName, setNewCodeName] = useState('')
   const [newAttributeName, setNewAttributeName] = useState('')
-  const [mergeTargetCodeId, setMergeTargetCodeId] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [queryText, setQueryText] = useState('')
   const [queryCodeId, setQueryCodeId] = useState('')
@@ -1687,8 +1687,8 @@ function App() {
     setActiveCodeId(next.codes[0].id)
   }
 
-  function mergeActiveCodeIntoTarget() {
-    const targetCode = codes.find((code) => code.id === mergeTargetCodeId)
+  function mergeActiveCodeIntoTarget(targetCodeId: string) {
+    const targetCode = codes.find((code) => code.id === targetCodeId)
     if (!activeCode || !targetCode || activeCode.id === targetCode.id) return
     if (descendantCodeIds(codes, activeCode.id).includes(targetCode.id)) return
 
@@ -1712,7 +1712,6 @@ function App() {
       Array.from(new Set(current.map((codeId) => (codeId === activeCode.id ? targetCode.id : codeId)))),
     )
     setActiveCodeId(targetCode.id)
-    setMergeTargetCodeId('')
     setSelectionHint(`Merged "${activeCode.name}" into "${targetCode.name}".`)
   }
 
@@ -2879,86 +2878,22 @@ function App() {
         )}
 
         {activeView === 'refine' && (
-          <article className="detail-card refine-surface">
-            <div className="refine-header">
-              <div>
-                <p className="detail-kicker">Code definition</p>
-                <h2>{activeCode.name}</h2>
-              </div>
-              <span className="reference-count">{codeExcerpts.length} references</span>
-            </div>
-
-            <div className="code-definition-grid">
-              <label className="property-field">
-                <span>Name</span>
-                <input value={activeCode.name} onChange={(event) => updateCode(activeCode.id, { name: event.target.value })} />
-              </label>
-              <label className="property-field color-field">
-                <span>Color</span>
-                <input type="color" value={activeCode.color} onChange={(event) => updateCode(activeCode.id, { color: event.target.value })} />
-              </label>
-            </div>
-
-            <div className="code-hierarchy-row">
-              <label className="property-field">
-                <span>Parent code</span>
-                <select value={activeCode.parentCodeId ?? ''} onChange={(event) => updateCodeParent(activeCode.id, event.target.value)}>
-                  <option value="">Top-level code</option>
-                  {parentCodeOptions.map((code) => (
-                    <option key={code.id} value={code.id}>
-                      {'-'.repeat(code.depth)} {code.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="code-family-summary">
-                <span>{activeCodeParent ? `Under ${activeCodeParent.name}` : 'Top-level'}</span>
-                <small>{activeCodeChildren.length} child code{activeCodeChildren.length === 1 ? '' : 's'}</small>
-              </div>
-            </div>
-
-            <label className="property-field">
-              <span>Description</span>
-              <textarea
-                className="code-description"
-                value={activeCode.description}
-                aria-label="Code description"
-                onChange={(event) => updateCode(activeCode.id, { description: event.target.value })}
-              />
-            </label>
-
-            <div className="code-maintenance-row">
-              <label className="property-field">
-                <span>Merge into</span>
-                <select value={mergeTargetCodeId} onChange={(event) => setMergeTargetCodeId(event.target.value)}>
-                  <option value="">Choose another code</option>
-                  {parentCodeOptions
-                    .map((code) => (
-                      <option key={code.id} value={code.id}>
-                        {'-'.repeat(code.depth)} {code.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <button className="secondary-button" type="button" disabled={!mergeTargetCodeId} onClick={mergeActiveCodeIntoTarget}>
-                Merge code
-              </button>
-            </div>
-
-            <div className="reference-toolbar">
-              <p className="detail-kicker">References</p>
-              <button className="danger-text-button" type="button" onClick={deleteActiveCode}>
-                <Trash2 size={15} aria-hidden="true" />
-                Delete code
-              </button>
-            </div>
-
-            <ReferenceList excerpts={codeExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} onSplit={splitExcerpt} />
-            <div className="coming-soon-strip">
-              <strong>Coming soon</strong>
-              <span>Code splitting, hierarchy drag-and-drop, and deeper codebook cleanup tools.</span>
-            </div>
-          </article>
+          <RefineDetail
+            activeCode={activeCode}
+            codes={codes}
+            codeExcerpts={codeExcerpts}
+            parentCodeOptions={parentCodeOptions}
+            activeCodeParent={activeCodeParent}
+            activeCodeChildren={activeCodeChildren}
+            updateCode={updateCode}
+            updateCodeParent={updateCodeParent}
+            mergeActiveCodeIntoTarget={mergeActiveCodeIntoTarget}
+            deleteActiveCode={deleteActiveCode}
+            updateExcerptNote={updateExcerptNote}
+            deleteExcerpt={deleteExcerpt}
+            removeCodeFromExcerpt={removeCodeFromExcerpt}
+            splitExcerpt={splitExcerpt}
+          />
         )}
 
         {activeView === 'classify' && (
@@ -3896,65 +3831,6 @@ function DetailTitle({
     return <input className="title-input" value={projectTitle} aria-label="Project title" onChange={(event) => onProjectTitleChange(event.target.value)} />
   }
   return <input className="title-input" value={activeSource.title} aria-label="Source title" onChange={(event) => onSourceTitleChange(event.target.value)} />
-}
-
-function ReferenceList({
-  excerpts,
-  codes,
-  onNoteChange,
-  onDelete,
-  onRemoveCode,
-  onSplit,
-  compact = false,
-}: {
-  excerpts: Excerpt[]
-  codes: Code[]
-  onNoteChange: (id: string, note: string) => void
-  onDelete: (id: string) => void
-  onRemoveCode: (excerptId: string, codeId: string) => void
-  onSplit?: (excerptId: string) => void
-  compact?: boolean
-}) {
-  if (!excerpts.length) {
-    return <p className="empty-reference-state">No coded references in this view yet.</p>
-  }
-
-  return (
-    <div className={compact ? 'excerpt-list compact' : 'excerpt-list'}>
-      {excerpts.map((excerpt) => {
-        const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id))
-        return (
-          <article className="excerpt-card" key={excerpt.id}>
-            <div className="excerpt-meta">
-              <div className="code-stack">
-                {excerptCodes.map((code) => (
-                  <button key={code.id} type="button" style={{ borderColor: code.color }} onClick={() => onRemoveCode(excerpt.id, code.id)}>
-                    <span aria-hidden="true" style={{ background: code.color }} />
-                    {code.name}
-                  </button>
-                ))}
-              </div>
-              <small>{excerpt.sourceTitle}</small>
-            </div>
-            <p>{excerpt.text}</p>
-            <div className="reference-actions">
-              <input value={excerpt.note} placeholder="Add note" aria-label="Reference note" onChange={(event) => onNoteChange(excerpt.id, event.target.value)} />
-              {onSplit && (
-                <button className="neutral-reference-button" type="button" onClick={() => onSplit(excerpt.id)}>
-                  <Scissors size={14} aria-hidden="true" />
-                  Split
-                </button>
-              )}
-              <button type="button" onClick={() => onDelete(excerpt.id)}>
-                <Trash2 size={14} aria-hidden="true" />
-                Delete
-              </button>
-            </div>
-          </article>
-        )
-      })}
-    </div>
-  )
 }
 
 export default App
