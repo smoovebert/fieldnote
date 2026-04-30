@@ -617,7 +617,11 @@ function App() {
       .then((projects) => {
         if (!isCurrent) return
         setProjectRows(projects)
-        setSaveStatus('Choose or create a project.')
+        if (projects.length > 0) {
+          void applyProject(projects[0])
+        } else {
+          setSaveStatus('Create your first project.')
+        }
       })
       .catch((error: Error) => {
         if (!isCurrent) return
@@ -1904,7 +1908,7 @@ function App() {
           </div>
         </header>
 
-        {!projectId && (
+        {!projectId && projectRows.length === 0 && (
           <article className="overview-empty-state">
             <h2>Welcome to Fieldnote</h2>
             <p>Create your first research project to begin.</p>
