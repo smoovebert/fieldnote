@@ -2665,6 +2665,21 @@ function App() {
                 Code selection
               </button>
             )}
+            <div className="toolbar-status sync-box" aria-live="polite">
+              <Cloud size={14} aria-hidden="true" />
+              <span>{saveStatus}</span>
+            </div>
+            {projectId && (
+              <button
+                type="button"
+                className="header-icon-button"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Project settings"
+                title="Project settings"
+              >
+                <Settings size={18} aria-hidden="true" />
+              </button>
+            )}
           </div>
         </header>
 

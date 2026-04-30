@@ -3549,31 +3549,13 @@ textarea {
   color: var(--ink);
 }
 
-/* Phase 3a follow-up — hide redundant brand block in .app-header,
-   the sidebar (3a) already shows it. Sync indicator + settings gear stay. */
+/* Phase 3a follow-up — sync + settings now live inside the detail-toolbar.
+   The legacy .app-header is fully redundant under the new shell. */
 .app-shell[data-shell="new"] .app-header {
-  background: var(--paper);
-  color: var(--ink);
-  padding: var(--s-2) var(--s-5);
-  border-bottom: 1px solid var(--rule);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--s-3);
-  min-height: 0;
-}
-
-.app-shell[data-shell="new"] .app-header .brand-block {
   display: none;
 }
 
-.app-shell[data-shell="new"] .app-header .header-tools {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-}
-
-.app-shell[data-shell="new"] .app-header .sync-box {
+.app-shell[data-shell="new"] .detail-toolbar .toolbar-status {
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
@@ -3582,9 +3564,10 @@ textarea {
   background: var(--pane);
   color: var(--ink-3);
   font: var(--t-ui-sm);
+  border: 1px solid var(--rule-soft);
 }
 
-.app-shell[data-shell="new"] .app-header .header-icon-button {
+.app-shell[data-shell="new"] .detail-toolbar .header-icon-button {
   background: transparent;
   border: 1px solid var(--rule);
   border-radius: var(--r-2);
@@ -3596,12 +3579,7 @@ textarea {
   cursor: pointer;
 }
 
-.app-shell[data-shell="new"] .app-header .header-icon-button:hover {
+.app-shell[data-shell="new"] .detail-toolbar .header-icon-button:hover {
   background: var(--pane);
   color: var(--ink);
-}
-
-/* The legacy .app-header .user-box (email + Sign out) is now in the sidebar account block. Hide here. */
-.app-shell[data-shell="new"] .app-header .user-box {
-  display: none;
 }
