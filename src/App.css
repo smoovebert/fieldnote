@@ -3276,3 +3276,275 @@ textarea {
   font: var(--t-meta);
   color: var(--ink-3);
 }
+
+/* ============================================================
+   Phase 3 — Project Home — scoped under [data-shell="new"]
+   The pre-app screen that lists research projects.
+   ============================================================ */
+
+.project-home-shell[data-shell="new"] {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11", "calt";
+  letter-spacing: -0.005em;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header {
+  background: var(--shell);
+  color: var(--shell-ink);
+  border-bottom: 1px solid var(--shell-rule);
+  padding: var(--s-3) var(--s-5);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .brand-block {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-ink-3);
+  font-size: 9.5px;
+  margin: 0 0 2px;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header h1 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--shell-ink);
+  margin: 0;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .header-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .sync-box {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: 99px;
+  background: var(--shell-deep);
+  color: var(--shell-ink-2);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .user-box {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: 99px;
+  background: var(--shell-deep);
+  color: var(--shell-ink-2);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .user-box button {
+  background: transparent;
+  border: 0;
+  color: var(--shell-ink-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .user-box button:hover {
+  color: var(--shell-ink);
+}
+
+/* ----- Content area ------------------------------------------------ */
+.project-home-shell[data-shell="new"] .project-home {
+  background: var(--paper);
+  padding: var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-5);
+  align-items: end;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: var(--s-5) var(--s-6);
+  box-shadow: none;
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading .eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-size: 10px;
+  margin: 0 0 var(--s-1);
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading h2 {
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--ink);
+  margin: 0 0 var(--s-2);
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading p {
+  font: var(--t-ui);
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 56ch;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row input {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  color: var(--ink);
+  font: var(--t-ui-sm);
+  padding: var(--s-2) var(--s-3);
+  height: 36px;
+  min-width: 220px;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row input:focus {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 2px var(--action-soft);
+}
+
+.project-home-shell[data-shell="new"] .new-project-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-4);
+  height: 36px;
+  border-radius: var(--r-2);
+  background: var(--action);
+  color: var(--action-ink);
+  border: 0;
+  cursor: pointer;
+  font: var(--t-ui);
+  font-weight: 500;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row button:hover {
+  box-shadow: var(--shadow-pop);
+}
+
+.project-home-shell[data-shell="new"] .new-project-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ----- Project list card ------------------------------------------- */
+.project-home-shell[data-shell="new"] .project-list-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 0;
+  box-shadow: none;
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading h2 {
+  font: var(--t-ui-lg);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading button {
+  font: var(--t-ui-sm);
+  color: var(--ink-2);
+  background: var(--pane);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: var(--s-1) var(--s-3);
+  cursor: pointer;
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading button:hover {
+  background: var(--pane-deep);
+}
+
+.project-home-shell[data-shell="new"] .project-row {
+  padding: var(--s-3) var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+  background: transparent;
+}
+
+.project-home-shell[data-shell="new"] .project-row:last-child {
+  border-bottom: 0;
+}
+
+.project-home-shell[data-shell="new"] .project-row.project-row-head {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-size: 10px;
+  background: transparent;
+}
+
+.project-home-shell[data-shell="new"] .project-row strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.project-home-shell[data-shell="new"] .project-row small,
+.project-home-shell[data-shell="new"] .project-row .project-row-action {
+  color: var(--ink-3);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-row .project-row-action {
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.project-home-shell[data-shell="new"] .project-row .project-row-action:hover {
+  color: var(--ink);
+}

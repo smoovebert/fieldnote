@@ -2376,7 +2376,7 @@ function App() {
 
   if (!projectId) {
     return (
-      <main className="project-home-shell">
+      <main className="project-home-shell" data-shell="new">
         <header className="project-home-header">
           <div className="brand-block">
             <div className="brand-mark">F</div>
@@ -3627,6 +3627,26 @@ function ProjectSettingsModal({
   onWidthChange: (next: number) => void
   onClose: () => void
 }) {
+  const [widthDraft, setWidthDraft] = useState<string>(String(width))
+
+  useEffect(() => {
+    setWidthDraft(String(width))
+  }, [width])
+
+  function commitWidth(raw: string) {
+    const next = Number(raw)
+    if (!Number.isFinite(next)) {
+      setWidthDraft(String(width))
+      return
+    }
+    const clamped = Math.min(
+      LINE_NUMBERING_WIDTH_MAX,
+      Math.max(LINE_NUMBERING_WIDTH_MIN, Math.round(next)),
+    )
+    setWidthDraft(String(clamped))
+    onWidthChange(clamped)
+  }
+
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       if (event.key === 'Escape') onClose()
@@ -3680,16 +3700,12 @@ function ProjectSettingsModal({
               min={LINE_NUMBERING_WIDTH_MIN}
               max={LINE_NUMBERING_WIDTH_MAX}
               step={1}
-              value={width}
+              value={widthDraft}
               disabled={mode !== 'fixed-width'}
-              onChange={(event) => {
-                const next = Number(event.target.value)
-                if (!Number.isFinite(next)) return
-                const clamped = Math.min(
-                  LINE_NUMBERING_WIDTH_MAX,
-                  Math.max(LINE_NUMBERING_WIDTH_MIN, Math.round(next)),
-                )
-                onWidthChange(clamped)
+              onChange={(event) => setWidthDraft(event.target.value)}
+              onBlur={(event) => commitWidth(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') commitWidth(event.currentTarget.value)
               }}
             />
           </label>
