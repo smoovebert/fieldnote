@@ -3452,26 +3452,30 @@ function App() {
               <h2>{activeView === 'code' ? 'Active Codes' : 'Codebook'}</h2>
             </div>
             <div className="code-picker">
-              {sortedCodes.map((code) => (
-                <button
-                  key={code.id}
-                  className={(activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id) ? 'selected' : ''}
-                  style={{ marginLeft: activeView === 'refine' ? code.depth * 14 : 0 }}
-                  type="button"
-                  aria-pressed={activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id}
-                  onClick={() => {
-                    if (activeView === 'code') {
-                      toggleSelectedCode(code.id)
-                      return
-                    }
-                    setActiveCodeId(code.id)
-                  }}
-                >
-                  <span style={{ background: code.color }} />
-                  {code.name}
-                  {code.depth > 0 && activeView === 'refine' && <small>Child</small>}
-                </button>
-              ))}
+              {sortedCodes.map((code) => {
+                const refCount = excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length
+                return (
+                  <button
+                    key={code.id}
+                    className={(activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id) ? 'selected' : ''}
+                    style={{ marginLeft: activeView === 'refine' ? code.depth * 14 : 0 }}
+                    type="button"
+                    aria-pressed={activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id}
+                    onClick={() => {
+                      if (activeView === 'code') {
+                        toggleSelectedCode(code.id)
+                        return
+                      }
+                      setActiveCodeId(code.id)
+                    }}
+                  >
+                    <span className="code-pick-dot" style={{ background: code.color }} />
+                    <span className="code-pick-name">{code.name}</span>
+                    {code.depth > 0 && activeView === 'refine' && <small className="code-pick-child">Child</small>}
+                    <span className="code-pick-refs fn-mono">{refCount}</span>
+                  </button>
+                )
+              })}
             </div>
 
             <div className="new-code">
