@@ -2606,7 +2606,7 @@ function App() {
             activeSourceId={activeSource.id}
             activeCodeId={activeCode.id}
             sources={activeSources}
-            visibleSources={activeView === 'organize' ? visibleSources : sources}
+            visibleSources={sources}
             cases={cases}
             savedQueries={savedQueries}
             activeSavedQueryId={activeSavedQueryId}
@@ -2615,7 +2615,7 @@ function App() {
             excerpts={excerpts}
             onSelectSource={(id) => {
               selectActiveSource(id)
-              if (activeView === 'organize' || activeView === 'classify') return
+              if (activeView === 'classify') return
               setActiveView('code')
             }}
             onSelectCode={(id) => {
