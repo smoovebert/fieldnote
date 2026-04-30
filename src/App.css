@@ -3087,3 +3087,185 @@ textarea {
   padding: var(--s-1) var(--s-2);
   font: var(--t-ui-sm);
 }
+
+/* ============================================================
+   Phase 3c — Inspector / Right Rail — scoped under [data-shell="new"]
+   ============================================================ */
+
+/* ----- Properties-view shell --------------------------------------- */
+.app-shell[data-shell="new"] .properties-view {
+  background: var(--paper);
+  color: var(--ink);
+  border-left: 1px solid var(--rule);
+}
+
+.app-shell[data-shell="new"] .properties-view .panel {
+  padding: var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+  background: transparent;
+}
+
+.app-shell[data-shell="new"] .properties-view .panel:last-child {
+  border-bottom: 0;
+}
+
+.app-shell[data-shell="new"] .properties-view .panel-heading {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  color: var(--ink-3);
+}
+
+.app-shell[data-shell="new"] .properties-view .panel-heading svg {
+  color: var(--ink-3);
+}
+
+.app-shell[data-shell="new"] .properties-view .panel-heading h2 {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ----- Active Codes / Codebook picker ------------------------------ */
+.app-shell[data-shell="new"] .properties-view .code-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--s-3);
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: var(--t-ui);
+  color: var(--ink);
+  position: relative;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button:hover {
+  background: var(--pane-deep);
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button.selected {
+  background: var(--pane);
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  display: inline-block;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-refs {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-child {
+  color: var(--ink-4);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button.selected::before {
+  content: "✓";
+  position: absolute;
+  right: var(--s-3);
+  color: var(--action);
+  font-size: 11px;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button.selected .code-pick-refs {
+  visibility: hidden;
+}
+
+/* ----- New-code field --------------------------------------------- */
+.app-shell[data-shell="new"] .properties-view .new-code {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-2);
+  align-items: center;
+  margin-top: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code input {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  color: var(--ink);
+  font: var(--t-ui-sm);
+  padding: var(--s-2) var(--s-3);
+  height: 32px;
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code input:focus {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 2px var(--action-soft);
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code button.icon-button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  background: var(--action);
+  color: var(--action-ink);
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code button.icon-button:hover {
+  box-shadow: var(--shadow-pop);
+}
+
+/* ----- Memo textarea ---------------------------------------------- */
+.app-shell[data-shell="new"] .properties-view #memo textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: var(--s-3);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  font: var(--t-ui);
+  color: var(--ink);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.app-shell[data-shell="new"] .properties-view #memo textarea:focus {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 2px var(--action-soft);
+}
+
+.app-shell[data-shell="new"] .properties-view .memo-link-note {
+  margin-top: var(--s-2);
+  font: var(--t-meta);
+  color: var(--ink-3);
+}
