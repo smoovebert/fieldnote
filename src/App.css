@@ -3000,6 +3000,15 @@ textarea {
   margin: 0 auto;
   padding: var(--reader-pad-y) var(--reader-pad-x);
   background: var(--paper);
+  overflow-y: auto;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript {
+  overflow: visible;
 }
 
 .app-shell[data-shell="new"] .reader-meta-strip {
