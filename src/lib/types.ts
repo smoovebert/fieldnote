@@ -2,6 +2,9 @@
 // into App.tsx. Extracting them out of App.tsx is the prerequisite for the
 // pure-function refactor — keeps lib/ free of React imports.
 
+import type { QueryDefinition } from '../analyze/queryDefinition'
+export type { QueryDefinition }
+
 export type Code = {
   id: string
   name: string
@@ -55,4 +58,119 @@ export type Excerpt = {
   sourceTitle: string
   text: string
   note: string
+}
+
+export type SavedQuery = {
+  id: string
+  name: string
+  queryType: 'coded_excerpt'
+  definition: QueryDefinition
+}
+
+export type ProjectData = {
+  activeSourceId: string
+  sources: Source[]
+  cases: Case[]
+  attributes: Attribute[]
+  attributeValues: AttributeValue[]
+  savedQueries: SavedQuery[]
+  codes: Code[]
+  memos: Memo[]
+  excerpts: Excerpt[]
+}
+
+export type ProjectRow = {
+  id: string
+  title: string
+  updated_at?: string | null
+  active_source_id?: string | null
+  sources?: Source[] | null
+  source_title?: string | null
+  transcript?: string | null
+  memo?: string | null
+  codes: Code[]
+  memos?: Memo[] | null
+  excerpts: Excerpt[]
+  line_numbering_mode?: string | null
+  line_numbering_width?: number | null
+}
+
+export type NormalizedSourceRow = {
+  id: string
+  project_id: string
+  title: string
+  kind: Source['kind']
+  folder_name: string
+  content: string
+  archived: boolean
+  imported_at?: string | null
+  case_name?: string | null
+}
+
+export type NormalizedCodeRow = {
+  id: string
+  project_id: string
+  name: string
+  color: string
+  description: string
+  parent_code_id?: string | null
+}
+
+export type NormalizedMemoRow = {
+  id: string
+  project_id: string
+  title: string
+  body: string
+  linked_type: Memo['linkedType']
+  linked_id?: string | null
+}
+
+export type NormalizedSegmentRow = {
+  id: string
+  project_id: string
+  source_id: string
+  content: string
+}
+
+export type NormalizedCodedReferenceRow = {
+  project_id: string
+  segment_id: string
+  code_id: string
+  source_id: string
+  note: string
+}
+
+export type NormalizedCaseRow = {
+  id: string
+  project_id: string
+  name: string
+  description: string
+}
+
+export type NormalizedCaseSourceRow = {
+  project_id: string
+  case_id: string
+  source_id: string
+}
+
+export type NormalizedAttributeRow = {
+  id: string
+  project_id: string
+  name: string
+  value_type: Attribute['valueType']
+}
+
+export type NormalizedAttributeValueRow = {
+  project_id: string
+  case_id: string
+  attribute_id: string
+  value: string
+}
+
+export type NormalizedQueryRow = {
+  id: string
+  project_id: string
+  name: string
+  query_type: SavedQuery['queryType']
+  definition: Partial<QueryDefinition> | null
 }

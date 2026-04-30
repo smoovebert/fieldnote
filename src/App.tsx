@@ -64,59 +64,34 @@ import {
 } from './lib/excerptOperations'
 import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
+import type {
+  Attribute,
+  AttributeValue,
+  Case,
+  Code,
+  Excerpt,
+  Memo,
+  NormalizedAttributeRow,
+  NormalizedAttributeValueRow,
+  NormalizedCaseRow,
+  NormalizedCaseSourceRow,
+  NormalizedCodedReferenceRow,
+  NormalizedCodeRow,
+  NormalizedMemoRow,
+  NormalizedQueryRow,
+  NormalizedSegmentRow,
+  NormalizedSourceRow,
+  ProjectData,
+  ProjectRow,
+  SavedQuery,
+  Source,
+} from './lib/types'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 type SourceFolderFilter = 'All' | 'Archived' | string
 type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence' | 'crosstab'
 type MatrixColumnMode = 'case' | 'attribute'
-
-type Code = {
-  id: string
-  name: string
-  color: string
-  description: string
-  parentCodeId?: string
-}
-
-type Source = {
-  id: string
-  title: string
-  kind: 'Transcript' | 'Document'
-  folder: string
-  content: string
-  archived?: boolean
-  importedAt?: string
-  caseName?: string
-}
-
-type Case = {
-  id: string
-  name: string
-  description: string
-  sourceIds: string[]
-}
-
-type Attribute = {
-  id: string
-  name: string
-  valueType: 'text'
-}
-
-type AttributeValue = {
-  caseId: string
-  attributeId: string
-  value: string
-}
-
-
-
-type SavedQuery = {
-  id: string
-  name: string
-  queryType: 'coded_excerpt'
-  definition: QueryDefinition
-}
 
 type MatrixColumn = {
   id: string
@@ -137,139 +112,12 @@ type CoOccurrenceRow = {
   excerpts: Excerpt[]
 }
 
-
-type Memo = {
-  id: string
-  title: string
-  body: string
-  linkedType: 'project' | 'source' | 'code'
-  linkedId?: string
-}
-
-type Excerpt = {
-  id: string
-  codeIds: string[]
-  sourceId: string
-  sourceTitle: string
-  text: string
-  note: string
-}
-
-type ProjectData = {
-  activeSourceId: string
-  sources: Source[]
-  cases: Case[]
-  attributes: Attribute[]
-  attributeValues: AttributeValue[]
-  savedQueries: SavedQuery[]
-  codes: Code[]
-  memos: Memo[]
-  excerpts: Excerpt[]
-}
-
 type LineNumberingMode = 'paragraph' | 'fixed-width'
 
 const DEFAULT_LINE_NUMBERING_MODE: LineNumberingMode = 'fixed-width'
 const DEFAULT_LINE_NUMBERING_WIDTH = 80
 const LINE_NUMBERING_WIDTH_MIN = 40
 const LINE_NUMBERING_WIDTH_MAX = 160
-
-type ProjectRow = {
-  id: string
-  title: string
-  updated_at?: string | null
-  active_source_id?: string | null
-  sources?: Source[] | null
-  source_title?: string | null
-  transcript?: string | null
-  memo?: string | null
-  codes: Code[]
-  memos?: Memo[] | null
-  excerpts: Excerpt[]
-  line_numbering_mode?: LineNumberingMode | null
-  line_numbering_width?: number | null
-}
-
-type NormalizedSourceRow = {
-  id: string
-  project_id: string
-  title: string
-  kind: Source['kind']
-  folder_name: string
-  content: string
-  archived: boolean
-  imported_at?: string | null
-  case_name?: string | null
-}
-
-type NormalizedCodeRow = {
-  id: string
-  project_id: string
-  name: string
-  color: string
-  description: string
-  parent_code_id?: string | null
-}
-
-type NormalizedMemoRow = {
-  id: string
-  project_id: string
-  title: string
-  body: string
-  linked_type: Memo['linkedType']
-  linked_id?: string | null
-}
-
-type NormalizedSegmentRow = {
-  id: string
-  project_id: string
-  source_id: string
-  content: string
-}
-
-type NormalizedCodedReferenceRow = {
-  project_id: string
-  segment_id: string
-  code_id: string
-  source_id: string
-  note: string
-}
-
-type NormalizedCaseRow = {
-  id: string
-  project_id: string
-  name: string
-  description: string
-}
-
-type NormalizedCaseSourceRow = {
-  project_id: string
-  case_id: string
-  source_id: string
-}
-
-type NormalizedAttributeRow = {
-  id: string
-  project_id: string
-  name: string
-  value_type: Attribute['valueType']
-}
-
-type NormalizedAttributeValueRow = {
-  project_id: string
-  case_id: string
-  attribute_id: string
-  value: string
-}
-
-type NormalizedQueryRow = {
-  id: string
-  project_id: string
-  name: string
-  query_type: SavedQuery['queryType']
-  definition: Partial<QueryDefinition> | null
-}
-
 
 const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
 
@@ -1031,7 +879,7 @@ function App() {
 
     setProjectId(project.id)
     setProjectTitle(project.title || 'Untitled project')
-    setLineNumberingMode(project.line_numbering_mode ?? DEFAULT_LINE_NUMBERING_MODE)
+    setLineNumberingMode((project.line_numbering_mode ?? DEFAULT_LINE_NUMBERING_MODE) as LineNumberingMode)
     setLineNumberingWidth(project.line_numbering_width ?? DEFAULT_LINE_NUMBERING_WIDTH)
     setActiveView('organize')
     setActiveSourceId(nextProject.activeSourceId)
