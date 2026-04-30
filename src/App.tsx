@@ -2566,6 +2566,7 @@ function App() {
 
         {activeView === 'code' && (
           <CodeDetail
+            key={activeSource.id}
             activeSource={activeSource}
             selectedCodeNames={selectedCodeNames}
             selectedCodes={selectedCodes}
