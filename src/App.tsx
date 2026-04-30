@@ -2736,7 +2736,14 @@ function App() {
               </label>
             </div>
 
-            <div className="reader-column">
+            <div
+              className="reader-column"
+              style={
+                lineNumberingMode === 'fixed-width'
+                  ? ({ '--reader-measure': `${lineNumberingWidth}ch` } as CSSProperties)
+                  : undefined
+              }
+            >
               <div className="reader-meta-strip fn-meta">
                 <span>{activeSource.caseName || activeSource.kind}</span>
                 <span aria-hidden="true">·</span>
