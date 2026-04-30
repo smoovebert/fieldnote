@@ -1045,21 +1045,32 @@ button {
   display: inline-flex;
   width: fit-content;
   border: 1px solid var(--line);
+  border-radius: 6px;
   background: #f8fafc;
+  overflow: hidden;
 }
 
 .analyze-tabs button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  min-height: 36px;
+  flex: 0 0 auto;
+  height: 36px;
+  box-sizing: border-box;
   border: 0;
   border-radius: 0;
-  padding: 0 12px;
+  padding: 0 14px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-weight: 760;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.analyze-tabs button + button {
+  border-left: 1px solid var(--line);
 }
 
 .analyze-tabs button.active {
