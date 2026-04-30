@@ -26,6 +26,8 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
+import { loadProject, saveProject, type SavePayload } from './persistence/io'
+import { useAutosave } from './persistence/useAutosave'
 import {
   DEFAULT_ANALYZE_VIEW,
   serialize as serializeAnalyzeView,
@@ -71,16 +73,6 @@ import type {
   Code,
   Excerpt,
   Memo,
-  NormalizedAttributeRow,
-  NormalizedAttributeValueRow,
-  NormalizedCaseRow,
-  NormalizedCaseSourceRow,
-  NormalizedCodedReferenceRow,
-  NormalizedCodeRow,
-  NormalizedMemoRow,
-  NormalizedQueryRow,
-  NormalizedSegmentRow,
-  NormalizedSourceRow,
   ProjectData,
   ProjectRow,
   SavedQuery,
@@ -298,23 +290,6 @@ function slugId(value: string, fallback = 'item') {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || fallback
 }
 
-function casesFromSources(sources: Source[]): Case[] {
-  const casesByName = new Map<string, Case>()
-  sources.forEach((source) => {
-    const name = source.caseName?.trim()
-    if (!name) return
-
-    const existingCase = casesByName.get(name) ?? {
-      id: `case-${slugId(name)}`,
-      name,
-      description: '',
-      sourceIds: [],
-    }
-    casesByName.set(name, { ...existingCase, sourceIds: Array.from(new Set([...existingCase.sourceIds, source.id])) })
-  })
-
-  return Array.from(casesByName.values())
-}
 
 
 
@@ -346,161 +321,11 @@ function buildCodeTree(codes: Code[]) {
 
 // descendantCodeIds moved to src/lib/codeOperations.ts
 
-function normalizeProject(project: ProjectRow): ProjectData {
-  const fallbackSource: Source = {
-    id: 'interview-03',
-    title: project.source_title || 'Interview 03',
-    kind: 'Transcript',
-    folder: 'Internals',
-    content: project.transcript || sampleTranscript,
-  }
-  const sources = project.sources?.length ? project.sources : [fallbackSource]
-  const memos = project.memos?.length
-    ? project.memos
-    : [
-        {
-          id: 'project-memo',
-          title: 'Project memo',
-          linkedType: 'project' as const,
-          body: project.memo || defaultProject.memos[0].body,
-        },
-      ]
-
-  return {
-    activeSourceId: project.active_source_id || sources[0].id,
-    sources,
-    cases: casesFromSources(sources),
-    attributes: initialAttributes,
-    attributeValues: initialAttributeValues,
-    savedQueries: initialSavedQueries,
-    codes: project.codes?.length ? project.codes : defaultProject.codes,
-    memos,
-    excerpts: (project.excerpts ?? []).map((excerpt) => ({
-      ...excerpt,
-      sourceId: excerpt.sourceId || sources.find((source) => source.title === excerpt.sourceTitle)?.id || sources[0].id,
-    })),
-  }
-}
-
-function composeProjectFromNormalized(
-  project: ProjectRow,
-  sourceRows: NormalizedSourceRow[],
-  codeRows: NormalizedCodeRow[],
-  memoRows: NormalizedMemoRow[],
-  segmentRows: NormalizedSegmentRow[],
-  referenceRows: NormalizedCodedReferenceRow[],
-  caseRows: NormalizedCaseRow[] = [],
-  caseSourceRows: NormalizedCaseSourceRow[] = [],
-  attributeRows: NormalizedAttributeRow[] = [],
-  attributeValueRows: NormalizedAttributeValueRow[] = [],
-  queryRows: NormalizedQueryRow[] = []
-): ProjectData {
-  const caseNameBySourceId = new Map<string, string>()
-  const caseNameById = new Map(caseRows.map((caseRow) => [caseRow.id, caseRow.name]))
-  caseSourceRows.forEach((caseSource) => {
-    const caseName = caseNameById.get(caseSource.case_id)
-    if (caseName) caseNameBySourceId.set(caseSource.source_id, caseName)
-  })
-
-  const sources = sourceRows.map<Source>((source) => ({
-    id: source.id,
-    title: source.title,
-    kind: source.kind,
-    folder: source.folder_name,
-    content: source.content,
-    archived: source.archived,
-    importedAt: source.imported_at ?? undefined,
-    caseName: caseNameBySourceId.get(source.id) ?? source.case_name ?? undefined,
-  }))
-  const caseSourceIdsByCaseId = caseSourceRows.reduce<Record<string, string[]>>((groups, caseSource) => {
-    groups[caseSource.case_id] = [...(groups[caseSource.case_id] ?? []), caseSource.source_id]
-    return groups
-  }, {})
-  const cases = caseRows.map<Case>((caseRow) => ({
-    id: caseRow.id,
-    name: caseRow.name,
-    description: caseRow.description,
-    sourceIds: caseSourceIdsByCaseId[caseRow.id] ?? [],
-  }))
-  const attributes = attributeRows.map<Attribute>((attribute) => ({
-    id: attribute.id,
-    name: attribute.name,
-    valueType: attribute.value_type,
-  }))
-  const attributeValues = attributeValueRows.map<AttributeValue>((attributeValue) => ({
-    caseId: attributeValue.case_id,
-    attributeId: attributeValue.attribute_id,
-    value: attributeValue.value,
-  }))
-  const savedQueries = queryRows.map<SavedQuery>((query) => ({
-    id: query.id,
-    name: query.name,
-    queryType: query.query_type,
-    definition: normalizeQueryDefinition(query.definition),
-  }))
-  const codes = codeRows.map<Code>((code) => ({
-    id: code.id,
-    name: code.name,
-    color: code.color,
-    description: code.description,
-    parentCodeId: code.parent_code_id ?? undefined,
-  }))
-  const memos = memoRows.map<Memo>((memo) => ({
-    id: memo.id,
-    title: memo.title,
-    body: memo.body,
-    linkedType: memo.linked_type,
-    linkedId: memo.linked_id ?? undefined,
-  }))
-  const referencesBySegment = referenceRows.reduce<Record<string, NormalizedCodedReferenceRow[]>>((groups, reference) => {
-    groups[reference.segment_id] = [...(groups[reference.segment_id] ?? []), reference]
-    return groups
-  }, {})
-  const sourceTitleById = new Map(sources.map((source) => [source.id, source.title]))
-  const excerpts = segmentRows.flatMap<Excerpt>((segment) => {
-    const segmentReferences = referencesBySegment[segment.id] ?? []
-    if (!segmentReferences.length) return []
-
-    return [
-      {
-        id: segment.id,
-        sourceId: segment.source_id,
-        sourceTitle: sourceTitleById.get(segment.source_id) ?? 'Unknown source',
-        text: segment.content,
-        note: segmentReferences[0]?.note ?? '',
-        codeIds: segmentReferences.map((reference) => reference.code_id),
-      },
-    ]
-  })
-
-  return {
-    activeSourceId: project.active_source_id || sources[0]?.id || defaultProject.activeSourceId,
-    sources: sources.length ? sources : normalizeProject(project).sources,
-    cases: cases.length ? cases : casesFromSources(sources),
-    attributes: attributes.length ? attributes : initialAttributes,
-    attributeValues,
-    savedQueries,
-    codes: codes.length ? codes : normalizeProject(project).codes,
-    memos: memos.length ? memos : normalizeProject(project).memos,
-    excerpts,
-  }
-}
-
 function errorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message
   return fallback
 }
-
-function postgrestInList(values: string[]): string {
-  // PostgREST IN-list — quote each value so commas / quotes / spaces in IDs
-  // can't break the filter. See https://docs.postgrest.org/en/stable/api.html#operators
-  const escaped = values.map((value) =>
-    `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`,
-  )
-  return `(${escaped.join(',')})`
-}
-
 
 async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kind'>> {
   if (file.name.toLowerCase().endsWith('.docx')) {
@@ -564,12 +389,6 @@ function App() {
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
-  // Autosave guard: while a save is in flight, the most recent next-save closure
-  // is parked here. When the in-flight save resolves, the queue runs at most one
-  // more save (with the latest captured state). Prevents two saves' deletes-then-
-  // upserts from interleaving on fast typing.
-  const saveInFlightRef = useRef(false)
-  const savePendingRef = useRef<(() => Promise<void>) | null>(null)
 
   const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
   const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
@@ -648,234 +467,9 @@ function App() {
     }
   }, [attributeValues])
 
-  async function loadProjectData(project: ProjectRow) {
-    try {
-      const [sourceResult, codeResult, memoResult, segmentResult, referenceResult, caseResult, caseSourceResult, attributeResult, attributeValueResult, queryResult] = await Promise.all([
-        supabase.from('fieldnote_sources').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_codes').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_memos').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_source_segments').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_coded_references').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_cases').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_case_sources').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_attributes').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_attribute_values').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-        supabase.from('fieldnote_queries').select('*').eq('project_id', project.id).order('created_at', { ascending: true }),
-      ])
-
-      const normalizedError =
-        sourceResult.error ??
-        codeResult.error ??
-        memoResult.error ??
-        segmentResult.error ??
-        referenceResult.error ??
-        caseResult.error ??
-        caseSourceResult.error ??
-        attributeResult.error ??
-        attributeValueResult.error ??
-        queryResult.error
-      if (normalizedError) throw normalizedError
-
-      const normalizedSources = (sourceResult.data ?? []) as NormalizedSourceRow[]
-      const normalizedCodes = (codeResult.data ?? []) as NormalizedCodeRow[]
-      const normalizedMemos = (memoResult.data ?? []) as NormalizedMemoRow[]
-      const normalizedSegments = (segmentResult.data ?? []) as NormalizedSegmentRow[]
-      const normalizedReferences = (referenceResult.data ?? []) as NormalizedCodedReferenceRow[]
-      const normalizedCases = (caseResult.data ?? []) as NormalizedCaseRow[]
-      const normalizedCaseSources = (caseSourceResult.data ?? []) as NormalizedCaseSourceRow[]
-      const normalizedAttributes = (attributeResult.data ?? []) as NormalizedAttributeRow[]
-      const normalizedAttributeValues = (attributeValueResult.data ?? []) as NormalizedAttributeValueRow[]
-      const normalizedQueries = (queryResult.data ?? []) as NormalizedQueryRow[]
-
-      if (
-        normalizedSources.length ||
-        normalizedCodes.length ||
-        normalizedMemos.length ||
-        normalizedSegments.length ||
-        normalizedReferences.length ||
-        normalizedCases.length ||
-        normalizedAttributes.length ||
-        normalizedQueries.length
-      ) {
-        return composeProjectFromNormalized(
-          project,
-          normalizedSources,
-          normalizedCodes,
-          normalizedMemos,
-          normalizedSegments,
-          normalizedReferences,
-          normalizedCases,
-          normalizedCaseSources,
-          normalizedAttributes,
-          normalizedAttributeValues,
-          normalizedQueries
-        )
-      }
-    } catch (error) {
-      console.warn('Falling back to project JSON data.', error)
-    }
-
-    return normalizeProject(project)
-  }
-
-  async function saveNormalizedProject(nextProjectId: string, nextProjectData: ProjectData) {
-    const folderNames = Array.from(new Set(nextProjectData.sources.map((source) => source.folder || 'Internals')))
-    const folderRows = folderNames.map((folder) => ({
-      id: folder.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      project_id: nextProjectId,
-      name: folder,
-      kind: 'source',
-    }))
-    const sourceRows = nextProjectData.sources.map((source) => ({
-      id: source.id,
-      project_id: nextProjectId,
-      title: source.title,
-      kind: source.kind,
-      folder_name: source.folder || 'Internals',
-      content: source.content,
-      archived: Boolean(source.archived),
-      imported_at: source.importedAt ?? null,
-      case_name: source.caseName ?? null,
-    }))
-    const caseRows = nextProjectData.cases.map((item) => ({
-      id: item.id,
-      project_id: nextProjectId,
-      name: item.name,
-      description: item.description,
-    }))
-    const caseSourceRows = nextProjectData.cases.flatMap((item) =>
-      item.sourceIds.map((sourceId) => ({
-        project_id: nextProjectId,
-        case_id: item.id,
-        source_id: sourceId,
-      }))
-    )
-    const attributeRows = nextProjectData.attributes.map((attribute) => ({
-      id: attribute.id,
-      project_id: nextProjectId,
-      name: attribute.name,
-      value_type: attribute.valueType,
-    }))
-    const attributeValueRows = nextProjectData.attributeValues
-      .filter((attributeValue) => attributeValue.value.trim())
-      .map((attributeValue) => ({
-        project_id: nextProjectId,
-        case_id: attributeValue.caseId,
-        attribute_id: attributeValue.attributeId,
-        value: attributeValue.value,
-      }))
-    const queryRows = nextProjectData.savedQueries.map((query) => ({
-      id: query.id,
-      project_id: nextProjectId,
-      name: query.name,
-      query_type: query.queryType,
-      definition: query.definition,
-    }))
-    const codeRows = nextProjectData.codes.map((code) => ({
-      id: code.id,
-      project_id: nextProjectId,
-      parent_code_id: code.parentCodeId ?? null,
-      name: code.name,
-      color: code.color,
-      description: code.description,
-    }))
-    const memoRows = nextProjectData.memos.map((memo) => ({
-      id: memo.id,
-      project_id: nextProjectId,
-      title: memo.title,
-      body: memo.body,
-      linked_type: memo.linkedType,
-      linked_id: memo.linkedId ?? null,
-    }))
-    const segmentRows = nextProjectData.excerpts.map((excerpt) => ({
-      id: excerpt.id,
-      project_id: nextProjectId,
-      source_id: excerpt.sourceId,
-      segment_type: 'text_range',
-      content: excerpt.text,
-    }))
-    const referenceRows = nextProjectData.excerpts.flatMap((excerpt) =>
-      excerpt.codeIds.map((codeId) => ({
-        project_id: nextProjectId,
-        segment_id: excerpt.id,
-        code_id: codeId,
-        source_id: excerpt.sourceId,
-        note: excerpt.note,
-      }))
-    )
-
-    const upserts = [
-      folderRows.length ? supabase.from('fieldnote_folders').upsert(folderRows, { onConflict: 'project_id,id' }) : undefined,
-      sourceRows.length ? supabase.from('fieldnote_sources').upsert(sourceRows, { onConflict: 'project_id,id' }) : undefined,
-      caseRows.length ? supabase.from('fieldnote_cases').upsert(caseRows, { onConflict: 'project_id,id' }) : undefined,
-      attributeRows.length ? supabase.from('fieldnote_attributes').upsert(attributeRows, { onConflict: 'project_id,id' }) : undefined,
-      queryRows.length ? supabase.from('fieldnote_queries').upsert(queryRows, { onConflict: 'project_id,id' }) : undefined,
-      codeRows.length ? supabase.from('fieldnote_codes').upsert(codeRows, { onConflict: 'project_id,id' }) : undefined,
-      memoRows.length ? supabase.from('fieldnote_memos').upsert(memoRows, { onConflict: 'project_id,id' }) : undefined,
-      segmentRows.length ? supabase.from('fieldnote_source_segments').upsert(segmentRows, { onConflict: 'project_id,id' }) : undefined,
-    ].filter(Boolean)
-
-    const upsertResults = await Promise.all(upserts)
-    const upsertError = upsertResults.find((result) => result?.error)?.error
-    if (upsertError) throw upsertError
-
-    const existingSourceIds = nextProjectData.sources.map((source) => source.id)
-    const existingCaseIds = nextProjectData.cases.map((item) => item.id)
-    const existingAttributeIds = nextProjectData.attributes.map((attribute) => attribute.id)
-    const existingQueryIds = nextProjectData.savedQueries.map((query) => query.id)
-    const existingCodeIds = nextProjectData.codes.map((code) => code.id)
-    const existingMemoIds = nextProjectData.memos.map((memo) => memo.id)
-    const existingSegmentIds = nextProjectData.excerpts.map((excerpt) => excerpt.id)
-
-    const { error: caseSourcesDeleteError } = await supabase.from('fieldnote_case_sources').delete().eq('project_id', nextProjectId)
-    if (caseSourcesDeleteError) throw caseSourcesDeleteError
-    if (caseSourceRows.length) {
-      const { error: caseSourcesInsertError } = await supabase.from('fieldnote_case_sources').insert(caseSourceRows)
-      if (caseSourcesInsertError) throw caseSourcesInsertError
-    }
-
-    const { error: attributeValuesDeleteError } = await supabase.from('fieldnote_attribute_values').delete().eq('project_id', nextProjectId)
-    if (attributeValuesDeleteError) throw attributeValuesDeleteError
-    if (attributeValueRows.length) {
-      const { error: attributeValuesInsertError } = await supabase.from('fieldnote_attribute_values').insert(attributeValueRows)
-      if (attributeValuesInsertError) throw attributeValuesInsertError
-    }
-
-    await Promise.all([
-      existingSourceIds.length
-        ? supabase.from('fieldnote_sources').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingSourceIds))
-        : supabase.from('fieldnote_sources').delete().eq('project_id', nextProjectId),
-      existingCaseIds.length
-        ? supabase.from('fieldnote_cases').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingCaseIds))
-        : supabase.from('fieldnote_cases').delete().eq('project_id', nextProjectId),
-      existingAttributeIds.length
-        ? supabase.from('fieldnote_attributes').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingAttributeIds))
-        : supabase.from('fieldnote_attributes').delete().eq('project_id', nextProjectId),
-      existingQueryIds.length
-        ? supabase.from('fieldnote_queries').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingQueryIds))
-        : supabase.from('fieldnote_queries').delete().eq('project_id', nextProjectId),
-      existingCodeIds.length
-        ? supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingCodeIds))
-        : supabase.from('fieldnote_codes').delete().eq('project_id', nextProjectId),
-      existingMemoIds.length
-        ? supabase.from('fieldnote_memos').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingMemoIds))
-        : supabase.from('fieldnote_memos').delete().eq('project_id', nextProjectId),
-      existingSegmentIds.length
-        ? supabase.from('fieldnote_source_segments').delete().eq('project_id', nextProjectId).not('id', 'in', postgrestInList(existingSegmentIds))
-        : supabase.from('fieldnote_source_segments').delete().eq('project_id', nextProjectId),
-    ])
-
-    const { error: referencesDeleteError } = await supabase.from('fieldnote_coded_references').delete().eq('project_id', nextProjectId)
-    if (referencesDeleteError) throw referencesDeleteError
-    if (referenceRows.length) {
-      const { error: referencesInsertError } = await supabase.from('fieldnote_coded_references').insert(referenceRows)
-      if (referencesInsertError) throw referencesInsertError
-    }
-  }
-
   async function applyProject(project: ProjectRow) {
     setSaveStatus('Opening project...')
-    const nextProject = await loadProjectData(project)
+    const nextProject = await loadProject(project, supabase)
 
     setProjectId(project.id)
     setProjectTitle(project.title || 'Untitled project')
@@ -958,7 +552,24 @@ function App() {
 
       if (error) throw error
       const nextProject = createdProject as ProjectRow
-      await saveNormalizedProject(nextProject.id, defaultProject)
+      await saveProject(nextProject.id, {
+        title,
+        active_source_id: defaultProject.activeSourceId,
+        source_title: defaultProject.sources[0].title,
+        transcript: defaultProject.sources[0].content,
+        memo: defaultProject.memos[0].body,
+        sources: defaultProject.sources,
+        codes: defaultProject.codes,
+        memos: defaultProject.memos,
+        excerpts: defaultProject.excerpts,
+        cases: defaultProject.cases,
+        attributes: defaultProject.attributes,
+        attributeValues: defaultProject.attributeValues,
+        savedQueries: defaultProject.savedQueries,
+        line_numbering_mode: DEFAULT_LINE_NUMBERING_MODE,
+        line_numbering_width: DEFAULT_LINE_NUMBERING_WIDTH,
+        projectData: defaultProject,
+      }, supabase)
       setProjectRows((current) => [nextProject, ...current])
       setNewProjectTitle('')
       await applyProject(nextProject)
@@ -1024,83 +635,57 @@ function App() {
     }
   }, [session])
 
-  useEffect(() => {
-    if (!session?.user || !projectId || !hasLoadedRemoteProject.current) return
+  const persistencePayload = useMemo<SavePayload | null>(() => {
+    if (!projectId) return null
+    return {
+      title: projectTitle,
+      active_source_id: activeSourceId,
+      source_title: activeSource?.title ?? '',
+      transcript: activeSource?.content ?? '',
+      memo: projectMemo?.body ?? '',
+      sources,
+      codes,
+      memos,
+      excerpts,
+      cases,
+      attributes,
+      attributeValues,
+      savedQueries,
+      line_numbering_mode: lineNumberingMode,
+      line_numbering_width: lineNumberingWidth,
+      projectData,
+    }
+  }, [projectId, projectTitle, activeSourceId, activeSource, projectMemo, sources, codes, memos, excerpts, cases, attributes, attributeValues, savedQueries, lineNumberingMode, lineNumberingWidth, projectData])
 
-    const currentProjectId = projectId
-    setSaveStatus('Saving...')
-    const timeout = window.setTimeout(() => {
-      const saveProject = async () => {
-        try {
-          const { error } = await supabase
-            .from('fieldnote_projects')
-            .update({
-              active_source_id: projectData.activeSourceId,
-              title: projectTitle,
-              source_title: activeSource.title,
-              transcript: activeSource.content,
-              memo: projectMemo.body,
-              sources: projectData.sources,
-              codes: projectData.codes,
-              memos: projectData.memos,
-              excerpts: projectData.excerpts,
-              line_numbering_mode: lineNumberingMode,
-              line_numbering_width: lineNumberingWidth,
-            })
-            .eq('id', currentProjectId)
-
-          if (error) throw error
-          try {
-            await saveNormalizedProject(currentProjectId, projectData)
-          } catch (normalizedError) {
-            console.warn('Project JSON saved, but normalized save failed.', normalizedError)
-          }
-          setProjectRows((current) =>
-            current.map((project) =>
-              project.id === currentProjectId
-                ? {
-                    ...project,
-                    title: projectTitle,
-                    active_source_id: projectData.activeSourceId,
-                    source_title: activeSource.title,
-                    transcript: activeSource.content,
-                    memo: projectMemo.body,
-                    sources: projectData.sources,
-                    codes: projectData.codes,
-                    memos: projectData.memos,
-                    excerpts: projectData.excerpts,
-                    line_numbering_mode: lineNumberingMode,
-                    line_numbering_width: lineNumberingWidth,
-                  }
-                : project
-            )
-          )
-          setSaveStatus('Saved to Supabase.')
-        } catch (error) {
-          setSaveStatus(errorMessage(error, 'Save failed.'))
-        }
-      }
-
-      const runSaveCycle = async () => {
-        savePendingRef.current = saveProject
-        if (saveInFlightRef.current) return
-        saveInFlightRef.current = true
-        try {
-          while (savePendingRef.current) {
-            const fn = savePendingRef.current
-            savePendingRef.current = null
-            await fn()
-          }
-        } finally {
-          saveInFlightRef.current = false
-        }
-      }
-
-      void runSaveCycle()
-    }, 700)
-
-    return () => window.clearTimeout(timeout)
-  }, [activeSource.content, activeSource.title, lineNumberingMode, lineNumberingWidth, projectData, projectId, projectMemo.body, projectTitle, session])
+  useAutosave({
+    enabled: Boolean(session?.user && projectId && hasLoadedRemoteProject.current),
+    projectId,
+    payload: persistencePayload,
+    supabase,
+    setSaveStatus,
+    onSaved: (savedPayload) => {
+      setProjectRows((current) =>
+        current.map((project) =>
+          project.id === projectId
+            ? {
+                ...project,
+                title: savedPayload.title,
+                active_source_id: savedPayload.active_source_id,
+                source_title: savedPayload.source_title,
+                transcript: savedPayload.transcript,
+                memo: savedPayload.memo,
+                sources: savedPayload.sources,
+                codes: savedPayload.codes,
+                memos: savedPayload.memos,
+                excerpts: savedPayload.excerpts,
+                line_numbering_mode: savedPayload.line_numbering_mode,
+                line_numbering_width: savedPayload.line_numbering_width,
+              }
+            : project
+        )
+      )
+    },
+  })
 
   const visibleExcerpts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
