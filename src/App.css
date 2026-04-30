@@ -2652,40 +2652,6 @@ textarea {
   display: none;
 }
 
-/* ----- Project switcher ---------------------------------------------- */
-.app-shell[data-shell="new"] .project-switcher {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-2) var(--s-3);
-  border-radius: var(--r-2);
-  background: transparent;
-  color: var(--shell-ink-2);
-  border: 0;
-  font: var(--t-ui-sm);
-  cursor: pointer;
-  text-align: left;
-}
-
-.app-shell[data-shell="new"] .project-switcher:hover {
-  background: var(--shell-deep);
-  color: var(--shell-ink);
-}
-
-.app-shell[data-shell="new"] .project-switcher-chevron {
-  font-size: 12px;
-  color: var(--shell-ink-3);
-}
-
-.app-shell[data-shell="new"] .project-switcher-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .project-switcher {
-  display: none;
-}
 
 /* ----- Mode list ----------------------------------------------------- */
 .app-shell[data-shell="new"] .mode-switcher {
