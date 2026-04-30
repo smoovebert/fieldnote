@@ -2877,3 +2877,204 @@ textarea {
 .app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-account .user-box {
   justify-content: center;
 }
+
+/* ============================================================
+   Phase 3b — Reader / Detail-View — scoped under [data-shell="new"]
+   Other modes' interior content (Organize/Refine/Classify/Analyze/
+   Report) keeps its current styling until Phase 3d.
+   ============================================================ */
+
+/* ----- Detail-view shell (shared across all modes) ------------------ */
+.app-shell[data-shell="new"] .detail-view {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.app-shell[data-shell="new"] .detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 2px;
+  font-size: 10px;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .search-box {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  background: var(--paper);
+  color: var(--ink-3);
+  min-width: 220px;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .search-box input {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--t-ui-sm);
+  outline: none;
+  width: 100%;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .toolbar-code-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-3);
+  background: var(--action);
+  color: var(--action-ink);
+  border: 0;
+  cursor: pointer;
+  font: var(--t-ui);
+  font-weight: 500;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .toolbar-code-action:hover {
+  box-shadow: var(--shadow-pop);
+}
+
+/* ----- Code-mode active-codes-bar ---------------------------------- */
+.app-shell[data-shell="new"] .active-codes-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-3) var(--s-5);
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.app-shell[data-shell="new"] .active-codes-bar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-shell[data-shell="new"] .active-codes-title {
+  font: var(--t-title);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.app-shell[data-shell="new"] .active-codes-hint {
+  font: var(--t-ui-sm);
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.app-shell[data-shell="new"] .active-codes-bar .quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font: var(--t-ui-sm);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+/* ----- Reader column ------------------------------------------------ */
+.app-shell[data-shell="new"] .reader-column {
+  max-width: var(--reader-measure);
+  margin: 0 auto;
+  padding: var(--reader-pad-y) var(--reader-pad-x);
+  background: var(--paper);
+}
+
+.app-shell[data-shell="new"] .reader-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--rule-soft);
+  margin-bottom: var(--s-5);
+  color: var(--ink-3);
+  font: var(--t-meta);
+}
+
+.app-shell[data-shell="new"] .reader-meta-strip > span[aria-hidden="true"] {
+  color: var(--ink-4);
+}
+
+/* ----- Transcript -------------------------------------------------- */
+.app-shell[data-shell="new"] .reader-column .transcript {
+  font: var(--t-reader);
+  color: var(--ink);
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript-line {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: var(--s-3);
+  align-items: baseline;
+  margin-bottom: var(--s-3);
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript-line .line-number {
+  font: var(--t-meta);
+  color: var(--ink-3);
+  text-align: right;
+  font-feature-settings: "tnum", "zero";
+  user-select: none;
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript-line .line-text {
+  font: inherit;
+  color: inherit;
+}
+
+/* ----- Marker highlights ------------------------------------------ */
+.app-shell[data-shell="new"] .reader-column .multi-code-mark {
+  /* `background` is inlined via markBackground() — single-color or gradient bands. */
+  color: inherit;
+  padding: 1px 2px;
+  margin: 0 -2px;
+  border-radius: 1px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  border: 0;
+  box-shadow: none;
+}
+
+/* ----- Quick code menu --------------------------------------------- */
+.app-shell[data-shell="new"] .quick-code-menu {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-pop);
+  color: var(--ink);
+  padding: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .quick-code-menu input,
+.app-shell[data-shell="new"] .quick-code-menu select,
+.app-shell[data-shell="new"] .quick-code-menu textarea {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  border-radius: var(--r-2);
+  padding: var(--s-1) var(--s-2);
+  font: var(--t-ui-sm);
+}
