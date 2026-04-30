@@ -48,6 +48,8 @@ import {
 import { buildReport } from './report/buildReport'
 import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
+import { OverviewMode } from './modes/overview/OverviewMode'
+import { ProjectSwitcher } from './modes/overview/ProjectSwitcher'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportSidebar } from './modes/report/ReportSidebar'
 import { RefineDetail } from './modes/refine/RefineDetail'
@@ -393,6 +395,7 @@ function App() {
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
+  const overviewFileInputRef = useRef<HTMLInputElement>(null)
 
   const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
   const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
@@ -503,24 +506,6 @@ function App() {
     setSourceFolderFilter('All')
     hasLoadedRemoteProject.current = true
     setSaveStatus('Project open.')
-  }
-
-  async function loadProjectRows() {
-    const { data, error } = await supabase
-      .from('fieldnote_projects')
-      .select('*')
-      .order('updated_at', { ascending: false })
-
-    if (error) throw error
-    setProjectRows((data ?? []) as ProjectRow[])
-  }
-
-  function returnToProjects() {
-    hasLoadedRemoteProject.current = false
-    setProjectId(null)
-    setDescription('')
-    setSaveStatus('Choose or create a project.')
-    void loadProjectRows().catch((error: Error) => setSaveStatus(error.message))
   }
 
   async function createProject() {
@@ -1419,6 +1404,22 @@ function App() {
     setSelectionHint('Split the selected text into a new coded reference.')
   }
 
+  function updateProjectMemo(body: string) {
+    const existing = memos.find((memo) => memo.linkedType === 'project')
+    if (existing) {
+      updateMemo(existing.id, { body })
+      return
+    }
+    const memo: Memo = {
+      id: `memo-${Date.now()}`,
+      title: 'Project memo',
+      linkedType: 'project',
+      body,
+    }
+    setMemos((current) => [memo, ...current])
+    setActiveMemoId(memo.id)
+  }
+
   function updateRailMemo(body: string) {
     if (contextualMemo) {
       updateMemo(contextualMemo.id, { body })
@@ -1690,10 +1691,11 @@ function App() {
     return <Landing />
   }
 
-  if (!projectId) {
-    return (
-      <main className="project-home-shell" data-shell="new">
-        <header className="project-home-header">
+  return (
+    <>
+    <main className="app-shell" data-shell="new">
+      <header className="app-header">
+        <div className="app-header-left">
           <div className="brand-block">
             <div className="brand-mark">F</div>
             <div>
@@ -1702,139 +1704,37 @@ function App() {
             </div>
           </div>
 
-          <div className="header-tools">
-            <div className="sync-box">
-              <Cloud size={16} aria-hidden="true" />
-              <span>{saveStatus}</span>
-            </div>
-            <div className="user-box">
-              <span>{session.user.email}</span>
-              <button type="button" onClick={signOut}>
-                <LogOut size={15} aria-hidden="true" />
-                Sign out
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <section className="project-home">
-          <div className="project-home-heading">
-            <div>
-              <p className="eyebrow">Project Home</p>
-              <h2>Research projects</h2>
-              <p>Choose a study, or start a separate workspace for another class, grant, dissertation, or paper.</p>
-            </div>
-            <div className="new-project-row">
-              <input
-                value={newProjectTitle}
-                placeholder="Project title"
-                aria-label="Project title"
-                onChange={(event) => setNewProjectTitle(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') void createProject()
-                }}
-              />
-              <button type="button" onClick={createProject} disabled={isCreatingProject}>
-                <Plus size={18} aria-hidden="true" />
-                Create
-              </button>
-            </div>
-          </div>
-
-          <section className="project-list-card">
-            <div className="project-list-heading">
-              <h2>Projects</h2>
-              <button type="button" onClick={() => void loadProjectRows()}>
-                Refresh
-              </button>
-            </div>
-
-            {projectRows.length ? (
-              <div className="project-list" role="table" aria-label="Research projects">
-                <div className="project-row project-row-head" role="row">
-                  <span>Project</span>
-                  <span>Sources</span>
-                  <span>Codes</span>
-                  <span>References</span>
-                  <span>Updated</span>
-                </div>
-                {projectRows.map((project) => (
-                  <button key={project.id} className="project-row" type="button" role="row" onClick={() => void applyProject(project)}>
-                    <span>
-                      <strong>{project.title || 'Untitled project'}</strong>
-                      <small>Open workspace</small>
-                    </span>
-                    <span>{(project.sources?.length ?? 0) || 1}</span>
-                    <span>{(project.codes?.length ?? 0) || defaultProject.codes.length}</span>
-                    <span>{(project.excerpts?.length ?? 0) || 0}</span>
-                    <span>{project.updated_at ? new Date(project.updated_at).toLocaleDateString() : '-'}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <article className="empty-project-state">
-                <Database size={22} aria-hidden="true" />
-                <strong>No projects yet</strong>
-                <span>Create the first one here, then Fieldnote will take you into the workspace.</span>
-              </article>
-            )}
-          </section>
-        </section>
-      </main>
-    )
-  }
-
-  return (
-    <>
-    <main className="app-shell" data-shell="new">
-      <header className="app-header">
-        <div className="app-header-left">
-          <button
-            type="button"
-            className="brand-block"
-            onClick={returnToProjects}
-            title="Back to project home"
-            aria-label="Back to project home"
-          >
-            <div className="brand-mark">F</div>
-            <div>
-              <p className="eyebrow">Qualitative workspace</p>
-              <h1>Fieldnote</h1>
-            </div>
-          </button>
-
-          {projectId && (
-            <button
-              type="button"
-              className="app-header-project"
-              onClick={returnToProjects}
-              title="Switch project"
-            >
-              <span className="project-chevron" aria-hidden="true">▾</span>
-              <span className="project-name">{projectTitle}</span>
-            </button>
-          )}
+          <ProjectSwitcher
+            activeProjectId={projectId}
+            activeProjectTitle={projectTitle}
+            projects={projectRows}
+            newProjectTitle={newProjectTitle}
+            isCreatingProject={isCreatingProject}
+            onSelectProject={(project) => void applyProject(project)}
+            onNewProjectTitleChange={setNewProjectTitle}
+            onCreateProject={() => void createProject()}
+          />
         </div>
 
-        {projectId && (
-          <nav className="app-header-modes" aria-label="Research modes">
-            {modeItems.map((mode) => {
-              const Icon = mode.icon
-              return (
-                <button
-                  key={mode.id}
-                  className={activeView === mode.id ? 'active' : ''}
-                  type="button"
-                  title={`${mode.label} — ${mode.description}`}
-                  onClick={() => selectView(mode.id)}
-                >
-                  <Icon size={15} aria-hidden="true" />
-                  <span>{mode.label}</span>
-                </button>
-              )
-            })}
-          </nav>
-        )}
+        <nav className="app-header-modes" aria-label="Research modes">
+          {modeItems.map((mode) => {
+            const Icon = mode.icon
+            const isDisabled = !projectId && mode.id !== 'overview'
+            return (
+              <button
+                key={mode.id}
+                className={activeView === mode.id ? 'active' : ''}
+                type="button"
+                title={`${mode.label} — ${mode.description}`}
+                disabled={isDisabled}
+                onClick={() => selectView(mode.id)}
+              >
+                <Icon size={15} aria-hidden="true" />
+                <span>{mode.label}</span>
+              </button>
+            )
+          })}
+        </nav>
 
         <div className="header-tools">
           <div className="sync-box toolbar-status" aria-live="polite">
@@ -1865,6 +1765,15 @@ function App() {
           )}
         </div>
       </header>
+
+      <input
+        ref={overviewFileInputRef}
+        type="file"
+        multiple
+        accept=".txt,.md,.docx,.pdf"
+        style={{ display: 'none' }}
+        onChange={importTranscript}
+      />
 
       <aside
         className={`workspace-sidebar ${sidebarCollapsed ? 'is-collapsed' : ''}`}
@@ -1995,7 +1904,44 @@ function App() {
           </div>
         </header>
 
-        {activeView === 'organize' && (
+        {!projectId && (
+          <article className="overview-empty-state">
+            <h2>Welcome to Fieldnote</h2>
+            <p>Create your first research project to begin.</p>
+            <div className="overview-empty-create">
+              <input
+                value={newProjectTitle}
+                placeholder="Project title"
+                aria-label="Project title"
+                onChange={(event) => setNewProjectTitle(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void createProject()
+                }}
+              />
+              <button type="button" onClick={() => void createProject()} disabled={isCreatingProject}>
+                <Plus size={16} aria-hidden="true" />
+                Create project
+              </button>
+            </div>
+          </article>
+        )}
+
+        {projectId && activeView === 'overview' && (
+          <OverviewMode
+            title={projectTitle}
+            description={description}
+            sources={sources}
+            codes={codes}
+            excerpts={excerpts}
+            projectMemo={memos.find((memo) => memo.linkedType === 'project')}
+            onTitleChange={setProjectTitle}
+            onDescriptionChange={setDescription}
+            onProjectMemoChange={updateProjectMemo}
+            onNewSource={() => overviewFileInputRef.current?.click()}
+          />
+        )}
+
+        {projectId && activeView === 'organize' && (
           <OrganizeDetail
             visibleSources={visibleSources}
             activeSource={activeSource}
@@ -2007,7 +1953,7 @@ function App() {
           />
         )}
 
-        {activeView === 'code' && (
+        {projectId && activeView === 'code' && (
           <CodeDetail
             key={activeSource.id}
             activeSource={activeSource}
@@ -2032,7 +1978,7 @@ function App() {
           />
         )}
 
-        {activeView === 'refine' && (
+        {projectId && activeView === 'refine' && (
           <RefineDetail
             activeCode={activeCode}
             codes={codes}
@@ -2051,7 +1997,7 @@ function App() {
           />
         )}
 
-        {activeView === 'classify' && (
+        {projectId && activeView === 'classify' && (
           <ClassifyDetail
             cases={cases}
             sources={sources}
@@ -2071,7 +2017,7 @@ function App() {
           />
         )}
 
-        {activeView === 'analyze' && (
+        {projectId && activeView === 'analyze' && (
           <article className="detail-card analyze-surface">
             <div className="source-register-heading">
               <div>
@@ -2363,10 +2309,10 @@ function App() {
           </article>
         )}
 
-        {activeView === 'report' && <ReportDetail model={reportModel} />}
+        {projectId && activeView === 'report' && <ReportDetail model={reportModel} />}
       </section>
 
-      <aside className="properties-view">
+      {activeView !== 'overview' && <aside className="properties-view">
         {activeView === 'organize' && (
           <OrganizeInspector
             activeSource={activeSource}
@@ -2539,7 +2485,7 @@ function App() {
           <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} compact />
           </section>
         )}
-      </aside>
+      </aside>}
     </main>
     {settingsOpen && (
       <ProjectSettingsModal
