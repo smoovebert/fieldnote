@@ -860,7 +860,7 @@ button {
 }
 
 .detail-kicker {
-  margin-bottom: 10px;
+  margin: 0 0 4px 0;
   color: var(--muted);
   font-size: 12px;
   font-weight: 760;
@@ -990,12 +990,25 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  min-height: 56px;
   margin-bottom: 12px;
 }
 
 .source-register-heading h2 {
   color: var(--ink);
   font-size: 18px;
+  margin: 0;
+}
+
+.source-register-heading > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.source-register-heading .reference-count {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .import-inline {
@@ -1042,12 +1055,13 @@ button {
 }
 
 .analyze-tabs {
-  display: inline-flex;
-  width: fit-content;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #f8fafc;
-  overflow: hidden;
+  display: flex;
+  width: 100%;
+  gap: 0;
+  border: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
 }
 
 .analyze-tabs button {
@@ -1055,9 +1069,11 @@ button {
   align-items: center;
   gap: 7px;
   flex: 0 0 auto;
-  height: 36px;
+  height: 40px;
   box-sizing: border-box;
+  margin-bottom: -1px;
   border: 0;
+  border-bottom: 2px solid transparent;
   border-radius: 0;
   padding: 0 14px;
   background: transparent;
@@ -1069,13 +1085,14 @@ button {
   white-space: nowrap;
 }
 
-.analyze-tabs button + button {
-  border-left: 1px solid var(--line);
+.analyze-tabs button:hover {
+  color: var(--ink);
 }
 
 .analyze-tabs button.active {
-  background: var(--ink);
-  color: #fff;
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  background: transparent;
 }
 
 .query-builder {
