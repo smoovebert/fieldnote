@@ -88,8 +88,17 @@ type MergeCodeInput = {
  *   (deduplicated — if it already had both, no double entry).
  * - `fromCode` is removed from the codebook. Children of `fromCode` are
  *   re-parented to `intoCode` (so the tree absorbs the merged subtree).
- * - Memos linked to `fromCode` are dropped (callers may want to migrate
- *   them — out of scope for this op; callers can re-link before/after).
+ * - **Memo migration** — explicit choice (and a fix to prior destructive
+ *   behavior). The source code's memo is preserved:
+ *     - If `intoCode` already has a memo, the source's body is appended
+ *       to the target's body with a one-line marker noting the merge.
+ *       The source memo row is dropped (its content lives on inside
+ *       the target memo).
+ *     - If `intoCode` has no memo, the source memo is retargeted in
+ *       place — its `linkedId` switches to `intoCodeId`. No data lost.
+ *     - If the source has no memo, no memo work happens.
+ *   Researchers' notes on a soon-to-disappear code are non-trivial; the
+ *   prior implementation silently deleted them on merge.
  * - Returns inputs unchanged if the merge is invalid (same id, missing
  *   source/target, or target is a descendant of source — would orphan
  *   the subtree).
@@ -124,9 +133,32 @@ export function mergeCodeInto({
     .filter((c) => c.id !== fromCodeId)
     .map((c) => (c.parentCodeId === fromCodeId ? { ...c, parentCodeId: intoCodeId } : c))
 
-  const nextMemos = memos.filter(
-    (m) => !(m.linkedType === 'code' && m.linkedId === fromCodeId),
+  // Memo migration — preserve source memo content.
+  const sourceMemo = memos.find(
+    (m) => m.linkedType === 'code' && m.linkedId === fromCodeId,
   )
+  const targetMemo = memos.find(
+    (m) => m.linkedType === 'code' && m.linkedId === intoCodeId,
+  )
+
+  let nextMemos: Memo[]
+  if (!sourceMemo) {
+    nextMemos = memos
+  } else if (targetMemo) {
+    // Append source body into target body with a marker.
+    const marker = `\n\n— merged from "${fromCode.name}":\n`
+    const mergedBody = targetMemo.body
+      ? `${targetMemo.body}${marker}${sourceMemo.body}`
+      : `${marker.replace(/^\n+/, '')}${sourceMemo.body}`
+    nextMemos = memos
+      .filter((m) => m.id !== sourceMemo.id)
+      .map((m) => (m.id === targetMemo.id ? { ...m, body: mergedBody } : m))
+  } else {
+    // No target memo — retarget the source memo's linkedId.
+    nextMemos = memos.map((m) =>
+      m.id === sourceMemo.id ? { ...m, linkedId: intoCodeId } : m,
+    )
+  }
 
   return { codes: nextCodes, excerpts: nextExcerpts, memos: nextMemos }
 }

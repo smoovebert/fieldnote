@@ -174,15 +174,67 @@ describe('mergeCodeInto', () => {
     expect(result.codes.find((c) => c.id === 'child')?.parentCodeId).toBe('into')
   })
 
-  it('drops memos linked to the from-code', () => {
+  it('preserves source memo content by appending to target memo body', () => {
+    const memos: Memo[] = [
+      { id: 'src', title: 't', body: 'translation barriers', linkedType: 'code', linkedId: 'from' },
+      { id: 'tgt', title: 't', body: 'access friction', linkedType: 'code', linkedId: 'into' },
+    ]
     const result = mergeCodeInto({
       codes: [code('from'), code('into')],
       excerpts: [],
-      memos: [codeMemo('m1', 'from'), codeMemo('m2', 'into')],
+      memos,
       fromCodeId: 'from',
       intoCodeId: 'into',
     })
-    expect(result.memos.map((m) => m.id)).toEqual(['m2'])
+    // The source memo row is gone — its content lives inside the target.
+    expect(result.memos.map((m) => m.id)).toEqual(['tgt'])
+    expect(result.memos[0].body).toContain('access friction')
+    expect(result.memos[0].body).toContain('translation barriers')
+    expect(result.memos[0].body).toContain('merged from "from"')
+  })
+
+  it('retargets source memo linkedId when target has no memo', () => {
+    const memos: Memo[] = [codeMemo('src', 'from')]
+    const result = mergeCodeInto({
+      codes: [code('from'), code('into')],
+      excerpts: [],
+      memos,
+      fromCodeId: 'from',
+      intoCodeId: 'into',
+    })
+    // No new row created; the existing row's linkedId points at the target.
+    expect(result.memos).toHaveLength(1)
+    expect(result.memos[0].id).toBe('src')
+    expect(result.memos[0].linkedId).toBe('into')
+  })
+
+  it('does not touch memos when source has no memo', () => {
+    const memos: Memo[] = [codeMemo('tgt', 'into'), codeMemo('other', 'other')]
+    const result = mergeCodeInto({
+      codes: [code('from'), code('into'), code('other')],
+      excerpts: [],
+      memos,
+      fromCodeId: 'from',
+      intoCodeId: 'into',
+    })
+    expect(result.memos).toEqual(memos)
+  })
+
+  it('formats appended body cleanly when target memo body is empty', () => {
+    const memos: Memo[] = [
+      { id: 'src', title: 't', body: 'source content', linkedType: 'code', linkedId: 'from' },
+      { id: 'tgt', title: 't', body: '', linkedType: 'code', linkedId: 'into' },
+    ]
+    const result = mergeCodeInto({
+      codes: [code('from'), code('into')],
+      excerpts: [],
+      memos,
+      fromCodeId: 'from',
+      intoCodeId: 'into',
+    })
+    // No leading newlines on an empty target body.
+    expect(result.memos[0].body.startsWith('\n')).toBe(false)
+    expect(result.memos[0].body).toContain('source content')
   })
 
   it('returns inputs unchanged on self-merge', () => {
