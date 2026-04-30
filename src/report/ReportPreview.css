@@ -1,0 +1,151 @@
+/* Scoped under .report-preview so it can't leak. */
+
+.report-preview {
+  max-width: var(--reader-measure);
+  margin: 0 auto;
+  padding: var(--reader-pad-y) var(--reader-pad-x);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-reader);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.report-preview .report-eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-size: 11px;
+  margin: 0 0 var(--s-2);
+}
+
+.report-preview .report-title {
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--s-3);
+}
+
+.report-preview .report-stats {
+  color: var(--ink-3);
+  margin: 0 0 var(--s-7);
+}
+
+.report-preview .report-section {
+  padding-top: var(--s-7);
+  border-top: 1px solid var(--rule-soft);
+  margin-top: var(--s-7);
+  page-break-before: always;
+}
+
+.report-preview .report-section h2 {
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+  margin: 0 0 var(--s-4);
+}
+
+.report-preview .report-section h3 {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: var(--s-5) 0 var(--s-2);
+}
+
+.report-preview .report-codebook-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.report-preview .report-code-row.depth-1 {
+  margin-left: var(--s-5);
+}
+
+.report-preview .report-code-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.report-preview .report-code-name {
+  font-weight: 600;
+}
+
+.report-preview .report-code-refs {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.report-preview .report-code-desc {
+  font-size: 15px;
+  color: var(--ink-2);
+  margin: var(--s-1) 0 0;
+}
+
+.report-preview .report-sample-quote {
+  margin: var(--s-3) 0;
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--rule);
+  background: var(--paper-tint);
+  font-style: italic;
+}
+
+.report-preview .report-sample-text {
+  margin: 0 0 var(--s-2);
+}
+
+.report-preview .report-sample-memo {
+  font-size: 15px;
+  color: var(--ink-2);
+  margin: 0 0 var(--s-2);
+}
+
+.report-preview .report-case-attrs {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s-1) var(--s-4);
+  margin: var(--s-2) 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.report-preview .report-case-attrs dt {
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  align-self: center;
+}
+
+.report-preview .report-case-attrs dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+.report-preview .report-case-sources {
+  margin: var(--s-2) 0 0;
+  padding-left: var(--s-5);
+}
+
+.report-preview .report-source-memo-block {
+  margin-bottom: var(--s-5);
+}
+
+@media print {
+  .report-preview .report-section {
+    page-break-before: always;
+  }
+}
