@@ -2599,6 +2599,7 @@ function App() {
           </section>
         )}
 
+        {activeView !== 'organize' && activeView !== 'report' && (
         <section className="list-view" aria-label="Objects">
           <ListView
             activeView={activeView}
@@ -2632,6 +2633,7 @@ function App() {
             onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
           />
         </section>
+        )}
 
         <div className="sidebar-account">
           <button
