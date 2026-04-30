@@ -48,6 +48,14 @@ import {
   type QueryDefinition,
 } from './analyze/queryDefinition'
 import { Landing } from './Landing'
+import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
+import {
+  deleteExcerpt as libDeleteExcerpt,
+  removeCodeFromExcerpt as libRemoveCodeFromExcerpt,
+  splitExcerpt as libSplitExcerpt,
+} from './lib/excerptOperations'
+import { deleteCase as libDeleteCase } from './lib/caseOperations'
+import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import './App.css'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
@@ -502,26 +510,7 @@ function buildCodeTree(codes: Code[]) {
   return ordered
 }
 
-function descendantCodeIds(codes: Code[], codeId: string) {
-  const childrenByParent = new Map<string, string[]>()
-  codes.forEach((code) => {
-    if (!code.parentCodeId) return
-    childrenByParent.set(code.parentCodeId, [...(childrenByParent.get(code.parentCodeId) ?? []), code.id])
-  })
-
-  const ids: string[] = []
-  const visit = (parentId: string, seen = new Set<string>()) => {
-    const childIds = childrenByParent.get(parentId) ?? []
-    childIds.forEach((childId) => {
-      if (seen.has(childId)) return
-      ids.push(childId)
-      visit(childId, new Set(seen).add(childId))
-    })
-  }
-
-  visit(codeId)
-  return ids
-}
+// descendantCodeIds moved to src/lib/codeOperations.ts
 
 function normalizeProject(project: ProjectRow): ProjectData {
   const fallbackSource: Source = {
@@ -1662,24 +1651,20 @@ function App() {
     )
     if (!shouldDelete) return
 
-    const remainingCodes = codes.filter((code) => code.id !== activeCode.id)
-    if (!remainingCodes.length) {
+    if (codes.filter((c) => c.id !== activeCode.id).length === 0) {
       setSelectionHint('Keep at least one code in the codebook.')
       return
     }
 
-    setCodes(remainingCodes.map((code) => (code.parentCodeId === activeCode.id ? { ...code, parentCodeId: activeCode.parentCodeId } : code)))
-    setExcerpts((current) =>
-      current
-        .map((excerpt) => ({ ...excerpt, codeIds: excerpt.codeIds.filter((codeId) => codeId !== activeCode.id) }))
-        .filter((excerpt) => excerpt.codeIds.length)
-    )
-    setMemos((current) => current.filter((memo) => !(memo.linkedType === 'code' && memo.linkedId === activeCode.id)))
+    const next = libDeleteCode({ codes, excerpts, memos, codeId: activeCode.id })
+    setCodes(next.codes)
+    setExcerpts(next.excerpts)
+    setMemos(next.memos)
     setSelectedCodeIds((current) => {
-      const next = current.filter((codeId) => codeId !== activeCode.id)
-      return next.length ? next : [remainingCodes[0].id]
+      const filtered = current.filter((codeId) => codeId !== activeCode.id)
+      return filtered.length ? filtered : [next.codes[0].id]
     })
-    setActiveCodeId(remainingCodes[0].id)
+    setActiveCodeId(next.codes[0].id)
   }
 
   function mergeActiveCodeIntoTarget() {
@@ -1693,23 +1678,19 @@ function App() {
     )
     if (!shouldMerge) return
 
-    setExcerpts((current) =>
-      current.map((excerpt) =>
-        excerpt.codeIds.includes(activeCode.id)
-          ? {
-              ...excerpt,
-              codeIds: Array.from(new Set(excerpt.codeIds.map((codeId) => (codeId === activeCode.id ? targetCode.id : codeId)))),
-            }
-          : excerpt
-      )
+    const next = libMergeCodeInto({
+      codes,
+      excerpts,
+      memos,
+      fromCodeId: activeCode.id,
+      intoCodeId: targetCode.id,
+    })
+    setCodes(next.codes)
+    setExcerpts(next.excerpts)
+    setMemos(next.memos)
+    setSelectedCodeIds((current) =>
+      Array.from(new Set(current.map((codeId) => (codeId === activeCode.id ? targetCode.id : codeId)))),
     )
-    setCodes((current) =>
-      current
-        .filter((code) => code.id !== activeCode.id)
-        .map((code) => (code.parentCodeId === activeCode.id ? { ...code, parentCodeId: targetCode.id } : code))
-    )
-    setMemos((current) => current.filter((memo) => !(memo.linkedType === 'code' && memo.linkedId === activeCode.id)))
-    setSelectedCodeIds((current) => Array.from(new Set(current.map((codeId) => (codeId === activeCode.id ? targetCode.id : codeId)))))
     setActiveCodeId(targetCode.id)
     setMergeTargetCodeId('')
     setSelectionHint(`Merged "${activeCode.name}" into "${targetCode.name}".`)
@@ -1946,14 +1927,10 @@ function App() {
   }
 
   function deleteCase(caseId: string) {
-    const removedCase = cases.find((item) => item.id === caseId)
-    setCases((current) => current.filter((item) => item.id !== caseId))
-    setAttributeValues((current) => current.filter((item) => item.caseId !== caseId))
-    if (removedCase) {
-      setSources((current) =>
-        current.map((source) => (removedCase.sourceIds.includes(source.id) ? { ...source, caseName: '' } : source))
-      )
-    }
+    const next = libDeleteCase({ cases, attributeValues, sources, caseId })
+    setCases(next.cases)
+    setAttributeValues(next.attributeValues)
+    setSources(next.sources)
   }
 
   function addAttribute() {
@@ -2046,9 +2023,10 @@ function App() {
     const shouldDelete = window.confirm(`Delete "${activeSource.title}" and its linked excerpts and source memos? This cannot be undone.`)
     if (!shouldDelete) return
 
-    setSources((current) => current.filter((source) => source.id !== activeSource.id))
-    setExcerpts((current) => current.filter((excerpt) => excerpt.sourceId !== activeSource.id))
-    setMemos((current) => current.filter((memo) => !(memo.linkedType === 'source' && memo.linkedId === activeSource.id)))
+    const next = libDeleteSource({ sources, excerpts, memos, sourceId: activeSource.id })
+    setSources(next.sources)
+    setExcerpts(next.excerpts)
+    setMemos(next.memos)
     const nextSource = sources.find((source) => source.id !== activeSource.id)
     if (nextSource) selectActiveSource(nextSource.id)
   }
@@ -2068,7 +2046,7 @@ function App() {
     const shouldDelete = window.confirm('Delete this coded reference? This removes the excerpt from all codes.')
     if (!shouldDelete) return
 
-    setExcerpts((current) => current.filter((item) => item.id !== id))
+    setExcerpts((current) => libDeleteExcerpt(current, id))
   }
 
   function removeCodeFromExcerpt(excerptId: string, codeId: string) {
@@ -2083,48 +2061,30 @@ function App() {
     )
     if (!shouldRemove) return
 
-    setExcerpts((current) =>
-      current
-        .map((item) => (item.id === excerptId ? { ...item, codeIds: item.codeIds.filter((itemCodeId) => itemCodeId !== codeId) } : item))
-        .filter((item) => item.codeIds.length)
-    )
+    setExcerpts((current) => libRemoveCodeFromExcerpt({ excerpts: current, excerptId, codeId }))
   }
 
   function splitExcerpt(excerptId: string) {
-    const excerpt = excerpts.find((item) => item.id === excerptId)
-    const selectedText = window.getSelection()?.toString().trim()
-    if (!excerpt) return
-
-    if (!selectedText) {
-      setSelectionHint('Select part of the coded reference text first, then click Split.')
+    const selectedText = window.getSelection()?.toString().trim() ?? ''
+    const result = libSplitExcerpt({
+      excerpts,
+      excerptId,
+      selectedText,
+      newExcerptId: `excerpt-${Date.now()}`,
+    })
+    if (!result.ok) {
+      if (result.reason === 'selection-not-in-text') {
+        setSelectionHint(
+          selectedText
+            ? 'The selected text must be inside the coded reference you are splitting.'
+            : 'Select part of the coded reference text first, then click Split.',
+        )
+      } else if (result.reason === 'selection-is-whole-text') {
+        setSelectionHint('Split needs a smaller selection, not the whole coded reference.')
+      }
       return
     }
-
-    const splitIndex = excerpt.text.indexOf(selectedText)
-    if (splitIndex === -1) {
-      setSelectionHint('The selected text must be inside the coded reference you are splitting.')
-      return
-    }
-
-    const before = excerpt.text.slice(0, splitIndex).trim()
-    const after = excerpt.text.slice(splitIndex + selectedText.length).trim()
-    const remainingText = [before, after].filter(Boolean).join(' ')
-
-    if (!remainingText) {
-      setSelectionHint('Split needs a smaller selection, not the whole coded reference.')
-      return
-    }
-
-    const splitReference: Excerpt = {
-      ...excerpt,
-      id: `excerpt-${Date.now()}`,
-      text: selectedText,
-      note: '',
-    }
-
-    setExcerpts((current) =>
-      current.flatMap((item) => (item.id === excerpt.id ? [{ ...item, text: remainingText }, splitReference] : [item]))
-    )
+    setExcerpts(result.excerpts)
     window.getSelection()?.removeAllRanges()
     setSelectionHint('Split the selected text into a new coded reference.')
   }
