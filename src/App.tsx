@@ -50,7 +50,8 @@ import {
 import { buildReport } from './report/buildReport'
 import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
-import { ReportPreview } from './report/ReportPreview'
+import { ReportDetail } from './modes/report/ReportDetail'
+import { ReportSidebar } from './modes/report/ReportSidebar'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
 import {
@@ -2607,33 +2608,14 @@ function App() {
         {activeView !== 'organize' && (
         <section className="list-view" aria-label="Objects">
           {activeView === 'report' && (
-            <div className="raw-data-panel">
-              <p className="fn-label raw-data-heading">Raw data</p>
-              <button type="button" className="raw-data-row" onClick={(event) => exportCsv(event)}>
-                <Download size={14} aria-hidden="true" />
-                <span>Coded excerpts CSV</span>
-              </button>
-              <button type="button" className="raw-data-row" onClick={(event) => exportCodebookCsv(event)}>
-                <FileText size={14} aria-hidden="true" />
-                <span>Codebook CSV</span>
-              </button>
-              <button type="button" className="raw-data-row" onClick={(event) => exportCaseSheetCsv(event)}>
-                <Database size={14} aria-hidden="true" />
-                <span>Case sheet CSV</span>
-              </button>
-              <button type="button" className="raw-data-row" onClick={(event) => exportCaseExcerptCsv(event)}>
-                <Rows3 size={14} aria-hidden="true" />
-                <span>Coded excerpts by case CSV</span>
-              </button>
-              <button type="button" className="raw-data-row" onClick={(event) => exportAnalyzeCsv(event)}>
-                <Search size={14} aria-hidden="true" />
-                <span>Current query CSV</span>
-              </button>
-              <button type="button" className="raw-data-row" onClick={(event) => exportMemosCsv(event)}>
-                <MessageSquareText size={14} aria-hidden="true" />
-                <span>Memos CSV</span>
-              </button>
-            </div>
+            <ReportSidebar
+              exportCsv={exportCsv}
+              exportCodebookCsv={exportCodebookCsv}
+              exportCaseSheetCsv={exportCaseSheetCsv}
+              exportCaseExcerptCsv={exportCaseExcerptCsv}
+              exportAnalyzeCsv={exportAnalyzeCsv}
+              exportMemosCsv={exportMemosCsv}
+            />
           )}
           {activeView !== 'report' && (
             <ListView
@@ -3374,9 +3356,7 @@ function App() {
           </article>
         )}
 
-        {activeView === 'report' && (
-          <ReportPreview model={reportModel} />
-        )}
+        {activeView === 'report' && <ReportDetail model={reportModel} />}
       </section>
 
       <aside className="properties-view">
