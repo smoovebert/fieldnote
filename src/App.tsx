@@ -8,10 +8,7 @@ import {
   Cloud,
   Database,
   Download,
-  FilePlus2,
   FileText,
-  FolderInput,
-  FolderOpen,
   Folders,
   Grid3x3,
   Highlighter,
@@ -52,6 +49,9 @@ import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportSidebar } from './modes/report/ReportSidebar'
 import { RefineDetail } from './modes/refine/RefineDetail'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
+import { OrganizeDetail } from './modes/organize/OrganizeDetail'
+import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
+import { OrganizeInspector } from './modes/organize/OrganizeInspector'
 import { ReferenceList } from './ReferenceList'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
@@ -759,7 +759,6 @@ function App() {
   const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [activeView, setActiveView] = useState<WorkspaceView>('organize')
   const [sourceFolderFilter, setSourceFolderFilter] = useState<SourceFolderFilter>('All')
-  const [newFolderName, setNewFolderName] = useState('')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
   const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
@@ -1862,13 +1861,12 @@ function App() {
     setProjectTitle(title)
   }
 
-  function moveActiveSourceToNewFolder() {
-    const folderName = newFolderName.trim()
-    if (!folderName) return
+  function moveActiveSourceToNewFolder(folderName: string) {
+    const trimmed = folderName.trim()
+    if (!trimmed) return
 
-    updateSource(activeSource.id, { folder: folderName, archived: false })
-    setSourceFolderFilter(folderName)
-    setNewFolderName('')
+    updateSource(activeSource.id, { folder: trimmed, archived: false })
+    setSourceFolderFilter(trimmed)
   }
 
   function createCaseFromSource() {
@@ -2560,48 +2558,15 @@ function App() {
         aria-label="Workspace sidebar"
       >
         {activeView === 'organize' && (
-          <section className="folder-pane" aria-label="Source folders">
-            <div className="pane-title">
-              <ListTree size={16} aria-hidden="true" />
-              <span>Source folders</span>
-            </div>
-              <label className="folder-row import-row">
-                <FilePlus2 size={16} aria-hidden="true" />
-                Import sources
-                <input type="file" accept=".txt,.md,.csv,.docx" multiple onChange={importTranscript} />
-              </label>
-              <button className={sourceFolderFilter === 'All' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('All')}>
-                <FolderOpen size={16} aria-hidden="true" />
-                All sources
-                <span>{activeSources.length}</span>
-              </button>
-              {sourceFolders.map((folder) => (
-                <button key={folder} className={sourceFolderFilter === folder ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder(folder)}>
-                  <FolderInput size={16} aria-hidden="true" />
-                  {folder}
-                  <span>{activeSources.filter((source) => source.folder === folder).length}</span>
-                </button>
-              ))}
-              <button className={sourceFolderFilter === 'Archived' ? 'folder-row active' : 'folder-row'} type="button" onClick={() => selectSourceFolder('Archived')}>
-                <FolderOpen size={16} aria-hidden="true" />
-                Archived
-                <span>{archivedSources.length}</span>
-              </button>
-              <div className="new-folder-row">
-                <input
-                  value={newFolderName}
-                  placeholder="New folder"
-                  aria-label="New folder name"
-                  onChange={(event) => setNewFolderName(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') moveActiveSourceToNewFolder()
-                  }}
-                />
-                <button className="icon-button" type="button" onClick={moveActiveSourceToNewFolder} aria-label="Move source to new folder">
-                  <Plus size={16} aria-hidden="true" />
-                </button>
-              </div>
-          </section>
+          <OrganizeSidebar
+            sourceFolderFilter={sourceFolderFilter}
+            sourceFolders={sourceFolders}
+            activeSources={activeSources}
+            archivedSources={archivedSources}
+            selectSourceFolder={selectSourceFolder}
+            importTranscript={importTranscript}
+            moveActiveSourceToNewFolder={moveActiveSourceToNewFolder}
+          />
         )}
 
         {activeView !== 'organize' && (
@@ -2718,51 +2683,15 @@ function App() {
         </header>
 
         {activeView === 'organize' && (
-          <article className="detail-card organize-surface">
-            <div className="source-register-heading">
-              <div>
-                <p className="detail-kicker">Source register</p>
-                <h2>{sourceFolderFilter === 'All' ? 'All sources' : sourceFolderFilter}</h2>
-              </div>
-              <label className="secondary-button import-inline">
-                <FilePlus2 size={17} aria-hidden="true" />
-                Import
-                <input type="file" accept=".txt,.md,.csv,.docx" multiple onChange={importTranscript} />
-              </label>
-            </div>
-            <div className="source-table" role="table" aria-label="Project sources">
-              <div className="source-row source-row-head" role="row">
-                <span>Title</span>
-                <small>Type</small>
-                <small>Folder</small>
-                <small>Case</small>
-                <small>References</small>
-                <small>Memo</small>
-              </div>
-              {visibleSources.map((source) => {
-                const referenceCount = excerpts.filter((excerpt) => excerpt.sourceId === source.id).length
-                const hasMemo = memos.some((memo) => memo.linkedType === 'source' && memo.linkedId === source.id && memo.body.trim())
-
-                return (
-                  <button key={source.id} className={source.id === activeSource.id ? 'source-row active' : 'source-row'} type="button" onClick={() => selectActiveSource(source.id)}>
-                    <span>{source.title}</span>
-                    <small>{source.kind}</small>
-                    <small>{source.folder}</small>
-                    <small>{source.caseName || '-'}</small>
-                    <small>{referenceCount}</small>
-                    <small>{hasMemo ? 'Yes' : 'No'}</small>
-                  </button>
-                )
-              })}
-              {!visibleSources.length && (
-                <article className="empty-list-state">
-                  <FileText size={20} aria-hidden="true" />
-                  <strong>No sources in this folder</strong>
-                  <span>Import a text file or move an existing source here from the properties rail.</span>
-                </article>
-              )}
-            </div>
-          </article>
+          <OrganizeDetail
+            visibleSources={visibleSources}
+            activeSource={activeSource}
+            excerpts={excerpts}
+            memos={memos}
+            sourceFolderFilter={sourceFolderFilter}
+            importTranscript={importTranscript}
+            selectActiveSource={selectActiveSource}
+          />
         )}
 
         {activeView === 'code' && (
@@ -3213,95 +3142,21 @@ function App() {
 
       <aside className="properties-view">
         {activeView === 'organize' && (
-          <section className="panel source-properties-panel">
-            <div className="panel-heading">
-              <Database size={18} aria-hidden="true" />
-              <h2>Source Properties</h2>
-            </div>
-
-            <label className="property-field">
-              <span>Title</span>
-              <input value={activeSource.title} onChange={(event) => updateSource(activeSource.id, { title: event.target.value })} />
-            </label>
-
-            <label className="property-field">
-              <span>Type</span>
-              <select value={activeSource.kind} onChange={(event) => updateSource(activeSource.id, { kind: event.target.value as Source['kind'] })}>
-                <option value="Transcript">Transcript</option>
-                <option value="Document">Document</option>
-              </select>
-            </label>
-
-            <label className="property-field">
-              <span>Folder</span>
-              <select value={activeSource.folder} onChange={(event) => updateSource(activeSource.id, { folder: event.target.value })}>
-                {sourceFolders.map((folder) => (
-                  <option key={folder} value={folder}>
-                    {folder}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="property-field">
-              <span>Case</span>
-              <select
-                value={cases.find((item) => item.sourceIds.includes(activeSource.id))?.id ?? ''}
-                aria-label={`Case for ${activeSource.title}`}
-                onChange={(event) => assignSourceToCase(activeSource.id, event.target.value)}
-              >
-                <option value="">No case assigned</option>
-                {cases.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <dl className="properties-list compact-properties">
-              <div>
-                <dt>Words</dt>
-                <dd>{activeSourceWords}</dd>
-              </div>
-              <div>
-                <dt>References</dt>
-                <dd>{sourceExcerpts.length}</dd>
-              </div>
-              <div>
-                <dt>Memo</dt>
-                <dd>{activeSourceMemo?.body.trim() ? 'Started' : 'Blank'}</dd>
-              </div>
-              <div>
-                <dt>Imported</dt>
-                <dd>{activeSource.importedAt ? new Date(activeSource.importedAt).toLocaleDateString() : 'Sample'}</dd>
-              </div>
-            </dl>
-
-            <button className="secondary-button" type="button" onClick={createCaseFromSource}>
-              <Database size={17} aria-hidden="true" />
-              Create case from source
-            </button>
-            <button className="secondary-button" type="button" onClick={() => setActiveView('code')}>
-              <BookOpenText size={17} aria-hidden="true" />
-              Open for coding
-            </button>
-            {activeSource.archived ? (
-              <button className="secondary-button" type="button" onClick={restoreActiveSource}>
-                <FolderInput size={17} aria-hidden="true" />
-                Restore source
-              </button>
-            ) : (
-              <button className="secondary-button" type="button" onClick={archiveActiveSource}>
-                <FolderOpen size={17} aria-hidden="true" />
-                Archive source
-              </button>
-            )}
-            <button className="danger-button" type="button" onClick={deleteActiveSource}>
-              <Trash2 size={17} aria-hidden="true" />
-              Delete source
-            </button>
-          </section>
+          <OrganizeInspector
+            activeSource={activeSource}
+            sourceFolders={sourceFolders}
+            cases={cases}
+            sourceExcerpts={sourceExcerpts}
+            activeSourceWords={activeSourceWords}
+            activeSourceMemo={activeSourceMemo}
+            updateSource={updateSource}
+            assignSourceToCase={assignSourceToCase}
+            createCaseFromSource={createCaseFromSource}
+            setActiveView={setActiveView}
+            archiveActiveSource={archiveActiveSource}
+            restoreActiveSource={restoreActiveSource}
+            deleteActiveSource={deleteActiveSource}
+          />
         )}
 
         {(activeView === 'code' || activeView === 'refine') && (
