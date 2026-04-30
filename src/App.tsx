@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, CSSProperties, MouseEvent } from 'react'
+import type { ChangeEvent, MouseEvent } from 'react'
 import {
   BarChart3,
   BookOpenText,
@@ -52,7 +52,8 @@ import { ClassifyDetail } from './modes/classify/ClassifyDetail'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
-import { markBackground, wrapHighlightedTranscript } from './modes/code/transcript'
+import { wrapHighlightedTranscript } from './modes/code/transcript'
+import { CodeDetail } from './modes/code/CodeDetail'
 import { ReferenceList } from './ReferenceList'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
@@ -136,11 +137,6 @@ type CoOccurrenceRow = {
   excerpts: Excerpt[]
 }
 
-type QuickCodeMenu = {
-  text: string
-  x: number
-  y: number
-}
 
 type Memo = {
   id: string
@@ -705,7 +701,6 @@ function App() {
   const [analyzeView, setAnalyzeView] = useState<AnalyzeViewState>(DEFAULT_ANALYZE_VIEW)
   const [matrixColumnMode, setMatrixColumnMode] = useState<MatrixColumnMode>('case')
   const [matrixAttributeId, setMatrixAttributeId] = useState('')
-  const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem('fieldnote.sidebarCollapsed') === 'true'
@@ -715,15 +710,12 @@ function App() {
     if (typeof window === 'undefined') return
     window.localStorage.setItem('fieldnote.sidebarCollapsed', String(sidebarCollapsed))
   }, [sidebarCollapsed])
-  const [quickCodeMenu, setQuickCodeMenu] = useState<QuickCodeMenu | null>(null)
-  const [quickNewCodeName, setQuickNewCodeName] = useState('')
   const [lineNumberingMode, setLineNumberingMode] = useState<LineNumberingMode>(DEFAULT_LINE_NUMBERING_MODE)
   const [lineNumberingWidth, setLineNumberingWidth] = useState(DEFAULT_LINE_NUMBERING_WIDTH)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const hasLoadedRemoteProject = useRef(false)
-  const transcriptRef = useRef<HTMLDivElement>(null)
   // Autosave guard: while a save is in flight, the most recent next-save closure
   // is parked here. When the in-flight save resolves, the queue runs at most one
   // more save (with the latest captured state). Prevents two saves' deletes-then-
@@ -1666,13 +1658,11 @@ function App() {
 
   function selectView(view: WorkspaceView) {
     setActiveView(view)
-    setQuickCodeMenu(null)
     if (view === 'refine') setActiveCodeId(activeCodeId || codes[0]?.id || '')
   }
 
   function selectActiveSource(sourceId: string) {
     setActiveSourceId(sourceId)
-    setQuickCodeMenu(null)
   }
 
   function selectSourceFolder(folder: SourceFolderFilter) {
@@ -1716,8 +1706,6 @@ function App() {
       ]
     })
     setSelectionHint(`${mergedExistingReference ? 'Added codes to existing reference' : 'Coded selection'} as ${label}.`)
-    setQuickCodeMenu(null)
-    setQuickNewCodeName('')
     window.getSelection()?.removeAllRanges()
   }
 
@@ -1730,45 +1718,6 @@ function App() {
     }
 
     applyCodesToText(selectedText)
-  }
-
-  function createQuickCodeAndApply() {
-    const name = quickNewCodeName.trim()
-    if (!name || !quickCodeMenu) return
-
-    const code = buildNewCode(name)
-    const nextCodeIds = Array.from(new Set([...selectedCodeIds, code.id]))
-    const nextLabel = [...selectedCodes.map((item) => item.name), code.name].join(', ')
-
-    setCodes((current) => [...current, code])
-    setSelectedCodeIds(nextCodeIds)
-    setActiveCodeId(code.id)
-    applyCodesToText(quickCodeMenu.text, nextCodeIds, nextLabel)
-  }
-
-  function captureQuickCodeSelection() {
-    if (!quickCodingEnabled || activeView !== 'code') return
-
-    window.requestAnimationFrame(() => {
-      const selection = window.getSelection()
-      const selectedText = selection?.toString().trim() ?? ''
-      const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null
-      const transcriptElement = transcriptRef.current
-      const anchorNode = selection?.anchorNode
-
-      if (!selectedText || !range || !transcriptElement || !anchorNode || !transcriptElement.contains(anchorNode)) {
-        setQuickCodeMenu(null)
-        return
-      }
-
-      const rect = range.getBoundingClientRect()
-      if (!rect.width && !rect.height) return
-
-      const x = Math.min(window.innerWidth - 220, Math.max(220, rect.left + rect.width / 2))
-      const y = Math.max(88, rect.top - 12)
-      setQuickNewCodeName('')
-      setQuickCodeMenu({ text: selectedText, x, y })
-    })
   }
 
   function updateSource(sourceId: string, patch: Partial<Source>) {
@@ -2616,115 +2565,27 @@ function App() {
         )}
 
         {activeView === 'code' && (
-          <article className="document-panel">
-            <div className="active-codes-bar">
-              <div className="active-codes-bar-text">
-                <strong className="active-codes-title">{selectedCodeNames}</strong>
-                <p className="active-codes-hint">{selectionHint} Active codes can be combined.</p>
-              </div>
-              <label className="quick-toggle">
-                <input
-                  type="checkbox"
-                  checked={quickCodingEnabled}
-                  onChange={(event) => {
-                    setQuickCodingEnabled(event.target.checked)
-                    setQuickCodeMenu(null)
-                  }}
-                />
-                Quick menu
-              </label>
-            </div>
-
-            <div
-              className="reader-column"
-              style={
-                lineNumberingMode === 'fixed-width'
-                  ? ({ '--reader-measure': `${lineNumberingWidth}ch` } as CSSProperties)
-                  : undefined
-              }
-            >
-              <div className="reader-meta-strip fn-meta">
-                <span>{activeSource.caseName || activeSource.kind}</span>
-                <span aria-hidden="true">·</span>
-                <span>{readerWordCount.toLocaleString()} words</span>
-                <span aria-hidden="true">·</span>
-                <span>{readerRefCount} codes applied</span>
-              </div>
-
-              <div className="transcript" ref={transcriptRef} aria-label="Source text with line numbers" onMouseUp={captureQuickCodeSelection} onKeyUp={captureQuickCodeSelection}>
-              {highlightedTranscriptLines.map((line, lineIndex) => (
-                <div className="transcript-line" key={`${activeSource.id}-line-${lineIndex}`}>
-                  <span className="line-number" aria-hidden="true">
-                    {lineIndex + 1}
-                  </span>
-                  <span className="line-text">
-                    {line.length ? (
-                      line.map((piece, pieceIndex) =>
-                        piece.codes ? (
-                          <mark
-                            key={`${piece.text}-${lineIndex}-${pieceIndex}`}
-                            className="multi-code-mark"
-                            style={markBackground(piece.codes)}
-                            title={piece.codes.map((code) => code.name).join(', ')}
-                          >
-                            {piece.text}
-                          </mark>
-                        ) : (
-                          <span key={`${piece.text}-${lineIndex}-${pieceIndex}`}>{piece.text}</span>
-                        )
-                      )
-                    ) : (
-                      <br />
-                    )}
-                  </span>
-                </div>
-              ))}
-            </div>
-            </div>
-            {quickCodingEnabled && quickCodeMenu && activeView === 'code' && (
-              <div className="quick-code-menu" style={{ left: quickCodeMenu.x, top: quickCodeMenu.y }}>
-                <div className="quick-code-heading">
-                  <strong>Code selection</strong>
-                  <button type="button" aria-label="Close quick coding menu" onClick={() => setQuickCodeMenu(null)}>
-                    x
-                  </button>
-                </div>
-                <p>{quickCodeMenu.text.length > 110 ? `${quickCodeMenu.text.slice(0, 110)}...` : quickCodeMenu.text}</p>
-                <div className="quick-code-new">
-                  <input
-                    value={quickNewCodeName}
-                    placeholder="New code for this passage"
-                    aria-label="New quick code"
-                    onChange={(event) => setQuickNewCodeName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') createQuickCodeAndApply()
-                    }}
-                  />
-                  <button type="button" onClick={createQuickCodeAndApply} disabled={!quickNewCodeName.trim()}>
-                    <Plus size={15} aria-hidden="true" />
-                    Add & apply
-                  </button>
-                </div>
-                <div className="quick-code-chips">
-                  {sortedCodes.map((code) => (
-                    <button
-                      key={code.id}
-                      className={selectedCodeIds.includes(code.id) ? 'selected' : ''}
-                      type="button"
-                      onClick={() => toggleSelectedCode(code.id)}
-                    >
-                      <span style={{ background: code.color }} />
-                      {code.name}
-                    </button>
-                  ))}
-                </div>
-                <button className="primary-button" type="button" onClick={() => codeSelection(quickCodeMenu.text)}>
-                  <Highlighter size={16} aria-hidden="true" />
-                  Apply {selectedCodeIds.length} code{selectedCodeIds.length === 1 ? '' : 's'}
-                </button>
-              </div>
-            )}
-          </article>
+          <CodeDetail
+            activeSource={activeSource}
+            selectedCodeNames={selectedCodeNames}
+            selectedCodes={selectedCodes}
+            selectedCodeIds={selectedCodeIds}
+            sortedCodes={sortedCodes}
+            highlightedTranscriptLines={highlightedTranscriptLines}
+            readerWordCount={readerWordCount}
+            readerRefCount={readerRefCount}
+            lineNumberingMode={lineNumberingMode}
+            lineNumberingWidth={lineNumberingWidth}
+            selectionHint={selectionHint}
+            setCodes={setCodes}
+            setSelectedCodeIds={setSelectedCodeIds}
+            setActiveCodeId={setActiveCodeId}
+            setSelectionHint={setSelectionHint}
+            toggleSelectedCode={toggleSelectedCode}
+            codeSelection={codeSelection}
+            applyCodesToText={applyCodesToText}
+            buildNewCode={buildNewCode}
+          />
         )}
 
         {activeView === 'refine' && (
