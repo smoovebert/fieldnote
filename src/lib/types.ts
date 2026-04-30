@@ -69,6 +69,7 @@ export type SavedQuery = {
 
 export type ProjectData = {
   activeSourceId: string
+  description: string
   sources: Source[]
   cases: Case[]
   attributes: Attribute[]
@@ -82,6 +83,7 @@ export type ProjectData = {
 export type ProjectRow = {
   id: string
   title: string
+  description: string
   updated_at?: string | null
   active_source_id?: string | null
   sources?: Source[] | null

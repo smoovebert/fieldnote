@@ -102,6 +102,7 @@ const initialExcerpts: Excerpt[] = [
 
 export const defaultProject: ProjectData = {
   activeSourceId: initialSources[0].id,
+  description: '',
   sources: initialSources,
   cases: initialCases,
   attributes: initialAttributes,
