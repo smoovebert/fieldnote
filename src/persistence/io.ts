@@ -49,6 +49,7 @@ import {
 
 export type SavePayload = {
   title: string
+  description: string
   active_source_id: string
   source_title: string
   transcript: string
@@ -160,6 +161,7 @@ export async function saveProject(
     .update({
       active_source_id: payload.active_source_id,
       title: payload.title,
+      description: payload.description,
       source_title: payload.source_title,
       transcript: payload.transcript,
       memo: payload.memo,

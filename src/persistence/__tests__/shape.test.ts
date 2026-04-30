@@ -254,6 +254,19 @@ describe('normalizeProject', () => {
     const data = normalizeProject(project)
     expect(data.excerpts[0].sourceId).toBe('s1')
   })
+  it('passes description through from row to ProjectData', () => {
+    const project = {
+      id: 'p', title: 'P', description: 'A study of access',
+      codes: [], excerpts: [], memos: [], sources: [],
+    } as unknown as Parameters<typeof normalizeProject>[0]
+    const data = normalizeProject(project)
+    expect(data.description).toBe('A study of access')
+  })
+  it('defaults description to empty string when missing', () => {
+    const project = { id: 'p', title: 'P', codes: [], excerpts: [], memos: [], sources: [] } as unknown as Parameters<typeof normalizeProject>[0]
+    const data = normalizeProject(project)
+    expect(data.description).toBe('')
+  })
 })
 
 // ─── composeProjectFromNormalized ─────────────────────────────────────────────
@@ -285,5 +298,10 @@ describe('composeProjectFromNormalized', () => {
     expect(data.codes).toHaveLength(1)
     expect(data.excerpts).toHaveLength(1)
     expect(data.excerpts[0].codeIds).toEqual(['c1'])
+  })
+  it('includes description in the returned ProjectData', () => {
+    const project = { id: 'p', title: 'P', description: 'My study' } as unknown as Parameters<typeof composeProjectFromNormalized>[0]
+    const data = composeProjectFromNormalized(project, [], [], [], [], [])
+    expect(data.description).toBe('My study')
   })
 })

@@ -193,6 +193,7 @@ export function normalizeProject(project: ProjectRow): ProjectData {
       ]
 
   return {
+    description: project.description ?? '',
     activeSourceId: project.active_source_id || sources[0].id,
     sources,
     cases: casesFromSources(sources),
@@ -300,6 +301,7 @@ export function composeProjectFromNormalized(
   })
 
   return {
+    description: project.description ?? '',
     activeSourceId: project.active_source_id || sources[0]?.id || defaultProject.activeSourceId,
     sources: sources.length ? sources : normalizeProject(project).sources,
     cases: cases.length ? cases : casesFromSources(sources),
