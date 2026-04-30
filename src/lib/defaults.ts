@@ -77,7 +77,7 @@ const initialMemos: Memo[] = [
     id: 'project-memo',
     title: 'Project memo',
     linkedType: 'project',
-    body: 'The clearest early pattern is not simple dissatisfaction. Participants describe systems that feel illegible until a specific person translates them.',
+    body: '',
   },
 ]
 
