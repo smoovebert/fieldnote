@@ -1670,7 +1670,18 @@ function App() {
   }
 
   function buildNewCode(name: string, parentCodeId?: string): Code {
-    const palette = ['#d9892b', '#2f7ebc', '#9b5a9f', '#5c8f42', '#c45173']
+    // Bundle palette — 8 OKLCH colors at shared chroma 0.10 with hue varied.
+    // Mirrors the --c-* tokens in src/styles/tokens.css.
+    const palette = [
+      'oklch(0.62 0.10 195)',  // teal
+      'oklch(0.66 0.08 220)',  // cyan
+      'oklch(0.55 0.10 265)',  // indigo
+      'oklch(0.55 0.10 315)',  // plum
+      'oklch(0.62 0.10 20)',   // rose
+      'oklch(0.72 0.09 75)',   // amber
+      'oklch(0.62 0.08 150)',  // moss
+      'oklch(0.55 0.04 240)',  // slate
+    ]
     return {
       id: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
       name,
