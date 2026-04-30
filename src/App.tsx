@@ -3627,23 +3627,17 @@ function ProjectSettingsModal({
   onWidthChange: (next: number) => void
   onClose: () => void
 }) {
-  const [widthDraft, setWidthDraft] = useState<string>(String(width))
-
-  useEffect(() => {
-    setWidthDraft(String(width))
-  }, [width])
-
-  function commitWidth(raw: string) {
+  function commitWidth(raw: string, target: HTMLInputElement) {
     const next = Number(raw)
     if (!Number.isFinite(next)) {
-      setWidthDraft(String(width))
+      target.value = String(width)
       return
     }
     const clamped = Math.min(
       LINE_NUMBERING_WIDTH_MAX,
       Math.max(LINE_NUMBERING_WIDTH_MIN, Math.round(next)),
     )
-    setWidthDraft(String(clamped))
+    target.value = String(clamped)
     onWidthChange(clamped)
   }
 
@@ -3696,16 +3690,16 @@ function ProjectSettingsModal({
           <label className="modal-field">
             <span>Line width (characters)</span>
             <input
+              key={width}
               type="number"
               min={LINE_NUMBERING_WIDTH_MIN}
               max={LINE_NUMBERING_WIDTH_MAX}
               step={1}
-              value={widthDraft}
+              defaultValue={width}
               disabled={mode !== 'fixed-width'}
-              onChange={(event) => setWidthDraft(event.target.value)}
-              onBlur={(event) => commitWidth(event.target.value)}
+              onBlur={(event) => commitWidth(event.target.value, event.target)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') commitWidth(event.currentTarget.value)
+                if (event.key === 'Enter') commitWidth(event.currentTarget.value, event.currentTarget)
               }}
             />
           </label>
