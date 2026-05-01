@@ -50,6 +50,7 @@ import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
 import { OverviewMode } from './modes/overview/OverviewMode'
 import { ProjectSwitcher } from './modes/overview/ProjectSwitcher'
+import { HeaderSearch } from './components/HeaderSearch'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportSidebar } from './modes/report/ReportSidebar'
 import { RefineDetail } from './modes/refine/RefineDetail'
@@ -2048,6 +2049,24 @@ function App() {
             onCreateProject={() => void createProject()}
             onDeleteProject={(id) => void deleteProject(id)}
           />
+          {projectId && (
+            <HeaderSearch
+              sources={sources}
+              codes={codes}
+              excerpts={excerpts}
+              cases={cases}
+              memos={memos}
+              onOpenSource={(id) => { selectActiveSource(id); setActiveView('code') }}
+              onOpenCode={(id) => { setActiveCodeId(id); setActiveView('refine') }}
+              onOpenCase={(id) => {
+                const targetCase = cases.find((c) => c.id === id)
+                if (targetCase?.sourceIds[0]) selectActiveSource(targetCase.sourceIds[0])
+                setActiveView('classify')
+              }}
+              onOpenMemo={(id) => { setActiveMemoId(id) }}
+              onOpenExcerpt={(sourceId) => { selectActiveSource(sourceId); setActiveView('code') }}
+            />
+          )}
         </div>
 
         <nav className="app-header-modes" aria-label="Research modes">
