@@ -4262,3 +4262,46 @@ textarea {
   border-radius: 4px;
   outline: 1px solid rgba(255, 255, 255, 0.32);
 }
+
+.app-shell[data-shell="new"] .raw-data-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.app-shell[data-shell="new"] .raw-data-heading-row .raw-data-heading {
+  margin: 0;
+}
+
+.raw-data-format {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.raw-data-format button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--shell-ink-2, #9ca3af);
+  font: 600 11px/1 inherit;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.raw-data-format button:hover {
+  color: var(--shell-ink, #ffffff);
+}
+
+.raw-data-format button.active {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--shell-ink, #ffffff);
+}
+
+.raw-data-format button + button {
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+}
