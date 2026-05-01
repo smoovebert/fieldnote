@@ -72,6 +72,7 @@ import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import { SourcesView } from './components/SourcesView'
 import { AiSettingsPanel } from './components/AiSettingsPanel'
+import { callAi } from './ai/client'
 import { BACKUP_MIME, backupFilename, buildBackup, validateBackup } from './lib/backup'
 import { deleteRecoverySnapshot, isLocalAheadOfRemote, readRecoverySnapshot } from './lib/localRecovery'
 import type {
@@ -1388,6 +1389,13 @@ function App() {
     applyCodesToText(selectedText)
   }
 
+  async function handleSuggestCodes(selectedText: string) {
+    const result = await callAi({ kind: 'suggest_codes', inputText: selectedText, projectId: projectId ?? null })
+    if (!result.ok) return { ok: false as const, message: result.message }
+    const response = result.response as { suggestions: Array<{ name: string; description: string }> }
+    return { ok: true as const, suggestions: response.suggestions }
+  }
+
   function updateSource(sourceId: string, patch: Partial<Source>) {
     setSources((current) => current.map((source) => (source.id === sourceId ? { ...source, ...patch } : source)))
     if (patch.title) {
@@ -2578,6 +2586,7 @@ function App() {
             codeSelection={codeSelection}
             applyCodesToText={applyCodesToText}
             buildNewCode={buildNewCode}
+            onSuggestCodes={handleSuggestCodes}
           />
         )}
 

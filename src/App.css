@@ -5085,3 +5085,24 @@ textarea {
 
 .ai-settings-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ai-settings-status { font-size: 12px; color: var(--muted, #6b7280); }
+
+.quick-code-ai-trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; margin-bottom: 8px;
+  border: 1px solid var(--line, #e5e7eb); border-radius: 6px;
+  background: #ffffff; color: var(--ink, #1f2937);
+  font: 600 12px/1 inherit; cursor: pointer;
+}
+.quick-code-ai-trigger:hover { background: #f3f4f6; }
+
+.ai-suggestions-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ai-suggestions-list li {
+  border: 1px solid var(--line, #e5e7eb); border-radius: 6px; background: #ffffff;
+}
+.ai-suggestions-list label { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; cursor: pointer; }
+.ai-suggestions-list input[type="checkbox"] { margin-top: 4px; flex: 0 0 auto; }
+.ai-suggestions-list label > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ai-suggestions-list strong { font-size: 13px; font-weight: 700; }
+.ai-suggestions-list span { font-size: 12px; color: var(--muted, #6b7280); }
+
+.ai-suggestions-footer { padding: 8px 4px 0; }

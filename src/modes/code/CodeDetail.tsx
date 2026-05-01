@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Highlighter, Plus } from 'lucide-react'
+import { Highlighter, Plus, Sparkles } from 'lucide-react'
 import type { Code, Source } from '../../lib/types'
 import { markBackground } from './transcript'
 import type { LineNumberingMode } from './transcript'
+import { AiPreviewPanel } from '../../components/AiPreviewPanel'
+import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
 
 type SortedCode = Code & { depth: number }
 type QuickCodeMenu = { text: string; x: number; y: number }
@@ -31,6 +33,7 @@ type Props = {
   codeSelection: (selectedTextOverride?: string) => void
   applyCodesToText: (selectedText: string, codeIds?: string[], label?: string) => void
   buildNewCode: (name: string, parentCodeId?: string) => Code
+  onSuggestCodes: (selectedText: string) => Promise<{ ok: true; suggestions: Array<{ name: string; description: string }> } | { ok: false; message: string }>
 }
 
 export function CodeDetail(props: Props) {
@@ -38,6 +41,12 @@ export function CodeDetail(props: Props) {
   const [quickCodingEnabled, setQuickCodingEnabled] = useState(true)
   const [quickCodeMenu, setQuickCodeMenu] = useState<QuickCodeMenu | null>(null)
   const [quickNewCodeName, setQuickNewCodeName] = useState('')
+  const [aiPhase, setAiPhase] = useState<'idle' | 'preview' | 'loading' | 'result' | 'error'>('idle')
+  const [aiSuggestions, setAiSuggestions] = useState<Array<{ name: string; description: string; checked: boolean }>>([])
+  const [aiError, setAiError] = useState<string | undefined>()
+
+  const inputTokens = estimateInputTokens(quickCodeMenu?.text ?? '')
+  const inputCost = estimateCostUsd(inputTokens)
 
   const captureQuickCodeSelection = () => {
     if (!quickCodingEnabled) return
@@ -154,6 +163,96 @@ export function CodeDetail(props: Props) {
             </button>
           </div>
           <p>{quickCodeMenu.text.length > 110 ? `${quickCodeMenu.text.slice(0, 110)}...` : quickCodeMenu.text}</p>
+          {aiPhase === 'idle' && (
+            <button
+              type="button"
+              className="quick-code-ai-trigger"
+              onClick={() => setAiPhase('preview')}
+            >
+              <Sparkles size={14} aria-hidden="true" />
+              Suggest codes
+            </button>
+          )}
+          {aiPhase !== 'idle' && (
+            <AiPreviewPanel
+              phase={aiPhase as 'preview' | 'loading' | 'result' | 'error'}
+              inputPreview={quickCodeMenu?.text ?? ''}
+              estimatedTokens={inputTokens}
+              estimatedCostUsd={inputCost}
+              errorMessage={aiError}
+              onCancel={() => { setAiPhase('idle'); setAiSuggestions([]); setAiError(undefined) }}
+              onSend={async () => {
+                setAiPhase('loading')
+                const result = await props.onSuggestCodes(quickCodeMenu?.text ?? '')
+                if (result.ok) {
+                  setAiSuggestions(result.suggestions.map((s) => ({ ...s, checked: true })))
+                  setAiPhase('result')
+                } else {
+                  setAiError(result.message)
+                  setAiPhase('error')
+                }
+              }}
+            >
+              {aiPhase === 'result' && (
+                <ul className="ai-suggestions-list">
+                  {aiSuggestions.map((s, i) => (
+                    <li key={`${s.name}-${i}`}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={s.checked}
+                          onChange={(e) => setAiSuggestions((current) =>
+                            current.map((item, idx) => idx === i ? { ...item, checked: e.target.checked } : item)
+                          )}
+                        />
+                        <div>
+                          <strong>{s.name}</strong>
+                          <span>{s.description}</span>
+                        </div>
+                      </label>
+                    </li>
+                  ))}
+                  <div className="ai-suggestions-footer">
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={aiSuggestions.every((s) => !s.checked)}
+                      onClick={() => {
+                        const picks = aiSuggestions.filter((s) => s.checked)
+                        if (picks.length === 0) return
+                        const nextCodeIds: string[] = [...props.selectedCodeIds]
+                        const namesToCreate: Array<{ name: string; description: string }> = []
+                        for (const pick of picks) {
+                          const existing = props.sortedCodes.find((c) => c.name.toLowerCase() === pick.name.toLowerCase())
+                          if (existing) {
+                            if (!nextCodeIds.includes(existing.id)) nextCodeIds.push(existing.id)
+                          } else {
+                            namesToCreate.push(pick)
+                          }
+                        }
+                        const newCodes = namesToCreate.map((p) => {
+                          const created = props.buildNewCode(p.name)
+                          return { ...created, description: p.description }
+                        })
+                        if (newCodes.length) {
+                          props.setCodes((current) => [...current, ...newCodes])
+                          for (const c of newCodes) nextCodeIds.push(c.id)
+                        }
+                        const allNames = picks.map((p) => p.name).join(', ')
+                        props.setSelectedCodeIds(nextCodeIds)
+                        props.applyCodesToText(quickCodeMenu?.text ?? '', nextCodeIds, allNames)
+                        setAiPhase('idle')
+                        setAiSuggestions([])
+                        setQuickCodeMenu(null)
+                      }}
+                    >
+                      Apply {aiSuggestions.filter((s) => s.checked).length} suggested code{aiSuggestions.filter((s) => s.checked).length === 1 ? '' : 's'}
+                    </button>
+                  </div>
+                </ul>
+              )}
+            </AiPreviewPanel>
+          )}
           <div className="quick-code-new">
             <input
               value={quickNewCodeName}
