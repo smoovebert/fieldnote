@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { BarChart3, Download, History, Network, Plus, RotateCcw } from 'lucide-react'
+import { BarChart3, Download, History, Network, Plus, RotateCcw, Sparkles } from 'lucide-react'
 import type { Code, Excerpt, Memo, Source } from '../../lib/types'
 import { computeOntology, computeProgress } from './stats'
 import { StatCard } from './StatCard'
 import { listVersions, type ProjectVersion } from '../../lib/localRecovery'
+import { AiPreviewPanel } from '../../components/AiPreviewPanel'
+import { estimateCostUsd } from '../../ai/client'
 
 type Props = {
   title: string
@@ -15,18 +17,28 @@ type Props = {
   projectMemo: Memo | undefined
   userId: string | null
   projectId: string | null
+  snapshotsCount: number
   onTitleChange: (next: string) => void
   onDescriptionChange: (next: string) => void
   onProjectMemoChange: (next: string) => void
   onNewSource: () => void
   onRestoreVersion: (version: ProjectVersion) => void
   onExportBackup: () => void
+  onDraftProjectMemo: () => Promise<{ ok: true; memo: string } | { ok: false; message: string }>
 }
 
 export function OverviewMode(props: Props) {
   const progress = computeProgress({ sources: props.sources, excerpts: props.excerpts })
   const ontology = computeOntology(props.codes)
   const [versions, setVersions] = useState<ProjectVersion[]>([])
+
+  const [aiPhase, setAiPhase] = useState<'idle' | 'preview' | 'loading' | 'result' | 'error'>('idle')
+  const [aiDraft, setAiDraft] = useState('')
+  const [aiError, setAiError] = useState<string | undefined>()
+
+  const enabled = props.snapshotsCount > 0
+  const estTokens = props.snapshotsCount * 800
+  const estCost = estimateCostUsd(estTokens)
 
   // Reload versions whenever the project changes or the user toggles Overview.
   // Cheap query (small per-project list) so re-running on focus is fine.
@@ -100,6 +112,55 @@ export function OverviewMode(props: Props) {
         <header className="panel-heading">
           <h2>Project memo</h2>
         </header>
+        {enabled && aiPhase === 'idle' && (
+          <button
+            type="button"
+            className="overview-ai-trigger"
+            onClick={() => setAiPhase('preview')}
+          >
+            <Sparkles size={14} aria-hidden="true" />
+            Draft from snapshots
+          </button>
+        )}
+        {aiPhase !== 'idle' && (
+          <AiPreviewPanel
+            phase={aiPhase as 'preview' | 'loading' | 'result' | 'error'}
+            inputPreview={`${props.snapshotsCount} pinned snapshot${props.snapshotsCount === 1 ? '' : 's'} from this project will be sent.`}
+            estimatedTokens={estTokens}
+            estimatedCostUsd={estCost}
+            errorMessage={aiError}
+            onCancel={() => { setAiPhase('idle'); setAiDraft(''); setAiError(undefined) }}
+            onSend={async () => {
+              setAiPhase('loading')
+              const result = await props.onDraftProjectMemo()
+              if (result.ok) { setAiDraft(result.memo); setAiPhase('result') }
+              else { setAiError(result.message); setAiPhase('error') }
+            }}
+          >
+            {aiPhase === 'result' && (
+              <div className="ai-draft-preview">
+                <p>{aiDraft}</p>
+                <div className="ai-draft-actions">
+                  <button type="button" onClick={() => { setAiPhase('idle'); setAiDraft('') }}>Discard</button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => {
+                      if ((props.projectMemo?.body ?? '').trim()) {
+                        if (!window.confirm('This will replace your existing project memo. Continue?')) return
+                      }
+                      props.onProjectMemoChange(aiDraft)
+                      setAiPhase('idle')
+                      setAiDraft('')
+                    }}
+                  >
+                    Insert into memo
+                  </button>
+                </div>
+              </div>
+            )}
+          </AiPreviewPanel>
+        )}
         <textarea
           value={props.projectMemo?.body ?? ''}
           placeholder="Add notes about this project's research questions, design choices, or evolving thinking."
