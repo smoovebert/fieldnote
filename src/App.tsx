@@ -71,6 +71,7 @@ import {
 import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import { SourcesView } from './components/SourcesView'
+import { BACKUP_MIME, backupFilename, buildBackup, validateBackup } from './lib/backup'
 import type {
   Attribute,
   AttributeValue,
@@ -2075,6 +2076,52 @@ function App() {
     XLSX.writeFile(book, filename)
   }
 
+  async function importProjectBackup(file: File) {
+    if (!session?.user) return
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(await file.text())
+    } catch (error) {
+      setSaveStatus(`Could not read backup: ${error instanceof Error ? error.message : 'invalid JSON'}.`)
+      return
+    }
+    const validation = validateBackup(parsed)
+    if (!validation.ok) {
+      setSaveStatus(`Backup invalid: ${validation.error}`)
+      return
+    }
+    const { backup } = validation
+    const seed: ProjectData = {
+      activeSourceId: backup.project.activeSourceId || backup.sources[0]?.id || '',
+      description: backup.project.description ?? '',
+      sources: backup.sources,
+      cases: backup.cases,
+      attributes: backup.attributes,
+      attributeValues: backup.attributeValues,
+      savedQueries: backup.savedQueries,
+      codes: backup.codes,
+      memos: backup.memos,
+      excerpts: backup.excerpts,
+    }
+    const restoredTitle = `${backup.project.title} (restored)`
+    await createProjectFromSeed(restoredTitle, seed)
+  }
+
+  function exportProjectBackup() {
+    if (!projectId) return
+    const projectRow = projectRows.find((row) => row.id === projectId)
+    if (!projectRow) return
+    const backup = buildBackup({ projectRow, data: projectData })
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: BACKUP_MIME })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = backupFilename(projectRow.title)
+    link.click()
+    URL.revokeObjectURL(url)
+    setSaveStatus('Backup downloaded.')
+  }
+
   function downloadInFormat(rows: string[][], baseName: string, sheetName?: string) {
     if (exportFormat === 'xlsx') {
       void downloadXlsx(rows, `${baseName}.xlsx`, sheetName ?? 'Sheet1')
@@ -2116,6 +2163,8 @@ function App() {
             onNewProjectTitleChange={setNewProjectTitle}
             onCreateProject={() => void createProject()}
             onDeleteProject={(id) => void deleteProject(id)}
+            onExportBackup={exportProjectBackup}
+            onImportBackup={(file) => void importProjectBackup(file)}
           />
           {projectId && (
             <HeaderSearch
@@ -2158,7 +2207,10 @@ function App() {
         </nav>
 
         <div className="header-tools">
-          <div className="sync-box toolbar-status" aria-live="polite">
+          <div
+            className={`sync-box toolbar-status${/save failed|could not|error|invalid/i.test(saveStatus) ? ' is-error' : ''}${saveStatus === 'Saving...' ? ' is-saving' : ''}`}
+            aria-live="polite"
+          >
             <Cloud size={14} aria-hidden="true" />
             <span>{saveStatus}</span>
           </div>

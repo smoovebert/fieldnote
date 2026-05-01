@@ -4805,3 +4805,45 @@ textarea {
   cursor: pointer;
 }
 .orphan-delete:hover { background: #fee2e2; color: #b91c1c; }
+
+/* ----- Backup actions in project switcher --------------------------- */
+.hps-backup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px 4px;
+  border-top: 1px solid var(--line, #e5e7eb);
+  margin-top: 8px;
+}
+
+.hps-backup-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink, #1f2937);
+  font: 600 12px/1.2 inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hps-backup-action:hover { background: #f3f4f6; }
+.hps-backup-action:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ----- Save status colors ------------------------------------------- */
+.app-shell[data-shell="new"] .sync-box.is-saving {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.app-shell[data-shell="new"] .sync-box.is-error {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+}
+
+.app-shell[data-shell="new"] .sync-box.is-error svg {
+  color: #fca5a5;
+}

@@ -29,6 +29,11 @@ export function useAutosave({
 }: UseAutosaveOptions): void {
   const saveInFlightRef = useRef(false)
   const savePendingRef = useRef<(() => Promise<void>) | null>(null)
+  // Tracks whether there are buffered changes that haven't been written yet.
+  // Set when a save is debounce-scheduled; cleared when the save completes
+  // successfully (or fails, since beforeunload should let the user retry rather
+  // than block them indefinitely on a dead network).
+  const dirtyRef = useRef(false)
 
   // Stash the latest callbacks in refs so the effect deps array stays stable.
   // Without this, passing non-memoized setSaveStatus / onSaved would retrigger
@@ -42,19 +47,38 @@ export function useAutosave({
     onSavedRef.current = onSaved
   })
 
+  // beforeunload guard: warn the user if they try to close/refresh while there
+  // are buffered or in-flight changes. Browsers ignore the custom message and
+  // show their own "Leave site?" dialog, but returning a truthy string is the
+  // documented signal to trigger that dialog.
+  useEffect(() => {
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      if (dirtyRef.current || saveInFlightRef.current || savePendingRef.current) {
+        event.preventDefault()
+        event.returnValue = '' // required for Chrome
+        return ''
+      }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
+
   useEffect(() => {
     if (!enabled || !projectId || !payload) return
 
+    dirtyRef.current = true
     setSaveStatusRef.current('Saving...')
     const timeout = window.setTimeout(() => {
       const runSave = async () => {
         try {
           await saveProject(projectId, payload, supabase)
+          dirtyRef.current = false
           setSaveStatusRef.current('Saved to Supabase.')
           onSavedRef.current?.(payload)
         } catch (error) {
+          dirtyRef.current = false
           const message = error instanceof Error ? error.message : 'Save failed.'
-          setSaveStatusRef.current(message)
+          setSaveStatusRef.current(`Save failed: ${message}`)
         }
       }
 

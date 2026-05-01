@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { ChevronDown, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Download, Plus, Trash2, Upload } from 'lucide-react'
 import type { ProjectRow } from '../../lib/types'
 
 type Props = {
@@ -13,6 +13,8 @@ type Props = {
   onNewProjectTitleChange: (next: string) => void
   onCreateProject: () => void
   onDeleteProject: (projectId: string) => void
+  onExportBackup: () => void
+  onImportBackup: (file: File) => void
 }
 
 export function ProjectSwitcher(props: Props) {
@@ -103,6 +105,37 @@ export function ProjectSwitcher(props: Props) {
               <Plus size={14} aria-hidden="true" />
               Create
             </button>
+          </div>
+          <div className="hps-backup">
+            <button
+              type="button"
+              className="hps-backup-action"
+              disabled={!props.activeProjectId}
+              onClick={() => {
+                props.onExportBackup()
+                setOpen(false)
+              }}
+              title="Download a .fieldnote.json snapshot of this project"
+            >
+              <Download size={13} aria-hidden="true" />
+              Backup current project
+            </button>
+            <label className="hps-backup-action" title="Restore from a .fieldnote.json file as a new project">
+              <Upload size={13} aria-hidden="true" />
+              Import backup as new project
+              <input
+                type="file"
+                accept=".json,.fieldnote.json,application/json"
+                style={{ display: 'none' }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (!file) return
+                  props.onImportBackup(file)
+                  event.target.value = ''
+                  setOpen(false)
+                }}
+              />
+            </label>
           </div>
         </div>
       )}
