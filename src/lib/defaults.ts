@@ -20,9 +20,37 @@ export const initialAttributes: Attribute[] = [
   { id: 'cohort', name: 'Cohort', valueType: 'text' },
 ]
 
-export const initialAttributeValues: AttributeValue[] = []
+export const initialAttributeValues: AttributeValue[] = [
+  { caseId: 'case-renata', attributeId: 'role', value: 'Student' },
+  { caseId: 'case-renata', attributeId: 'cohort', value: '2024' },
+  { caseId: 'case-marcus', attributeId: 'role', value: 'Faculty advisor' },
+  { caseId: 'case-marcus', attributeId: 'cohort', value: '2023' },
+]
 
-export const initialSavedQueries: SavedQuery[] = []
+export const initialSavedQueries: SavedQuery[] = [
+  {
+    id: 'query-trust-passages',
+    name: 'Trust and safety passages',
+    queryType: 'coded_excerpt',
+    definition: {
+      text: '',
+      codeId: 'trust',
+      caseId: '',
+      attributes: [],
+    },
+  },
+  {
+    id: 'query-students',
+    name: 'Student-role excerpts',
+    queryType: 'coded_excerpt',
+    definition: {
+      text: '',
+      codeId: '',
+      caseId: '',
+      attributes: [{ attributeId: 'role', value: 'Student' }],
+    },
+  },
+]
 
 const initialCodes: Code[] = [
   {
@@ -30,6 +58,13 @@ const initialCodes: Code[] = [
     name: 'Access barriers',
     color: '#ea6f5a',
     description: 'Moments where people describe friction, cost, or gatekeeping.',
+  },
+  {
+    id: 'access-bureaucratic',
+    name: 'Bureaucratic friction',
+    color: '#f29481',
+    description: 'Form-filling, paperwork, office hand-offs.',
+    parentCodeId: 'access',
   },
   {
     id: 'trust',
@@ -70,14 +105,27 @@ const initialSources: Source[] = [
   },
 ]
 
-const initialCases: Case[] = []
+const initialCases: Case[] = [
+  {
+    id: 'case-renata',
+    name: 'Renata',
+    description: 'First-generation student navigating financial-aid paperwork.',
+    sourceIds: ['interview-03'],
+  },
+  {
+    id: 'case-marcus',
+    name: 'Marcus',
+    description: 'Faculty advisor reflecting on what helps students stay enrolled.',
+    sourceIds: ['interview-07'],
+  },
+]
 
 const initialMemos: Memo[] = [
   {
     id: 'project-memo',
     title: 'Project memo',
     linkedType: 'project',
-    body: '',
+    body: 'Sample project. The clearest early pattern is not simple dissatisfaction — participants describe systems that feel illegible until a specific person translates them. Use this memo to track running thinking as the codebook evolves.',
   },
 ]
 

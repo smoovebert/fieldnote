@@ -540,10 +540,8 @@ function App() {
     setSaveStatus('Project open.')
   }
 
-  async function createProject() {
+  async function createProjectFromSeed(title: string, seed: ProjectData) {
     if (!session?.user || isCreatingProject) return
-
-    const title = newProjectTitle.trim() || 'Untitled research project'
     setIsCreatingProject(true)
     setSaveStatus('Creating project...')
 
@@ -561,14 +559,14 @@ function App() {
         .insert({
           owner_id: user.id,
           title,
-          active_source_id: defaultProject.activeSourceId,
-          source_title: defaultProject.sources[0].title,
-          transcript: defaultProject.sources[0].content,
-          memo: defaultProject.memos[0].body,
-          sources: defaultProject.sources,
-          codes: defaultProject.codes,
-          memos: defaultProject.memos,
-          excerpts: defaultProject.excerpts,
+          active_source_id: seed.activeSourceId,
+          source_title: seed.sources[0]?.title ?? '',
+          transcript: seed.sources[0]?.content ?? '',
+          memo: seed.memos[0]?.body ?? '',
+          sources: seed.sources,
+          codes: seed.codes,
+          memos: seed.memos,
+          excerpts: seed.excerpts,
         })
         .select('*')
         .single()
@@ -578,21 +576,21 @@ function App() {
       await saveProject(nextProject.id, {
         title,
         description: '',
-        active_source_id: defaultProject.activeSourceId,
-        source_title: defaultProject.sources[0].title,
-        transcript: defaultProject.sources[0].content,
-        memo: defaultProject.memos[0].body,
-        sources: defaultProject.sources,
-        codes: defaultProject.codes,
-        memos: defaultProject.memos,
-        excerpts: defaultProject.excerpts,
-        cases: defaultProject.cases,
-        attributes: defaultProject.attributes,
-        attributeValues: defaultProject.attributeValues,
-        savedQueries: defaultProject.savedQueries,
+        active_source_id: seed.activeSourceId,
+        source_title: seed.sources[0]?.title ?? '',
+        transcript: seed.sources[0]?.content ?? '',
+        memo: seed.memos[0]?.body ?? '',
+        sources: seed.sources,
+        codes: seed.codes,
+        memos: seed.memos,
+        excerpts: seed.excerpts,
+        cases: seed.cases,
+        attributes: seed.attributes,
+        attributeValues: seed.attributeValues,
+        savedQueries: seed.savedQueries,
         line_numbering_mode: DEFAULT_LINE_NUMBERING_MODE,
         line_numbering_width: DEFAULT_LINE_NUMBERING_WIDTH,
-        projectData: defaultProject,
+        projectData: seed,
       }, supabase)
       setProjectRows((current) => [nextProject, ...current])
       setNewProjectTitle('')
@@ -602,6 +600,27 @@ function App() {
     } finally {
       setIsCreatingProject(false)
     }
+  }
+
+  async function createProject() {
+    const title = newProjectTitle.trim() || 'Untitled research project'
+    const blankSeed: ProjectData = {
+      description: '',
+      activeSourceId: '',
+      sources: [],
+      cases: [],
+      attributes: [],
+      attributeValues: [],
+      savedQueries: [],
+      codes: [],
+      memos: [],
+      excerpts: [],
+    }
+    await createProjectFromSeed(title, blankSeed)
+  }
+
+  async function createSampleProject() {
+    await createProjectFromSeed('Sample project', defaultProject)
   }
 
   async function deleteProject(projectIdToDelete: string) {
@@ -2089,21 +2108,34 @@ function App() {
         {!projectId && projectRows.length === 0 && (
           <article className="overview-empty-state">
             <h2>Welcome to Fieldnote</h2>
-            <p>Create your first research project to begin.</p>
-            <div className="overview-empty-create">
-              <input
-                value={newProjectTitle}
-                placeholder="Project title"
-                aria-label="Project title"
-                onChange={(event) => setNewProjectTitle(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') void createProject()
-                }}
-              />
-              <button type="button" onClick={() => void createProject()} disabled={isCreatingProject}>
-                <Plus size={16} aria-hidden="true" />
-                Create project
-              </button>
+            <p>Explore the sample, or start fresh.</p>
+            <div className="overview-empty-options">
+              <section className="overview-empty-option">
+                <h3>Try a sample project</h3>
+                <p>A small set of seeded interviews, codes, and a memo so you can poke around.</p>
+                <button type="button" onClick={() => void createSampleProject()} disabled={isCreatingProject}>
+                  Open sample project
+                </button>
+              </section>
+              <section className="overview-empty-option">
+                <h3>Create a blank project</h3>
+                <p>An empty project. Import your own sources to begin.</p>
+                <div className="overview-empty-create">
+                  <input
+                    value={newProjectTitle}
+                    placeholder="Project title"
+                    aria-label="Project title"
+                    onChange={(event) => setNewProjectTitle(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') void createProject()
+                    }}
+                  />
+                  <button type="button" onClick={() => void createProject()} disabled={isCreatingProject}>
+                    <Plus size={16} aria-hidden="true" />
+                    Create blank project
+                  </button>
+                </div>
+              </section>
             </div>
           </article>
         )}
