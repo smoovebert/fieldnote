@@ -72,6 +72,7 @@ import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import { SourcesView } from './components/SourcesView'
 import { BACKUP_MIME, backupFilename, buildBackup, validateBackup } from './lib/backup'
+import { deleteRecoverySnapshot, isLocalAheadOfRemote, readRecoverySnapshot, writeRecoverySnapshot } from './lib/localRecovery'
 import type {
   Attribute,
   AttributeValue,
@@ -604,6 +605,39 @@ function App() {
     hasLoadedRemoteProject.current = true
     setSaveStatus('Project open.')
 
+    // Local-recovery prompt: if IndexedDB holds a snapshot newer than what
+    // we just loaded from Supabase, the user has unsynced work from a prior
+    // session (network loss, tab crash, browser update). Offer to restore.
+    const userId = session?.user?.id
+    if (userId) {
+      try {
+        const snap = await readRecoverySnapshot(userId, project.id)
+        if (snap && isLocalAheadOfRemote(snap, project.updated_at ?? null)) {
+          const ageMin = Math.max(1, Math.round((Date.now() - Date.parse(snap.capturedAt)) / 60_000))
+          const restore = window.confirm(
+            `A local recovery copy of "${snap.projectTitle}" is newer than the remote version (saved ~${ageMin} min ago). Restore the local copy? Click Cancel to keep the remote version (the local copy will be discarded on the next save).`,
+          )
+          if (restore) {
+            setActiveSourceId(snap.data.activeSourceId)
+            setSources(snap.data.sources)
+            setCases(snap.data.cases)
+            setAttributes(snap.data.attributes)
+            setAttributeValues(snap.data.attributeValues)
+            setSavedQueries(snap.data.savedQueries)
+            setCodes(snap.data.codes)
+            setMemos(snap.data.memos)
+            setExcerpts(snap.data.excerpts)
+            setDescription(snap.data.description ?? '')
+            setSaveStatus('Local copy restored. Next save will sync to Supabase.')
+          } else {
+            await deleteRecoverySnapshot(userId, project.id)
+          }
+        }
+      } catch (error) {
+        console.warn('Recovery snapshot check failed:', error)
+      }
+    }
+
     // Snapshots are independent of the JSON-on-project model: live in their own table.
     const { data: snaps, error: snapsError } = await supabase
       .from('fieldnote_query_results')
@@ -855,6 +889,17 @@ function App() {
             : project
         )
       )
+      // Write a local recovery snapshot of the just-saved state. If the next
+      // remote save fails, this is the rescue copy.
+      const userId = session?.user?.id
+      const currentRow = projectRows.find((row) => row.id === projectId)
+      if (userId && currentRow) {
+        void writeRecoverySnapshot({
+          userId,
+          projectRow: currentRow,
+          data: savedPayload.projectData,
+        })
+      }
     },
   })
 
