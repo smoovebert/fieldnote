@@ -524,6 +524,103 @@ Current production alias:
 https://fieldnote-seven.vercel.app
 ```
 
+## Data safety / "do not lose Stacey's work"
+
+Real research data deserves boring, redundant, recoverable storage. Layers
+of protection, weakest first:
+
+### 1. Autosave (in-app, automatic)
+
+- Debounced 700 ms after every state change.
+- In-flight guard prevents two saves overlapping.
+- `Saving...` / `Saved to Supabase.` / `Save failed: <reason>` visible in
+  the header. Failures render the pill in red.
+- Browser `beforeunload` handler triggers the "Leave site?" dialog when
+  there are buffered or in-flight changes, so a user can't accidentally
+  close mid-save.
+
+### 2. IndexedDB local recovery (in-app, automatic)
+
+- Every successful Supabase save also writes the latest project state to
+  IndexedDB (`fieldnote-recovery` DB, `project_snapshots` store).
+- On project load, if the local copy's `capturedAt` is >5 s newer than
+  the remote `updated_at`, the user gets a confirm dialog to restore.
+- Single snapshot per (user, project); each save overwrites. Survives
+  network loss, tab crash, mid-save browser update, multi-device
+  divergence — anything short of a full browser-data wipe.
+
+### 3. Manual backup file (user-driven, on demand)
+
+- "Backup current project" in the project switcher dropdown downloads a
+  `.fieldnote.json` containing every authored object plus settings.
+- "Import backup as new project" creates a fresh project from a
+  `.fieldnote.json`. Never overwrites; bad/wrong-version files are
+  rejected with a friendly message.
+- Tell users to download a backup before any risky operation (bulk
+  delete, mass merge, model migration).
+
+### 4. Supabase platform backups (operational, you run this)
+
+Supabase Pro plan ($25/mo) ships daily automated backups with 7-day
+point-in-time recovery. Free plan does **not** — only manual exports.
+
+**Recommended setup:**
+
+- Upgrade to Pro before any project carries real research data.
+- In Supabase dashboard: Database → Backups → confirm daily backups are
+  on.
+- Monthly: trigger a manual backup via the dashboard before the first
+  destructive migration of the month.
+
+### 5. Pre-migration checklist (operational, you run this)
+
+Before any migration that drops/renames columns or alters constraints:
+
+- [ ] Run `supabase db push --dry-run` to inspect the SQL.
+- [ ] Trigger a Supabase manual backup (dashboard → Database → Backups
+      → Create backup).
+- [ ] Have at least one user export a `.fieldnote.json` of their
+      current project so end-to-end restore is testable.
+- [ ] Push the migration to a Supabase preview branch first if the
+      change is non-trivial. (Preview branches don't auto-receive
+      production env vars; provision them explicitly.)
+- [ ] If the migration could lose data on rollback, write a separate
+      down-migration that round-trips on a copy of production before
+      applying.
+
+### 6. Pre-destructive-action checklist (in-app behavior)
+
+Every destructive action in the app must:
+
+- Confirm with `window.confirm` (already in place for delete project,
+  delete code, delete folder, delete excerpt, etc.).
+- Spell out the cascade (e.g. "Delete this project? Permanently removes
+  all sources, codes, memos, excerpts, cases, attribute values, saved
+  queries, and snapshots.").
+- Never trigger from a single key press without the dialog.
+
+When adding a new destructive action, mirror the pattern in
+`deleteProject` (`src/App.tsx`) — confirm, list cascading consequences,
+update local state and remote in the same handler.
+
+### 7. Catastrophic-recovery runbook
+
+If something goes wrong:
+
+1. **App is still up, user is panicking:** tell them to use "Backup
+   current project" immediately. The download is a snapshot they can
+   re-import as a new project.
+2. **Supabase data corrupted:** restore from the latest Supabase
+   automated backup (dashboard → Database → Backups → Restore).
+   Acceptable RPO is 24 h on the daily backup tier.
+3. **User thinks they lost work after a crash:** on next sign-in, the
+   IndexedDB recovery dialog should appear. If they declined and want
+   it back, DevTools → Application → IndexedDB → fieldnote-recovery →
+   project_snapshots — the row is keyed `<userId>::<projectId>`.
+4. **Bad deploy is in production:** revert in Vercel dashboard → that
+   release → "Promote to production." Vercel keeps the previous build
+   instantly available.
+
 ## Recent Commits
 
 For an up-to-date list run `git log --oneline -15`. The handoff bullets above
