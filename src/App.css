@@ -54,12 +54,15 @@
   }
 }
 
-/* Overview hides both rails — collapse the grid so detail-view fills the row. */
+/* Overview shows the project picker in the left rail; the right
+   inspector stays hidden so the grid drops to two columns. */
 .app-shell[data-view="overview"] {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 232px minmax(0, 1fr);
 }
-.app-shell[data-view="overview"] .detail-view {
-  grid-column: 1;
+@media (max-width: 1280px) {
+  .app-shell[data-view="overview"] {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
 }
 
 .auth-shell,
@@ -3808,6 +3811,20 @@ textarea {
   color: var(--shell-ink-3);
   font: var(--t-ui-sm);
   border: 0;
+  /* Fixed footprint so the status text length doesn't bump the mode tabs
+     when the message changes between Saving... / Saved / errors. */
+  width: 180px;
+  flex: 0 0 180px;
+  overflow: hidden;
+}
+
+.app-shell[data-shell="new"] .app-header .toolbar-status span,
+.app-shell[data-shell="new"] .app-header .sync-box span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .app-shell[data-shell="new"] .app-header .header-icon-button {

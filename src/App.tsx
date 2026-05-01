@@ -46,7 +46,7 @@ import { applyReportIncludes, buildReport, DEFAULT_REPORT_INCLUDES, type ReportI
 import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
 import { OverviewMode } from './modes/overview/OverviewMode'
-import { ProjectSwitcher } from './modes/overview/ProjectSwitcher'
+import { OverviewSidebar } from './modes/overview/OverviewSidebar'
 import { HeaderSearch } from './components/HeaderSearch'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportSidebar } from './modes/report/ReportSidebar'
@@ -2270,19 +2270,6 @@ function App() {
             </div>
           </div>
 
-          <ProjectSwitcher
-            activeProjectId={projectId}
-            activeProjectTitle={projectTitle}
-            projects={projectRows}
-            newProjectTitle={newProjectTitle}
-            isCreatingProject={isCreatingProject}
-            onSelectProject={(project) => void applyProject(project)}
-            onNewProjectTitleChange={setNewProjectTitle}
-            onCreateProject={() => void createProject()}
-            onDeleteProject={(id) => void deleteProject(id)}
-            onExportBackup={exportProjectBackup}
-            onImportBackup={(file) => void importProjectBackup(file)}
-          />
         </div>
 
         <nav className="app-header-modes" aria-label="Research modes">
@@ -2355,10 +2342,24 @@ function App() {
         onChange={importTranscript}
       />
 
-      {activeView !== 'overview' && <aside
+      <aside
         className="workspace-sidebar"
         aria-label="Workspace sidebar"
       >
+        {activeView === 'overview' && (
+          <OverviewSidebar
+            activeProjectId={projectId}
+            projects={projectRows}
+            newProjectTitle={newProjectTitle}
+            isCreatingProject={isCreatingProject}
+            onSelectProject={(project) => void applyProject(project)}
+            onNewProjectTitleChange={setNewProjectTitle}
+            onCreateProject={() => void createProject()}
+            onCreateSampleProject={() => void createSampleProject()}
+            onDeleteProject={(id) => void deleteProject(id)}
+            onImportBackup={(file) => void importProjectBackup(file)}
+          />
+        )}
         {activeView === 'organize' && (
           <OrganizeSidebar
             activeSources={activeSources}
@@ -2426,7 +2427,7 @@ function App() {
         </section>
         )}
 
-      </aside>}
+      </aside>
 
       <section className="detail-view" id="sources">
         <header className="detail-toolbar">
