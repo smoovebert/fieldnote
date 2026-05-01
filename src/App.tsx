@@ -50,6 +50,7 @@ import { OverviewSidebar } from './modes/overview/OverviewSidebar'
 import { OverviewInspector } from './modes/overview/OverviewInspector'
 import { HeaderSearch } from './components/HeaderSearch'
 import { ReportDetail } from './modes/report/ReportDetail'
+import { ReportInspector } from './modes/report/ReportInspector'
 import { ReportSidebar } from './modes/report/ReportSidebar'
 import { RefineDetail } from './modes/refine/RefineDetail'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
@@ -3084,38 +3085,14 @@ function App() {
         )}
 
         {activeView === 'report' && (
-          <section className="panel">
-            <div className="panel-heading">
-              <Database size={18} aria-hidden="true" />
-              <h2>Export Summary</h2>
-            </div>
-            <dl className="properties-list">
-              <div>
-                <dt>Project</dt>
-                <dd>{projectTitle}</dd>
-              </div>
-              <div>
-                <dt>Sources</dt>
-                <dd>{activeSources.length}</dd>
-              </div>
-              <div>
-                <dt>Codes</dt>
-                <dd>{codes.length}</dd>
-              </div>
-              <div>
-                <dt>References</dt>
-                <dd>{excerpts.length}</dd>
-              </div>
-              <div>
-                <dt>Cases</dt>
-                <dd>{cases.length}</dd>
-              </div>
-              <div>
-                <dt>Attributes</dt>
-                <dd>{attributes.length}</dd>
-              </div>
-            </dl>
-          </section>
+          <ReportInspector
+            projectTitle={projectTitle}
+            sourceCount={activeSources.length}
+            codeCount={codes.length}
+            excerptCount={excerpts.length}
+            caseCount={cases.length}
+            attributeCount={attributes.length}
+          />
         )}
 
         {(activeView === 'code' || activeView === 'refine') && (
