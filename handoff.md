@@ -88,9 +88,9 @@ Remaining functionality grouped by LOE:
 
 - ~~Folder rename/delete~~ ✓ shipped (Internals protected; archive filters beyond the bucket still TBD).
 - ~~Attribute import from CSV~~ ✓ shipped (case groups still TBD).
-- Saved query result snapshots for point-in-time evidence captures.
-- Report settings for included sections/fields.
-- Code hierarchy polish beyond drag-and-drop: clearer tree controls, bulk cleanup, and hierarchy reporting.
+- ~~Saved query result snapshots for point-in-time evidence captures~~ ✓ shipped (coded_excerpt only; other panel kinds TBD).
+- ~~Report settings for included sections/fields~~ ✓ shipped.
+- Code hierarchy polish beyond drag-and-drop: clearer tree controls, bulk cleanup, and hierarchy reporting (split + dedupe banner shipped; bulk-multi-select recode still TBD).
 - ~~Excel/XLSX versions of current CSV exports~~ ✓ shipped.
 - First-run UX with sample-vs-blank choice ✓ shipped.
 
@@ -98,10 +98,10 @@ Remaining functionality grouped by LOE:
 
 - Full source search across uncoded source text, memos, code definitions, and case fields.
 - Richer PDF/DOCX import preview while still coding extracted text.
-- Stronger codebook cleanup tools: split code, duplicate detection, bulk recode, orphan reference review.
-- First-class analysis objects: saved matrices/crosstabs/charts with stored results.
+- ~~Codebook cleanup: split code + duplicate detection~~ ✓ shipped (orphan-reference review + bulk recode multi-select still TBD).
+- First-class analysis objects: saved matrices/crosstabs/charts with stored results — extend the existing `fieldnote_query_results` table to other panel kinds.
 - More visualization surfaces: hierarchy chart, relationship map, concept map v1.
-- Report builder customization and embedded chart outputs.
+- ~~Report builder customization (sections/fields)~~ ✓ shipped (embedded chart outputs in the Report still TBD).
 
 **Large**
 
@@ -457,16 +457,18 @@ Implemented:
 - Excel/XLSX exports for every CSV export, gated by a single CSV/XLSX segmented toggle in the Report sidebar's Raw-data panel. Honored by inline Analyze exports too. xlsx (SheetJS) lazy-imported.
 - Attribute CSV import in Classify: header row = attribute names, first column = case names, body cells = values. Auto-creates missing attributes, skips rows with no matching case, reports a one-line summary.
 - First-run UX: empty state offers "Try a sample project" (titled "Sample project", seeded with 2 short interviews + a small code hierarchy with one parent/child pair + 2 cases with attributes + 2 saved analyses + a project memo) OR "Create a blank project" (truly empty). The project switcher's Create row only ever creates blank — sample is a one-time first-run option.
+- Report customization: section toggles in the Report sidebar (Project memo, Codebook, Coded excerpts, Cases, Source memos) flow through to live preview + PDF + Word exports.
+- Saved-query result snapshots: `fieldnote_query_results` table (RLS via project ownership) captures point-in-time excerpt lists for any saved coded-excerpt query. Pin button in Analyze, snapshot list with download/delete in the right inspector.
+- Refine codebook cleanup: split code (move selected references to a new code), duplicate-name banner with click-to-jump links, and clearer "Merge / bulk recode" label on the existing merge.
 
 Still needed:
 
 - Project share controls (delete works; sharing/inviting is unbuilt).
 - Mode-specific right rails outside Organize need another design pass.
-- Organize mode still needs richer source previews (folder rename/delete shipped).
-- Refine mode still needs stronger code splitting and deeper codebook cleanup tools (split, duplicate detection, bulk recode).
-- Classify still needs case groups and richer filtering (attribute CSV import shipped).
-- M5.3 (query result snapshots): persist `fieldnote_query_results` rows for point-in-time captures.
-- Report customization: which sections / fields the formatted Report includes.
+- Organize mode still needs richer source previews.
+- Classify still needs case groups and richer filtering.
+- Snapshots beyond coded-excerpt queries (matrix / wordfreq / co-occurrence / crosstab snapshots) — extension of the existing `fieldnote_query_results` table via the `result_kind` discriminator.
+- Codebook cleanup beyond split/dedupe: bulk recode UX (multi-select rows in a code's references and re-tag without deleting source), orphan reference review, fuzzy-match duplicate detection (currently exact-normalized match only).
 - Non-text source types (PDF as PDF, DOCX rich content, audio/video, image regions) — only plain-text extraction/import works today.
 - Tablet/mobile: blocked behind a 1024px gate, no responsive design.
 - Persistence-layer integration tests (mocked Supabase) — deferred during Phase 4.
@@ -475,7 +477,11 @@ Still needed:
 
 Do **not** add more one-off UI panels.
 
-Top of the open list: **Query result snapshots / first-class analysis objects**. Analyze is useful now, but saved outputs are still view state rather than durable point-in-time evidence captures.
+The MVP path and most of Phase A/B Small + Medium items are done. Top
+of the remaining list: **Project sharing UI + roles** (Large) — biggest
+unbuilt piece on the wishlist; needs auth/RLS design + invite flow.
+Lower-effort follow-ups: full source search; richer source previews;
+non-text source types; case groups in Classify.
 
 ## Design Direction
 
