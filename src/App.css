@@ -2,11 +2,25 @@
   height: 100vh;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 320px minmax(500px, 1fr) 420px;
+  grid-template-columns: 232px minmax(0, 1fr) 340px;
   grid-template-rows: 68px minmax(0, 1fr);
   overflow: hidden;
   background: var(--canvas);
   color: var(--ink);
+}
+
+@media (max-width: 1280px) {
+  .app-shell {
+    grid-template-columns: 200px minmax(0, 1fr) 300px;
+  }
+}
+
+/* Overview hides both rails — collapse the grid so detail-view fills the row. */
+.app-shell[data-view="overview"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.app-shell[data-view="overview"] .detail-view {
+  grid-column: 1;
 }
 
 .auth-shell,

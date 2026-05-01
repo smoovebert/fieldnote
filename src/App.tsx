@@ -583,8 +583,9 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const userId = session?.user?.id ?? null
   useEffect(() => {
-    if (!session?.user) {
+    if (!userId) {
       hasLoadedRemoteProject.current = false
       queueMicrotask(() => {
         setProjectId(null)
@@ -631,7 +632,7 @@ function App() {
     return () => {
       isCurrent = false
     }
-  }, [session])
+  }, [userId])
 
   const persistencePayload = useMemo<SavePayload | null>(() => {
     if (!projectId) return null
@@ -1689,7 +1690,7 @@ function App() {
 
   return (
     <>
-    <main className="app-shell" data-shell="new">
+    <main className="app-shell" data-shell="new" data-view={activeView}>
       <header className="app-header">
         <div className="app-header-left">
           <div className="brand-block">
@@ -1830,6 +1831,7 @@ function App() {
               onOpenMatrix={() => setAnalyzePanel('matrix')}
               onOpenFrequency={() => setAnalyzePanel('frequency')}
               onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
+              onOpenCrosstab={() => setAnalyzePanel('crosstab')}
             />
           )}
         </section>
@@ -2605,6 +2607,7 @@ function ListView({
   onOpenMatrix,
   onOpenFrequency,
   onOpenCoOccurrence,
+  onOpenCrosstab,
 }: {
   activeView: WorkspaceView
   activeSourceId: string
@@ -2624,6 +2627,7 @@ function ListView({
   onOpenMatrix: () => void
   onOpenFrequency: () => void
   onOpenCoOccurrence: () => void
+  onOpenCrosstab: () => void
 }) {
   const orderedCodes = buildCodeTree(codes)
 
@@ -2718,6 +2722,13 @@ function ListView({
             <div>
               <strong>Co-occurrence</strong>
               <span>Codes that appear together</span>
+            </div>
+          </button>
+          <button className={analyzePanel === 'crosstab' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenCrosstab}>
+            <Grid3x3 size={17} aria-hidden="true" />
+            <div>
+              <strong>Crosstabs</strong>
+              <span>Two-attribute counts</span>
             </div>
           </button>
         </>
