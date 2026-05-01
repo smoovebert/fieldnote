@@ -935,13 +935,23 @@ button {
 
 .source-table,
 .case-table,
-.query-results-table,
+.query-results-table {
+  display: grid;
+  gap: 10px;
+}
+
+/* Mode surfaces: flex column packs content at the top so the parent
+   detail-card's flexible height doesn't stretch grid rows into giant
+   blank gaps. */
 .report-surface,
 .analyze-surface,
 .classify-surface,
-.refine-surface {
-  display: grid;
-  gap: 10px;
+.refine-surface,
+.organize-surface,
+.code-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .refine-header,
@@ -1087,15 +1097,30 @@ button {
 .classify-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.classify-toolbar .secondary-button,
+.classify-toolbar label.secondary-button,
+.classify-toolbar .inline-entry {
+  flex: 0 0 auto;
 }
 
 .classify-toolbar .secondary-button {
   width: auto;
   margin: 0;
   padding: 0 13px;
+  white-space: nowrap;
+}
+
+.classify-toolbar .inline-entry {
+  min-width: 0;
+}
+
+.classify-toolbar .inline-entry input {
+  width: 180px;
 }
 
 .inline-entry {
