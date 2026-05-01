@@ -22,6 +22,7 @@ Ship a thin, principled AI-assist layer in Fieldnote that augments coding withou
 - Streaming responses (just await full response)
 - AI-drafted source memos or code memos beyond the project memo
 - Auto-applying any AI output without an explicit approval click
+- Org-wide / admin-facing usage dashboards (we have per-user usage rows + a daily cost log; richer analytics are post-v1)
 
 ## Architecture
 
@@ -76,10 +77,19 @@ create table fieldnote_user_settings (
   updated_at timestamptz default now()
 );
 
--- RLS on fieldnote_user_settings: a user can SELECT/UPDATE their own row.
--- Critically: the encrypted_keys column is exposed via SELECT but it's
--- ciphertext — useless without the encryption secret which lives only
--- in Edge Function secrets, never accessible to the client.
+-- RLS / column access on fieldnote_user_settings: clients NEVER read
+-- encrypted_keys. The table is exposed to clients via a view:
+--
+--   create view fieldnote_user_settings_safe as
+--     select user_id, ai_provider, hosted_ai_consent_at, created_at, updated_at
+--     from fieldnote_user_settings;
+--
+-- Client RLS allows SELECT / UPDATE on the safe view's columns only.
+-- Inserting/updating encrypted_keys happens exclusively through the
+-- /save-key Edge Function, which uses the service-role key to write the
+-- column the client never sees. Defence in depth: even if the encryption
+-- secret leaks, the ciphertext was never available to the client to
+-- begin with.
 
 -- Audit log + spend ledger + cache. One row per AI call (cached or live).
 create table fieldnote_ai_calls (
@@ -240,7 +250,48 @@ Why these numbers:
 - 10 RPM rate limit per user blocks accidental loops without visibly impeding manual use.
 - BYOK gets higher caps because the user is paying — but still bounded as a sanity check (a runaway loop on the user's side shouldn't burn $1000 silently).
 
-Quota enforcement: at the start of each `/ai-call`, the Function reads `fieldnote_ai_usage` for `(user_id, today)`, checks the daily count, and increments after a successful call. Rate limit (RPM) uses a small in-memory token bucket inside the Function (best-effort, since Edge Functions can scale horizontally — the day cap is the real safety belt).
+Quota enforcement is **atomic** — the naive read-check-increment pattern races under concurrent calls (multiple in-flight requests all read the pre-limit count and pass before any of them increment). Implement as a Postgres RPC inside a transaction:
+
+```sql
+create function reserve_ai_call(p_user_id uuid, p_estimated_input int)
+returns table(ok boolean, reason text, today_count int)
+language plpgsql as $$
+declare
+  v_count int;
+begin
+  insert into fieldnote_ai_usage (user_id, date, call_count, prompt_tokens, completion_tokens)
+  values (p_user_id, current_date, 0, 0, 0)
+  on conflict (user_id, date) do nothing;
+
+  -- Lock the row for the rest of this transaction.
+  select call_count into v_count
+    from fieldnote_ai_usage
+   where user_id = p_user_id and date = current_date
+   for update;
+
+  if v_count >= 50 then
+    return query select false, 'daily-cap', v_count;
+    return;
+  end if;
+
+  update fieldnote_ai_usage
+     set call_count = call_count + 1,
+         prompt_tokens = prompt_tokens + p_estimated_input
+   where user_id = p_user_id and date = current_date;
+
+  return query select true, ''::text, v_count + 1;
+end $$;
+```
+
+Flow at each `/ai-call`:
+1. Edge Function calls `reserve_ai_call(user_id, estimated_input_tokens)`. The RPC's `for update` lock serializes concurrent reservations; only the one that brings the row past 50 gets refused.
+2. If `ok=false` → return quota error to client without touching the provider.
+3. If `ok=true` → call the provider.
+4. After the response, call `record_ai_call_actuals(user_id, actual_input, actual_output)` to replace the estimated input tokens with actuals and add output tokens. This update is naturally idempotent.
+
+Failure handling: if the provider call fails after a successful reservation, the call still counts against the daily cap. Mild over-counting on errors is preferable to under-counting on races.
+
+Rate limit (RPM) uses a small in-memory token bucket inside the Function (best-effort under horizontal scaling); the daily cap RPC is the real safety belt.
 
 When a quota is hit, the Function returns `{ ok: false, reason: 'quota', message: 'Daily free-tier limit reached. Add your own key in Settings to continue.' }` without calling the provider. UI surfaces this as the same banner pattern as the kill switch.
 
@@ -250,9 +301,14 @@ Daily Supabase pg_cron job aggregates `fieldnote_ai_calls` where `provider = 'ge
 
 Per-call: the Edge Function returns the cost estimate alongside the response so the client can show "This call: ~$0.0001" in the UI footer of the suggestion panel.
 
-### Kill switch
+### Kill switches (two of them, scoped)
 
-Single env var on the Edge Function: `AI_KILL_SWITCH=1`. When set, the Function returns `{ ok: false, reason: 'kill-switch', message: 'Hosted AI temporarily disabled. Add your own API key in Settings to continue.' }` without calling Gemini. The client surfaces this as a sticky yellow banner in the AI surfaces; users with their own key are unaffected. This is the "something went wrong, stop everything" emergency — quotas handle the routine cases.
+Two env vars on the Edge Function for two different emergencies:
+
+- `HOSTED_AI_KILL_SWITCH=1` — disables only the `gemini-free` path. The Function returns `{ ok: false, reason: 'kill-switch-hosted', message: 'Hosted AI temporarily disabled. Add your own API key in Settings to continue.' }` for free-tier users. BYOK users are unaffected. **Use case:** runaway cost, Gemini outage, or any time we want to shed the shared-cost surface without disrupting paying users.
+- `ALL_AI_KILL_SWITCH=1` — disables every path including BYOK. Returns `{ ok: false, reason: 'kill-switch-all', message: 'AI features temporarily disabled.' }`. **Use case:** a security incident — for example, a known prompt-injection vector against the Function — where we need to halt provider calls regardless of who's paying. Strictly the bigger hammer.
+
+Either switch flips at next request without a redeploy (env vars are runtime-readable in Supabase Edge Functions). Quotas handle routine over-use; kill switches are reserved for emergencies.
 
 ## Implementation order
 
@@ -291,18 +347,18 @@ There is **no** browser-side prompts module and **no** `get-my-keys` function. P
 4. **Quota enforcement.** Free-tier user makes 50 calls in a day → 51st call returns `{ ok: false, reason: 'quota' }` from the Edge Function (not a 429 from Gemini). Banner shown.
 5. **Rate limit.** Free-tier user fires 11 calls in 60 seconds → 11th returns `quota` reason with rate-limit message.
 6. **Token cap.** Hosted user attempts to summarize a 30,000-token source → request rejected at the Edge Function before any provider call.
-7. **Kill switch.** Set `AI_KILL_SWITCH=1` → free-tier user sees the banner; BYOK user is also blocked (because BYOK calls also route through the Function). Confirm the kill switch is the universal off switch.
+7. **Kill switches (scoped).** Set `HOSTED_AI_KILL_SWITCH=1` → free-tier user sees the banner; BYOK user is unaffected. Then set `ALL_AI_KILL_SWITCH=1` → BYOK user is also blocked. Each switch is independently toggleable.
 8. **No client-side keys.** Search the deployed JS bundle for any string matching `sk-` or `AIza` → none. Network tab inspection shows no plaintext keys in any response from `/save-key`, `/ai-call`, or `/get-my-keys` (the last function is removed).
 9. **Draft autosave isolation.** Click `✨ Draft from references`, get a draft, navigate away to another code without clicking Insert → original code's `description` is unchanged in the database.
 10. **Cache delete on project delete.** Pin some snapshots, run summaries, delete the project → `fieldnote_ai_calls` rows for that project are gone.
-11. **Predeploy script.** Change `src/ai/prompts.ts`, run the deploy script, verify `supabase/functions/ai-call/prompts.ts` is regenerated identically.
+11. **Prompt-version isolation.** Bump `SUGGEST_CODES_V1` → `SUGGEST_CODES_V2` in `supabase/functions/ai-call/prompts.ts`, redeploy. Cached results from V1 do NOT serve V2 calls (the version id is in the content hash); a fresh provider call lands. The browser-side bundle is untouched because there is no browser-side prompts module.
 
 ## Out of scope (named for clarity)
 
 - Streaming responses
 - Embeddings / "find similar passages"
 - Project-wide RAG ("ask your data")
-- Per-user quotas (replaced by spend monitoring + kill switch)
+- Org-wide / admin-facing usage dashboards (the per-user `fieldnote_ai_usage` table + the daily `fieldnote_ai_cost_log` are the v1 surfaces; richer analytics are post-v1)
 - AI-drafted code memos beyond drafting code descriptions (different feature; descriptions are short labels, memos are long-form synthesis)
 - Auto-classify sources into cases via AI
 - Multi-turn AI conversations / chat surfaces
