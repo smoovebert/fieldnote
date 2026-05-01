@@ -9,6 +9,45 @@
   color: var(--ink);
 }
 
+.screen-too-narrow { display: none; }
+
+@media (max-width: 1023px) {
+  .screen-too-narrow {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--paper, #f8f9fb);
+    color: var(--ink, #1f2937);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+  .screen-too-narrow-card {
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .screen-too-narrow h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .screen-too-narrow p {
+    margin: 0;
+    color: var(--muted, #6b7280);
+    line-height: 1.5;
+  }
+  .app-shell,
+  .auth-shell,
+  .landing-root,
+  .project-home-shell {
+    display: none !important;
+  }
+}
+
 @media (max-width: 1280px) {
   .app-shell {
     grid-template-columns: 200px minmax(0, 1fr) 300px;

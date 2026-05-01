@@ -1685,11 +1685,27 @@ function App() {
   }
 
   if (!session) {
-    return <Landing />
+    return (
+      <>
+        <div className="screen-too-narrow" role="alert">
+          <div className="screen-too-narrow-card">
+            <h1>Fieldnote needs a wider screen</h1>
+            <p>Qualitative coding works best on a laptop or desktop. Open this page in a browser window at least 1024 pixels wide.</p>
+          </div>
+        </div>
+        <Landing />
+      </>
+    )
   }
 
   return (
     <>
+    <div className="screen-too-narrow" role="alert">
+      <div className="screen-too-narrow-card">
+        <h1>Fieldnote needs a wider screen</h1>
+        <p>Qualitative coding works best on a laptop or desktop. Open this page in a browser window at least 1024 pixels wide.</p>
+      </div>
+    </div>
     <main className="app-shell" data-shell="new" data-view={activeView}>
       <header className="app-header">
         <div className="app-header-left">
