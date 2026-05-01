@@ -78,7 +78,7 @@ Major parity gaps:
 - deeper formal query system beyond the shipped header search
 - advanced visualizations beyond current first-pass charts
 - transcription
-- AI assistant
+- ~~AI assistant~~ ✓ shipped (suggest codes / draft description / summarize source / draft project memo); RAG / "ask your data" still TBD
 - collaboration and inter-coder reliability
 - archive and reference/bibliography export formats
 
@@ -110,7 +110,7 @@ Remaining functionality grouped by LOE:
 - Inter-coder reliability workflow. **Parked** with sharing.
 - Audio/video upload, transcription, speaker labels, and transcript-linked playback.
 - Image/PDF/media region coding with durable file storage.
-- AI summaries, suggested codes/sub-codes, thematic suggestions, and ask-your-data with human approval.
+- ~~AI summaries, suggested codes/sub-codes, draft code descriptions, draft project memos~~ ✓ shipped (BYOK + free Gemini, all four tools live; "ask your data" RAG still TBD).
 - Full project archive/restore format.
 
 Important architecture note: full parity will require normalized database tables for sources, codes, references, memos, cases, attributes, relationships, files/media, queries, exports, and collaboration. The current JSON-on-project model is only acceptable for the prototype/MVP spine.
@@ -647,6 +647,115 @@ order, in priority of how good the data is:
 chain is `.fieldnote.json` → IndexedDB → manual Supabase CSV export.
 If Stacey ever carries data she truly cannot lose, that's the moment
 to pay $25/mo for Pro and unlock daily auto-backups + 7-day PITR.
+
+## AI assist (v1)
+
+Single hosted-or-BYOK path; every call routes through the
+`supabase/functions/ai-call` Edge Function. Provider keys (ours or the
+user's) never reach the browser. AI proposes, user approves; drafts
+land in a separate preview surface so AI text never silently flows into
+project autosave.
+
+### One-time developer setup
+
+In Supabase Dashboard → Edge Functions → Secrets, set:
+
+```
+SHARED_GEMINI_KEY=<your gemini api key from aistudio.google.com>
+AI_KEY_ENCRYPTION_SECRET=<32+ random bytes; openssl rand -base64 48>
+HOSTED_AI_KILL_SWITCH=0
+ALL_AI_KILL_SWITCH=0
+```
+
+Both Edge Functions deploy with `--no-verify-jwt` because they verify
+the JWT manually inside the body (`supabase.auth.getUser()`) so they
+can return tagged-error JSON instead of generic 401s:
+
+```bash
+SUPABASE_ACCESS_TOKEN=<token> supabase functions deploy ai-call \
+  --project-ref ofvxesweiilycuakduff --no-verify-jwt
+SUPABASE_ACCESS_TOKEN=<token> supabase functions deploy save-key \
+  --project-ref ofvxesweiilycuakduff --no-verify-jwt
+```
+
+### User-facing tools
+
+- **✨ Suggest codes** — Code-mode quick-code menu after text selection.
+  5 suggestions, ✓/✗ subset, Apply creates new codes (case-insensitive
+  match against existing) and applies all checked to the active selection.
+- **✨ Draft from references** — Refine code description, when active
+  code has ≥3 references and a short/empty description. AI text lands
+  in a separate preview panel with Insert/Discard buttons.
+- **✨ Summary** — Organize source inspector. 3-sentence summary cached
+  forever (until source content hash changes). Refresh button forces a
+  re-call.
+- **✨ Draft from snapshots** — Overview project memo. Only enabled when
+  ≥1 snapshot exists. Sends labels + first 5 excerpts of each snapshot.
+  Insert replaces project memo (with confirm if non-empty).
+
+### Defaults & limits
+
+- Free Gemini Flash; **50 calls/user/day**; **20k input-token cap per
+  request**; **10 RPM**. Hosted users get one-time IRB consent prompt
+  before first call; consent stored in
+  `fieldnote_user_settings.hosted_ai_consent_at`.
+- BYOK (OpenAI / Anthropic / Gemini paid): higher caps (50k tokens,
+  30 RPM, no daily cap).
+
+### BYOK flow
+
+1. User opens Settings (gear icon in header) → picks "Bring your own
+   key" → chooses provider → pastes key → Save.
+2. Key sent to `/save-key` over HTTPS once. Edge Function encrypts
+   with `AI_KEY_ENCRYPTION_SECRET`, stores in
+   `fieldnote_user_settings.encrypted_keys[provider]`.
+3. On every AI call, `/ai-call` decrypts the user's key in memory only,
+   uses it, discards. Browser never receives the plaintext key.
+
+### Cost monitoring
+
+Run periodically (manual or pg_cron):
+
+```sql
+insert into fieldnote_ai_cost_log (date, total_usd, call_count)
+select current_date, coalesce(sum(estimated_cost_usd), 0), count(*)
+from fieldnote_ai_calls
+where provider = 'gemini-free' and created_at::date = current_date
+on conflict (date) do update
+   set total_usd = excluded.total_usd,
+       call_count = excluded.call_count,
+       computed_at = now();
+```
+
+If total_usd ever exceeds your comfort threshold, set
+`HOSTED_AI_KILL_SWITCH=1` immediately. BYOK users keep working.
+
+### Kill switches (two)
+
+- `HOSTED_AI_KILL_SWITCH=1` — disables only the free-tier path. BYOK
+  unaffected. Use for runaway cost or Gemini outage.
+- `ALL_AI_KILL_SWITCH=1` — disables every path including BYOK. Use
+  only for security incidents (e.g. known prompt-injection vector).
+
+Both switches flip at next request — no redeploy needed.
+
+### Files
+
+**Browser side:**
+- `src/ai/types.ts` — `AiCallKind`, `AiCallResult`, `AiResponse`, etc.
+- `src/ai/client.ts` — `callAi()`, `saveProviderKey()`, cost estimators
+- `src/lib/aiSettings.ts` — `loadAiSettings`, `updateAiProvider`, `recordHostedConsent`
+- `src/components/AiSettingsPanel.tsx` — Settings modal
+- `src/components/AiPreviewPanel.tsx` — generic preview/loading/result/error panel
+
+**Server side (Deno Edge Functions):**
+- `supabase/functions/ai-call/index.ts` — router
+- `supabase/functions/ai-call/prompts.ts` — versioned prompt templates
+- `supabase/functions/ai-call/providers/{gemini,openai,anthropic}.ts` — provider adapters
+- `supabase/functions/save-key/index.ts` — encrypted key write
+
+**Database:**
+- 4 migrations: `20260501190000` (tables) → `190100` (safe view) → `190200` (quota RPCs) → `190300` (encrypt/decrypt helpers)
 
 ## Recent Commits
 
