@@ -32,3 +32,6 @@ supabase/.temp
 
 # Stray Claude Code session logs
 /20[0-9][0-9]-*-this-session-*.txt
+
+# Serena MCP local project memory (auto-generated)
+.serena/
