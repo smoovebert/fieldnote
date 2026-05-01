@@ -2568,7 +2568,11 @@ function App() {
             userId={session?.user?.id ?? null}
             projectId={projectId}
             snapshotsCount={querySnapshots.length}
+            lineNumberingMode={lineNumberingMode}
+            lineNumberingWidth={lineNumberingWidth}
             onExportBackup={exportProjectBackup}
+            onOpenProjectSettings={() => setSettingsOpen(true)}
+            onOpenAiSettings={() => setAiSettingsOpen(true)}
             onTitleChange={setProjectTitle}
             onDescriptionChange={setDescription}
             onProjectMemoChange={updateProjectMemo}

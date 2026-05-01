@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { BarChart3, Download, History, Network, Plus, RotateCcw, Sparkles } from 'lucide-react'
+import { BarChart3, Download, History, Network, Plus, RotateCcw, Settings as SettingsIcon, Sparkles } from 'lucide-react'
 import type { Code, Excerpt, Memo, Source } from '../../lib/types'
 import { computeOntology, computeProgress } from './stats'
 import { StatCard } from './StatCard'
 import { listVersions, type ProjectVersion } from '../../lib/localRecovery'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
 import { estimateCostUsd } from '../../ai/client'
+import { loadAiSettings } from '../../lib/aiSettings'
+import type { AiProvider } from '../../ai/types'
 
 type Props = {
   title: string
@@ -18,6 +20,9 @@ type Props = {
   userId: string | null
   projectId: string | null
   snapshotsCount: number
+  /** Read-only display on Overview; opens the project-settings modal to change. */
+  lineNumberingMode: 'paragraph' | 'fixed-width'
+  lineNumberingWidth: number
   onTitleChange: (next: string) => void
   onDescriptionChange: (next: string) => void
   onProjectMemoChange: (next: string) => void
@@ -25,16 +30,60 @@ type Props = {
   onRestoreVersion: (version: ProjectVersion) => void
   onExportBackup: () => void
   onDraftProjectMemo: () => Promise<{ ok: true; memo: string } | { ok: false; message: string }>
+  onOpenProjectSettings: () => void
+  onOpenAiSettings: () => void
+}
+
+function aiProviderLabel(provider: AiProvider): string {
+  switch (provider) {
+    case 'gemini-free': return "Free Gemini Flash"
+    case 'gemini-byok': return "Your own Gemini key"
+    case 'openai-byok': return "Your own OpenAI key"
+    case 'anthropic-byok': return "Your own Anthropic key"
+    default: return provider
+  }
 }
 
 export function OverviewMode(props: Props) {
   const progress = computeProgress({ sources: props.sources, excerpts: props.excerpts })
   const ontology = computeOntology(props.codes)
   const [versions, setVersions] = useState<ProjectVersion[]>([])
+  const [aiProvider, setAiProvider] = useState<AiProvider>('gemini-free')
+  const [aiConsentAt, setAiConsentAt] = useState<string | null>(null)
 
   const [aiPhase, setAiPhase] = useState<'idle' | 'preview' | 'loading' | 'result' | 'error'>('idle')
   const [aiDraft, setAiDraft] = useState('')
   const [aiError, setAiError] = useState<string | undefined>()
+
+  // Load the user's AI settings so the Overview can summarize them inline.
+  useEffect(() => {
+    let cancelled = false
+    if (!props.userId) {
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setAiProvider('gemini-free')
+          setAiConsentAt(null)
+        }
+      })
+      return () => { cancelled = true }
+    }
+    loadAiSettings(props.userId).then((settings) => {
+      if (cancelled) return
+      if (settings) {
+        setAiProvider(settings.aiProvider)
+        setAiConsentAt(settings.hostedAiConsentAt)
+      } else {
+        setAiProvider('gemini-free')
+        setAiConsentAt(null)
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setAiProvider('gemini-free')
+        setAiConsentAt(null)
+      }
+    })
+    return () => { cancelled = true }
+  }, [props.userId])
 
   const enabled = props.snapshotsCount > 0
   const estTokens = props.snapshotsCount * 800
@@ -167,6 +216,52 @@ export function OverviewMode(props: Props) {
           aria-label="Project memo"
           onChange={(event) => props.onProjectMemoChange(event.target.value)}
         />
+      </section>
+
+      <section className="overview-settings">
+        <header className="panel-heading">
+          <h2>Settings</h2>
+        </header>
+        <div className="overview-settings-grid">
+          <div className="overview-settings-card">
+            <header>
+              <SettingsIcon size={14} aria-hidden="true" />
+              <strong>Project</strong>
+            </header>
+            <dl>
+              <div>
+                <dt>Reader line numbering</dt>
+                <dd>
+                  {props.lineNumberingMode === 'fixed-width'
+                    ? `Fixed width · ${props.lineNumberingWidth} chars per line`
+                    : 'One per paragraph'}
+                </dd>
+              </div>
+            </dl>
+            <button type="button" onClick={props.onOpenProjectSettings}>
+              Edit project settings
+            </button>
+          </div>
+          <div className="overview-settings-card">
+            <header>
+              <Sparkles size={14} aria-hidden="true" />
+              <strong>AI assist</strong>
+            </header>
+            <dl>
+              <div>
+                <dt>Provider</dt>
+                <dd>{aiProviderLabel(aiProvider)}</dd>
+              </div>
+              <div>
+                <dt>Free-tier consent</dt>
+                <dd>{aiConsentAt ? `Given ${new Date(aiConsentAt).toLocaleDateString()}` : 'Not yet — required before first hosted AI call'}</dd>
+              </div>
+            </dl>
+            <button type="button" onClick={props.onOpenAiSettings}>
+              Edit AI settings
+            </button>
+          </div>
+        </div>
       </section>
 
       <section className="overview-safety">
