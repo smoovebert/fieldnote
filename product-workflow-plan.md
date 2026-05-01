@@ -150,7 +150,7 @@ Support getting research out of the system:
 The current build only covers a narrow but important spine:
 
 ```text
-projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV exports
+projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV/Word/PDF exports
 ```
 
 That is intentional for MVP, but it is not the full product definition.
@@ -158,18 +158,47 @@ That is intentional for MVP, but it is not the full product definition.
 ### Major Parity Gaps
 
 - non-text source types
-- PDF/DOCX parsing and preview
+- PDF/DOCX rich parsing and preview beyond plain-text extraction
 - image/media region coding
 - audio/video transcription and playback
-- nested code hierarchy
+- deeper codebook cleanup tools beyond the current parent/child tree and drag editing
 - annotations and relationships
-- full source search and formal queries
-- advanced matrix coding and crosstabs
-- visualizations
+- full source search and deeper formal queries
+- persisted query result snapshots and first-class analysis objects
+- advanced visualizations beyond current first-pass charts
 - AI-assisted analysis
 - project sharing and team workflows
 - inter-coder reliability
-- rich Word/Excel/PDF exports
+- Excel, archive, and reference/bibliography export formats
+
+### Remaining Functionality By LOE
+
+#### Small
+
+- Folder rename/delete and richer archive filters.
+- Attribute CSV import and basic case groups.
+- Saved query result snapshots.
+- Report section/field toggles.
+- XLSX exports that mirror the existing CSV exports.
+- Code hierarchy cleanup polish: clearer tree controls, hierarchy reporting, and bulk tools.
+
+#### Medium
+
+- Full source search across uncoded text, memos, code definitions, cases, and attributes.
+- PDF/DOCX preview while coding extracted text.
+- Codebook cleanup tools: split code, bulk recode, duplicate-code review, orphan-reference review.
+- Saved analysis objects for matrices, crosstabs, and charts.
+- Hierarchy charts, relationship maps, and concept maps v1.
+- Report builder customization and embedded charts.
+
+#### Large
+
+- Sharing, roles, reviewer workflows, coding assignments, and conflict handling.
+- Inter-coder reliability.
+- Audio/video upload, transcription, speaker labels, and synced playback.
+- Image/PDF/media region coding backed by durable file storage.
+- AI summaries, suggested codes/sub-codes, thematic suggestions, and ask-your-data with human approval.
+- Full project archive/restore format.
 
 ### Architecture Implication
 
@@ -200,7 +229,7 @@ Current MVP loop target:
 
 - Code mode should avoid duplicate references when the same passage is coded again.
 - Refine mode should let users edit code names, colors, descriptions, and reference notes.
-- Report mode should produce useful coded-excerpt and codebook CSV files before richer Word/PDF reporting exists.
+- Report mode should keep the formatted Word/PDF path useful while adding customization, Excel exports, and archive support.
 
 Each mode should answer one question:
 
@@ -722,12 +751,15 @@ First MVP pass implemented:
 - case sheet CSV
 - coded excerpts by case CSV
 - current Analyze query CSV
+- report preview
+- formatted Word export
+- formatted PDF export
 
 Still missing:
 
-- report preview / builder
-- DOCX export
-- PDF export
+- report builder customization
+- Excel/XLSX export
+- embedded chart bundles
 - full project archive
 
 ## Proposed Data Model
@@ -979,6 +1011,6 @@ The mode shell is now in place. The next code pass should deepen one of the part
 
 Best candidates:
 
-- Analyze: crosstabs, visualization scaffolding, or stored query result snapshots.
-- Report: report preview and formatted Word/PDF exports.
-- Refine: hierarchy drag-and-drop and richer codebook cleanup.
+- Analyze: stored query result snapshots or first-class saved analysis objects.
+- Report: report customization, Excel exports, embedded charts, or full archive export.
+- Refine: richer codebook cleanup, stronger splitting, and bulk recode tools.

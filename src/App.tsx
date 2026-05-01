@@ -353,6 +353,7 @@ function App() {
   const [projectRows, setProjectRows] = useState<ProjectRow[]>([])
   const [newProjectTitle, setNewProjectTitle] = useState('')
   const [isCreatingProject, setIsCreatingProject] = useState(false)
+  const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv')
   const [activeView, setActiveView] = useState<WorkspaceView>('overview')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
@@ -1508,7 +1509,7 @@ function App() {
       }),
     ]
 
-    downloadCsv(rows, 'fieldnote-coded-excerpts.csv')
+    downloadInFormat(rows, 'fieldnote-coded-excerpts', 'Coded excerpts')
   }
 
   function exportCaseSheetCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1528,7 +1529,7 @@ function App() {
       }),
     ]
 
-    downloadCsv(rows, 'fieldnote-case-sheet.csv')
+    downloadInFormat(rows, 'fieldnote-case-sheet', 'Case sheet')
   }
 
   function exportCaseExcerptCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1553,7 +1554,7 @@ function App() {
       }),
     ]
 
-    downloadCsv(rows, 'fieldnote-coded-excerpts-by-case.csv')
+    downloadInFormat(rows, 'fieldnote-coded-excerpts-by-case', 'Excerpts by case')
   }
 
   function exportAnalyzeCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1576,7 +1577,7 @@ function App() {
       }),
     ]
 
-    downloadCsv(rows, 'fieldnote-query-results.csv')
+    downloadInFormat(rows, 'fieldnote-query-results', 'Query results')
   }
 
   function exportMatrixCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1599,7 +1600,7 @@ function App() {
       ),
     ]
 
-    downloadCsv(rows, 'fieldnote-matrix-coding.csv')
+    downloadInFormat(rows, 'fieldnote-matrix-coding', 'Matrix coding')
   }
 
   function exportWordFrequencyCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1610,7 +1611,7 @@ function App() {
       ...wordFrequencyRows.map((row) => [projectTitle, row.word, String(row.count), String(row.excerptCount), activeQueryFilters.join('; ')]),
     ]
 
-    downloadCsv(rows, 'fieldnote-word-frequency.csv')
+    downloadInFormat(rows, 'fieldnote-word-frequency', 'Word frequency')
   }
 
   function exportCoOccurrenceCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1629,7 +1630,7 @@ function App() {
       ]),
     ]
 
-    downloadCsv(rows, 'fieldnote-code-cooccurrence.csv')
+    downloadInFormat(rows, 'fieldnote-code-cooccurrence', 'Co-occurrence')
   }
 
   function exportActiveAnalysisCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1651,7 +1652,7 @@ function App() {
       const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
       const a2 = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
       const rows = crosstabCsvRows(crosstabResult, a1, a2)
-      downloadCsv(rows, 'fieldnote-crosstabs.csv')
+      downloadInFormat(rows, 'fieldnote-crosstabs', 'Crosstabs')
       return
     }
     exportAnalyzeCsv(event)
@@ -1668,7 +1669,7 @@ function App() {
       }),
     ]
 
-    downloadCsv(rows, 'fieldnote-codebook.csv')
+    downloadInFormat(rows, 'fieldnote-codebook', 'Codebook')
   }
 
   function exportMemosCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -1688,7 +1689,7 @@ function App() {
       }),
     ]
 
-    downloadCsv(rows, 'fieldnote-memos.csv')
+    downloadInFormat(rows, 'fieldnote-memos', 'Memos')
   }
 
   function downloadCsv(rows: string[][], filename: string) {
@@ -1702,18 +1703,24 @@ function App() {
     URL.revokeObjectURL(url)
   }
 
+  async function downloadXlsx(rows: string[][], filename: string, sheetName = 'Sheet1') {
+    const XLSX = await import('xlsx')
+    const sheet = XLSX.utils.aoa_to_sheet(rows)
+    const book = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(book, sheet, sheetName.slice(0, 31))
+    XLSX.writeFile(book, filename)
+  }
+
+  function downloadInFormat(rows: string[][], baseName: string, sheetName?: string) {
+    if (exportFormat === 'xlsx') {
+      void downloadXlsx(rows, `${baseName}.xlsx`, sheetName ?? 'Sheet1')
+    } else {
+      downloadCsv(rows, `${baseName}.csv`)
+    }
+  }
+
   if (!session) {
-    return (
-      <>
-        <div className="screen-too-narrow" role="alert">
-          <div className="screen-too-narrow-card">
-            <h1>Fieldnote needs a wider screen</h1>
-            <p>Qualitative coding works best on a laptop or desktop. Open this page in a browser window at least 1024 pixels wide.</p>
-          </div>
-        </div>
-        <Landing />
-      </>
-    )
+    return <Landing />
   }
 
   return (
@@ -1829,6 +1836,8 @@ function App() {
         <section className="list-view" aria-label="Objects">
           {activeView === 'report' && (
             <ReportSidebar
+              exportFormat={exportFormat}
+              onExportFormatChange={setExportFormat}
               exportCsv={exportCsv}
               exportCodebookCsv={exportCodebookCsv}
               exportCaseSheetCsv={exportCaseSheetCsv}
@@ -2326,7 +2335,7 @@ function App() {
                     const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
                     const a2 = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
                     const rows = crosstabCsvRows(crosstabResult, a1, a2)
-                    downloadCsv(rows, 'fieldnote-crosstabs.csv')
+                    downloadInFormat(rows, 'fieldnote-crosstabs', 'Crosstabs')
                   }}
                 />
               </div>

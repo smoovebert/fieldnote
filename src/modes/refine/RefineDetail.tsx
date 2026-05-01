@@ -115,7 +115,7 @@ export function RefineDetail(props: Props) {
       />
       <div className="coming-soon-strip">
         <strong>Coming soon</strong>
-        <span>Code splitting, hierarchy drag-and-drop, and deeper codebook cleanup tools.</span>
+        <span>Stronger code splitting, bulk recode, and deeper codebook cleanup tools.</span>
       </div>
     </article>
   )

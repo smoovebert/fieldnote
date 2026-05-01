@@ -892,7 +892,7 @@ fieldnote_exports
 This unlocks:
 
 - report builder
-- DOCX/PDF export
+- persisted export history and regenerated DOCX/PDF outputs
 - Excel export
 - chart export
 - project archive export

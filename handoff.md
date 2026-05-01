@@ -67,21 +67,49 @@ Full feature ambition:
 Current MVP slice:
 
 ```text
-projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV exports
+projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV/Word/PDF exports
 ```
 
 Major parity gaps:
 
 - non-text source types
 - media/image region coding
-- nested code hierarchy
-- annotations and relationships
-- full source search and formal query system
-- visualizations
+- annotations, sentiment codes, and relationships
+- full source search and deeper formal query system
+- advanced visualizations beyond current first-pass charts
 - transcription
 - AI assistant
 - collaboration and inter-coder reliability
-- rich report/export formats
+- archive, Excel, and reference/bibliography export formats
+
+Remaining functionality grouped by LOE:
+
+**Small**
+
+- Folder rename/delete and better archive filters.
+- Attribute import from CSV and basic case groups.
+- Saved query result snapshots for point-in-time evidence captures.
+- Report settings for included sections/fields.
+- Excel/XLSX versions of current CSV exports.
+- Code hierarchy polish beyond drag-and-drop: clearer tree controls, bulk cleanup, and hierarchy reporting.
+
+**Medium**
+
+- Full source search across uncoded source text, memos, code definitions, and case fields.
+- Richer PDF/DOCX import preview while still coding extracted text.
+- Stronger codebook cleanup tools: split code, duplicate detection, bulk recode, orphan reference review.
+- First-class analysis objects: saved matrices/crosstabs/charts with stored results.
+- More visualization surfaces: hierarchy chart, relationship map, concept map v1.
+- Report builder customization and embedded chart outputs.
+
+**Large**
+
+- Project sharing UI, roles, reviewer workflow, coding assignments, and conflict handling.
+- Inter-coder reliability workflow.
+- Audio/video upload, transcription, speaker labels, and transcript-linked playback.
+- Image/PDF/media region coding with durable file storage.
+- AI summaries, suggested codes/sub-codes, thematic suggestions, and ask-your-data with human approval.
+- Full project archive/restore format.
 
 Important architecture note: full parity will require normalized database tables for sources, codes, references, memos, cases, attributes, relationships, files/media, queries, exports, and collaboration. The current JSON-on-project model is only acceptable for the prototype/MVP spine.
 
@@ -332,6 +360,7 @@ Typing in a missing context memo creates it automatically.
 - Analyze mode can export the current query result set as CSV.
 - Analyze mode can export the current matrix coding table as CSV.
 - Analyze mode can export current word frequency and code co-occurrence results as CSV.
+- Report mode has a live report preview plus formatted Word (`.docx`) and PDF exports.
 
 ### Analyze
 
@@ -343,7 +372,7 @@ Typing in a missing context memo creates it automatically.
 - Matrix coding respects the active query filters, so a saved query can narrow the matrix before comparing codes by case or attribute value.
 - Word frequency is implemented as a first MVP pass over the current filtered coded excerpts, with term counts, excerpt counts, weight bars, and CSV export.
 - Code co-occurrence is implemented as a first MVP pass over the current filtered coded excerpts, counting code pairs that appear on the same excerpt, with excerpt previews and CSV export.
-- Crosstabs is implemented as a first MVP pass: codes × the cartesian product of two attributes, with row/column totals, a Count / Row % / Col % toggle, and CSV export. Cases missing a value for either attribute bucket into a `(none)` value. Cells are display-only in v1; click-to-drill ships once the analyze filter model supports multiple attribute filters.
+- Crosstabs is implemented as a first MVP pass: codes × the cartesian product of two attributes, with row/column totals, a Count / Row % / Col % toggle, CSV export, and cell click-to-drill into Query results. Cases missing a value for either attribute bucket into a `(none)` value.
 - The Analyze right rail now summarizes result count, matching cases, matching codes, active filters, and exports the active Analyze surface.
 - Word frequency, code co-occurrence, and matrix coding each have a 3-way toggle: Table / Chart A / Chart B.
   - Word frequency → Bar chart, Word cloud, Table.
@@ -361,9 +390,9 @@ Typing in a missing context memo creates it automatically.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
 - Analyze is first-pass only: it has useful filters (now multi-attribute), saved queries, matrix coding, word frequency, code co-occurrence, and crosstabs (with cell drill-down), but no stored query result snapshots yet.
-- Report mode has basic CSV exports, but not report preview or formatted Word/PDF outputs.
+- Report mode has a real preview and formatted Word/PDF outputs; remaining gaps are report customization, Excel exports, embedded chart bundles, and full archive export.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
-- Code hierarchy is first-pass only: parent assignment and tree display exist, but hierarchy drag-and-drop and code splitting are not implemented.
+- Code hierarchy supports parent assignment, tree display, drag-to-nest, and drag-to-root; remaining gaps are deeper code splitting and codebook cleanup.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
 
@@ -420,16 +449,17 @@ Implemented:
 - Width gate: app shows a "needs a wider screen" message below 1024px instead of rendering a broken layout.
 - Auto-load most-recent project on sign-in (was: user landed on empty Create form even when projects existed).
 - Crosstab col-key separator switched from `∥` (printable) to U+001F (control char) to defuse the value-collision class. Regression test added.
+- Refine codebook now supports drag-to-nest and drag-to-root for parent/child hierarchy editing.
 
 Still needed:
 
 - Project delete/share controls (rename works via inline-edit on Overview).
 - Mode-specific right rails outside Organize need another design pass.
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
-- Refine mode still needs hierarchy drag-and-drop, stronger code splitting, and deeper codebook cleanup tools.
+- Refine mode still needs stronger code splitting and deeper codebook cleanup tools.
 - Classify still needs attribute import, case groups, and better filtering.
 - M5.3 (query result snapshots): persist `fieldnote_query_results` rows for point-in-time captures.
-- Non-text source types (PDF, DOCX rich content, audio/video, image regions) — only plain-text import works today.
+- Non-text source types (PDF as PDF, DOCX rich content, audio/video, image regions) — only plain-text extraction/import works today.
 - Tablet/mobile: blocked behind a 1024px gate, no responsive design.
 - Persistence-layer integration tests (mocked Supabase) — deferred during Phase 4.
 
@@ -437,7 +467,7 @@ Still needed:
 
 Do **not** add more one-off UI panels.
 
-Top of the open list: **Refine hierarchy drag-and-drop**. Parent assignment exists via select dropdown; users want to drag a code onto another to nest, drag to root to unparent. Core qualitative-research interaction.
+Top of the open list: **Query result snapshots / first-class analysis objects**. Analyze is useful now, but saved outputs are still view state rather than durable point-in-time evidence captures.
 
 ## Design Direction
 
