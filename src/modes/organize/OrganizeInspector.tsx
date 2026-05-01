@@ -1,5 +1,8 @@
-import { BookOpenText, Database, FolderInput, FolderOpen, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { BookOpenText, Database, FolderInput, FolderOpen, Sparkles, Trash2 } from 'lucide-react'
 import type { Case, Memo, Source } from '../../lib/types'
+import { AiPreviewPanel } from '../../components/AiPreviewPanel'
+import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
 
 type WorkspaceView = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 
@@ -17,6 +20,7 @@ type Props = {
   archiveActiveSource: () => void
   restoreActiveSource: () => void
   deleteActiveSource: () => void
+  onSummarizeSource: (source: { title: string; content: string }) => Promise<{ ok: true; summary: string } | { ok: false; message: string }>
 }
 
 export function OrganizeInspector(props: Props) {
@@ -35,6 +39,13 @@ export function OrganizeInspector(props: Props) {
     restoreActiveSource,
     deleteActiveSource,
   } = props
+
+  const [aiPhase, setAiPhase] = useState<'idle' | 'preview' | 'loading' | 'result' | 'error'>('idle')
+  const [aiSummary, setAiSummary] = useState('')
+  const [aiError, setAiError] = useState<string | undefined>()
+
+  const inputTokens = estimateInputTokens(props.activeSource?.content ?? '')
+  const inputCost = estimateCostUsd(inputTokens)
 
   return (
     <section className="panel source-properties-panel">
@@ -125,6 +136,44 @@ export function OrganizeInspector(props: Props) {
         <Trash2 size={17} aria-hidden="true" />
         Delete source
       </button>
+
+      <section className="organize-ai">
+        {aiPhase === 'idle' && !aiSummary && (
+          <button
+            type="button"
+            className="organize-ai-trigger"
+            onClick={() => setAiPhase('preview')}
+            disabled={!props.activeSource?.content?.trim()}
+          >
+            <Sparkles size={14} aria-hidden="true" />
+            Summary
+          </button>
+        )}
+        {aiPhase === 'idle' && aiSummary && (
+          <div className="organize-ai-summary">
+            <p>{aiSummary}</p>
+            <button type="button" className="organize-ai-refresh" onClick={() => { setAiSummary(''); setAiPhase('preview') }}>
+              Refresh ↻
+            </button>
+          </div>
+        )}
+        {aiPhase !== 'idle' && (
+          <AiPreviewPanel
+            phase={aiPhase as 'preview' | 'loading' | 'result' | 'error'}
+            inputPreview={(props.activeSource?.content ?? '').slice(0, 500) + (props.activeSource && props.activeSource.content.length > 500 ? '…' : '')}
+            estimatedTokens={inputTokens}
+            estimatedCostUsd={inputCost}
+            errorMessage={aiError}
+            onCancel={() => { setAiPhase('idle'); setAiError(undefined) }}
+            onSend={async () => {
+              setAiPhase('loading')
+              const result = await props.onSummarizeSource({ title: props.activeSource.title, content: props.activeSource.content })
+              if (result.ok) { setAiSummary(result.summary); setAiPhase('idle') }
+              else { setAiError(result.message); setAiPhase('error') }
+            }}
+          />
+        )}
+      </section>
     </section>
   )
 }
