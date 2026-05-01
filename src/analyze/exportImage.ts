@@ -31,7 +31,9 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.appendChild(a)
   a.click()
   a.remove()
-  URL.revokeObjectURL(url)
+  // Some browsers can cancel larger generated downloads if the blob URL is
+  // revoked in the same tick as the synthetic click. Keep it alive briefly.
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000)
 }
 
 export async function exportCanvasPng(canvas: HTMLCanvasElement): Promise<Blob | null> {

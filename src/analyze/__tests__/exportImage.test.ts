@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { RefObject } from 'react'
-import { buildExportFilename, exportPng } from '../exportImage'
+import { buildExportFilename, downloadBlob, exportPng } from '../exportImage'
 
 vi.mock('html-to-image', () => ({
   toPng: vi.fn().mockRejectedValue(new Error('canvas tainted')),
@@ -28,5 +28,28 @@ describe('exportPng error path', () => {
   it('returns null when ref is null', async () => {
     const blob = await exportPng({ current: null })
     expect(blob).toBeNull()
+  })
+})
+
+describe('downloadBlob', () => {
+  it('keeps the blob URL alive past the synthetic click', () => {
+    vi.useFakeTimers()
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test')
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    downloadBlob(new Blob(['pdf-ish'], { type: 'application/pdf' }), 'fieldnote.pdf')
+
+    expect(createObjectURL).toHaveBeenCalled()
+    expect(click).toHaveBeenCalled()
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(30_000)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:test')
+
+    click.mockRestore()
+    createObjectURL.mockRestore()
+    revokeObjectURL.mockRestore()
+    vi.useRealTimers()
   })
 })
