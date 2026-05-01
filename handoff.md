@@ -86,11 +86,13 @@ Remaining functionality grouped by LOE:
 
 **Small**
 
-- Folder rename/delete and better archive filters.
-- Attribute import from CSV and basic case groups.
+- ~~Folder rename/delete~~ ✓ shipped (Internals protected; archive filters beyond the bucket still TBD).
+- ~~Attribute import from CSV~~ ✓ shipped (case groups still TBD).
 - Saved query result snapshots for point-in-time evidence captures.
 - Report settings for included sections/fields.
 - Code hierarchy polish beyond drag-and-drop: clearer tree controls, bulk cleanup, and hierarchy reporting.
+- ~~Excel/XLSX versions of current CSV exports~~ ✓ shipped.
+- First-run UX with sample-vs-blank choice ✓ shipped.
 
 **Medium**
 
@@ -450,15 +452,21 @@ Implemented:
 - Auto-load most-recent project on sign-in (was: user landed on empty Create form even when projects existed).
 - Crosstab col-key separator switched from `∥` (printable) to U+001F (control char) to defuse the value-collision class. Regression test added.
 - Refine codebook now supports drag-to-nest and drag-to-root for parent/child hierarchy editing.
+- Project delete from the project switcher (with confirm dialog; child tables already cascade).
+- Folder rename and folder delete on user folders in the Organize SourcesView (Internals is protected; deleted folders move their sources to Internals).
+- Excel/XLSX exports for every CSV export, gated by a single CSV/XLSX segmented toggle in the Report sidebar's Raw-data panel. Honored by inline Analyze exports too. xlsx (SheetJS) lazy-imported.
+- Attribute CSV import in Classify: header row = attribute names, first column = case names, body cells = values. Auto-creates missing attributes, skips rows with no matching case, reports a one-line summary.
+- First-run UX: empty state offers "Try a sample project" (titled "Sample project", seeded with 2 short interviews + a small code hierarchy with one parent/child pair + 2 cases with attributes + 2 saved analyses + a project memo) OR "Create a blank project" (truly empty). The project switcher's Create row only ever creates blank — sample is a one-time first-run option.
 
 Still needed:
 
-- Project delete/share controls (rename works via inline-edit on Overview).
+- Project share controls (delete works; sharing/inviting is unbuilt).
 - Mode-specific right rails outside Organize need another design pass.
-- Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
-- Refine mode still needs stronger code splitting and deeper codebook cleanup tools.
-- Classify still needs attribute import, case groups, and better filtering.
+- Organize mode still needs richer source previews (folder rename/delete shipped).
+- Refine mode still needs stronger code splitting and deeper codebook cleanup tools (split, duplicate detection, bulk recode).
+- Classify still needs case groups and richer filtering (attribute CSV import shipped).
 - M5.3 (query result snapshots): persist `fieldnote_query_results` rows for point-in-time captures.
+- Report customization: which sections / fields the formatted Report includes.
 - Non-text source types (PDF as PDF, DOCX rich content, audio/video, image regions) — only plain-text extraction/import works today.
 - Tablet/mobile: blocked behind a 1024px gate, no responsive design.
 - Persistence-layer integration tests (mocked Supabase) — deferred during Phase 4.
