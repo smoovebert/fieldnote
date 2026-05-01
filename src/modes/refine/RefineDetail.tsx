@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Scissors, Trash2 } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { ReferenceList } from '../../ReferenceList'
 
@@ -20,15 +20,55 @@ type Props = {
   deleteExcerpt: (id: string) => void
   removeCodeFromExcerpt: (excerptId: string, codeId: string) => void
   splitExcerpt: (excerptId: string) => void
+  splitCodeInto: (sourceCodeId: string, excerptIds: string[], newCodeName: string, parentCodeId?: string) => void
+  onSelectCode: (codeId: string) => void
+}
+
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function findDuplicates(activeCode: Code, codes: Code[]): Code[] {
+  const target = normalizeName(activeCode.name)
+  if (!target) return []
+  return codes.filter((c) => c.id !== activeCode.id && normalizeName(c.name) === target)
 }
 
 export function RefineDetail(props: Props) {
   const [mergeTargetCodeId, setMergeTargetCodeId] = useState('')
+  const [splitOpen, setSplitOpen] = useState(false)
+  const [splitName, setSplitName] = useState('')
+  const [splitParentId, setSplitParentId] = useState<string>(() => props.activeCode.parentCodeId ?? '')
+  const [splitSelected, setSplitSelected] = useState<Set<string>>(() => new Set())
 
   const handleMerge = () => {
     if (!mergeTargetCodeId) return
     props.mergeActiveCodeIntoTarget(mergeTargetCodeId)
     setMergeTargetCodeId('')
+  }
+
+  const duplicates = useMemo(() => findDuplicates(props.activeCode, props.codes), [props.activeCode, props.codes])
+
+  const toggleSplit = (excerptId: string) => {
+    setSplitSelected((current) => {
+      const next = new Set(current)
+      if (next.has(excerptId)) next.delete(excerptId)
+      else next.add(excerptId)
+      return next
+    })
+  }
+
+  const performSplit = () => {
+    props.splitCodeInto(props.activeCode.id, Array.from(splitSelected), splitName, splitParentId || undefined)
+    setSplitOpen(false)
+    setSplitName('')
+    setSplitSelected(new Set())
+  }
+
+  const closeSplit = () => {
+    setSplitOpen(false)
+    setSplitName('')
+    setSplitSelected(new Set())
   }
 
   return (
@@ -40,6 +80,26 @@ export function RefineDetail(props: Props) {
         </div>
         <span className="reference-count">{props.codeExcerpts.length} references</span>
       </div>
+
+      {duplicates.length > 0 && (
+        <div className="duplicate-codes-banner" role="status">
+          <strong>Possible duplicate{duplicates.length === 1 ? '' : 's'}:</strong>
+          <span>This code shares a name with </span>
+          {duplicates.map((dup, index) => (
+            <span key={dup.id}>
+              <button
+                type="button"
+                className="duplicate-link"
+                onClick={() => props.onSelectCode(dup.id)}
+              >
+                {dup.name}
+              </button>
+              {index < duplicates.length - 1 ? ', ' : ''}
+            </span>
+          ))}
+          <span>. Use Merge below to combine them.</span>
+        </div>
+      )}
 
       <div className="code-definition-grid">
         <label className="property-field">
@@ -82,7 +142,7 @@ export function RefineDetail(props: Props) {
 
       <div className="code-maintenance-row">
         <label className="property-field">
-          <span>Merge into</span>
+          <span>Merge / bulk recode into</span>
           <select value={mergeTargetCodeId} onChange={(event) => setMergeTargetCodeId(event.target.value)}>
             <option value="">Choose another code</option>
             {props.parentCodeOptions.map((code) => (
@@ -95,7 +155,77 @@ export function RefineDetail(props: Props) {
         <button className="secondary-button" type="button" disabled={!mergeTargetCodeId} onClick={handleMerge}>
           Merge code
         </button>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => setSplitOpen((open) => !open)}
+          disabled={props.codeExcerpts.length === 0}
+        >
+          <Scissors size={15} aria-hidden="true" />
+          {splitOpen ? 'Close split' : 'Split code'}
+        </button>
       </div>
+
+      {splitOpen && (
+        <section className="split-code-panel">
+          <header>
+            <strong>Split this code</strong>
+            <span>Select references to move into a new code. Unselected references stay on "{props.activeCode.name}".</span>
+          </header>
+          <div className="split-code-form">
+            <label className="property-field">
+              <span>New code name</span>
+              <input
+                value={splitName}
+                placeholder={`${props.activeCode.name} – split`}
+                onChange={(event) => setSplitName(event.target.value)}
+              />
+            </label>
+            <label className="property-field">
+              <span>Parent</span>
+              <select value={splitParentId} onChange={(event) => setSplitParentId(event.target.value)}>
+                <option value="">Top-level code</option>
+                {props.parentCodeOptions.map((code) => (
+                  <option key={code.id} value={code.id}>
+                    {'-'.repeat(code.depth)} {code.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <ul className="split-code-list">
+            {props.codeExcerpts.map((excerpt) => (
+              <li key={excerpt.id} className={splitSelected.has(excerpt.id) ? 'selected' : ''}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={splitSelected.has(excerpt.id)}
+                    onChange={() => toggleSplit(excerpt.id)}
+                  />
+                  <div>
+                    <strong>{excerpt.sourceTitle}</strong>
+                    <span>{excerpt.text}</span>
+                  </div>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <footer>
+            <span>{splitSelected.size} of {props.codeExcerpts.length} selected</span>
+            <div className="split-code-actions">
+              <button type="button" onClick={closeSplit}>Cancel</button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={splitSelected.size === 0 || !splitName.trim()}
+                onClick={performSplit}
+              >
+                Move {splitSelected.size} to new code
+              </button>
+            </div>
+          </footer>
+        </section>
+      )}
 
       <div className="reference-toolbar">
         <p className="detail-kicker">References</p>
@@ -113,10 +243,6 @@ export function RefineDetail(props: Props) {
         onRemoveCode={props.removeCodeFromExcerpt}
         onSplit={props.splitExcerpt}
       />
-      <div className="coming-soon-strip">
-        <strong>Coming soon</strong>
-        <span>Stronger code splitting, bulk recode, and deeper codebook cleanup tools.</span>
-      </div>
     </article>
   )
 }

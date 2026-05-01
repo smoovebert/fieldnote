@@ -1172,6 +1172,24 @@ function App() {
     })
   }
 
+  function splitCodeInto(sourceCodeId: string, excerptIds: string[], newCodeName: string, parentCodeId?: string) {
+    const trimmed = newCodeName.trim()
+    if (!trimmed || excerptIds.length === 0) return
+    const newCode = buildNewCode(trimmed, parentCodeId)
+    setCodes((current) => [...current, newCode])
+    setExcerpts((current) =>
+      current.map((excerpt) => {
+        if (!excerptIds.includes(excerpt.id)) return excerpt
+        const nextCodeIds = Array.from(new Set([
+          ...excerpt.codeIds.filter((id) => id !== sourceCodeId),
+          newCode.id,
+        ]))
+        return { ...excerpt, codeIds: nextCodeIds }
+      }),
+    )
+    setSelectionHint(`Split ${excerptIds.length} reference${excerptIds.length === 1 ? '' : 's'} into new code "${trimmed}".`)
+  }
+
   function buildNewCode(name: string, parentCodeId?: string): Code {
     // Bundle palette — 8 OKLCH colors at shared chroma 0.10 with hue varied.
     // Mirrors the --c-* tokens in src/styles/tokens.css.
@@ -2329,6 +2347,8 @@ function App() {
             deleteExcerpt={deleteExcerpt}
             removeCodeFromExcerpt={removeCodeFromExcerpt}
             splitExcerpt={splitExcerpt}
+            splitCodeInto={splitCodeInto}
+            onSelectCode={(id) => setActiveCodeId(id)}
           />
         )}
 
