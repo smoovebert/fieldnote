@@ -3,7 +3,14 @@
 // existing Excerpt/Code/Case/AttributeValue arrays directly.
 
 export const CROSSTAB_NONE = '(none)'
-export const CROSSTAB_COL_KEY_SEPARATOR = '∥' // ∥
+/**
+ * Separator used internally when concatenating row/col strings into Map keys.
+ * Uses a control character (Unit Separator, U+001F) that cannot appear in
+ * normal user input — text inputs strip it and even paste from word
+ * processors won't contain it. Avoids the collision class that a printable
+ * separator (e.g. "∥") was vulnerable to.
+ */
+export const CROSSTAB_COL_KEY_SEPARATOR = ''
 
 export type CrosstabExcerpt   = { id: string; codeIds: string[]; sourceId: string }
 export type CrosstabCode      = { id: string; name: string }

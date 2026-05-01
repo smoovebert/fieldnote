@@ -206,4 +206,37 @@ describe('crosstabCsvRows', () => {
     const hasNone = rows.some((r) => r.includes(CROSSTAB_NONE))
     expect(hasNone).toBe(true)
   })
+
+  it('does not collide when an attribute value contains the prior visible separator', () => {
+    // Regression: the separator used to be U+2225 (∥), so an attribute
+    // value containing it could spoof a different (col1, col2) pair. The
+    // current separator is U+001F which cannot be entered through normal
+    // text inputs, so the collision class is gone.
+    const T: T = {
+      excerpts: [
+        { id: 'e1', codeIds: ['c1'], sourceId: 's1' },
+        { id: 'e2', codeIds: ['c1'], sourceId: 's2' },
+      ],
+      codes: [{ id: 'c1', name: 'Trust' }],
+      cases: [
+        { id: 'A', sourceIds: ['s1'] },
+        { id: 'B', sourceIds: ['s2'] },
+      ],
+      attributeValues: [
+        // Case A: region = "urban∥male" (a value containing the OLD separator).
+        { caseId: 'A', attributeId: 'region', value: 'urban∥male' },
+        { caseId: 'A', attributeId: 'gender', value: '' },
+        // Case B: region = "urban", gender = "male" — distinct conceptual cell.
+        { caseId: 'B', attributeId: 'region', value: 'urban' },
+        { caseId: 'B', attributeId: 'gender', value: 'male' },
+      ],
+    }
+    const result = buildCrosstab({
+      ...T, attr1Id: 'region', attr2Id: 'gender', topNRows: 30, topNCols: 30,
+    })
+    expect(result.cols.length).toBe(2) // two distinct columns, not one merged
+    const labels = result.cols.map((c) => `${c.col1}|${c.col2}`)
+    expect(labels).toContain('urban∥male|(none)')
+    expect(labels).toContain('urban|male')
+  })
 })
