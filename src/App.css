@@ -5105,4 +5105,49 @@ textarea {
 .ai-suggestions-list strong { font-size: 13px; font-weight: 700; }
 .ai-suggestions-list span { font-size: 12px; color: var(--muted, #6b7280); }
 
+/* ----- AI-2 Draft description (Refine) ---------------------------------- */
+.refine-ai-trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; margin-left: 8px;
+  border: 1px solid var(--line, #e5e7eb); border-radius: 6px;
+  background: #ffffff; color: var(--ink, #1f2937);
+  font: 600 12px/1 inherit; cursor: pointer;
+}
+.refine-ai-trigger:hover { background: #f3f4f6; }
+
+.ai-draft-preview { display: flex; flex-direction: column; gap: 8px; }
+.ai-draft-preview p { margin: 0; padding: 8px 10px; background: #ffffff; border: 1px solid var(--line, #e5e7eb); border-radius: 6px; font-size: 13px; line-height: 1.5; }
+.ai-draft-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.ai-draft-actions button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line, #e5e7eb); background: #ffffff; cursor: pointer; font: 600 12px/1 inherit; }
+.ai-draft-actions button.primary-button { background: var(--accent, #4a6cf7); color: #fff; border-color: var(--accent, #4a6cf7); }
+
 .ai-suggestions-footer { padding: 8px 4px 0; }
+
+/* ----- AI-3 Summarize source (Organize) --------------------------------- */
+.organize-ai { margin-top: 16px; }
+.organize-ai-trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 6px;
+  background: #ffffff; color: var(--ink, #1f2937);
+  font: 600 12px/1 inherit; cursor: pointer;
+}
+.organize-ai-trigger:disabled { opacity: 0.4; cursor: not-allowed; }
+.organize-ai-trigger:hover:not(:disabled) { background: #f3f4f6; }
+
+.organize-ai-summary {
+  padding: 10px 12px; background: #f8fafc; border: 1px solid var(--line, #e5e7eb); border-radius: 6px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.organize-ai-summary p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink, #1f2937); }
+.organize-ai-refresh { align-self: flex-start; background: transparent; border: 0; color: var(--muted, #6b7280); cursor: pointer; font-size: 11px; }
+.organize-ai-refresh:hover { color: var(--ink, #1f2937); }
+
+/* ----- AI-4 Draft project memo (Overview) ------------------------------- */
+.overview-ai-trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; align-self: flex-start;
+  border: 1px solid var(--line, #e5e7eb); border-radius: 6px;
+  background: #ffffff; color: var(--ink, #1f2937);
+  font: 600 12px/1 inherit; cursor: pointer;
+}
+.overview-ai-trigger:hover { background: #f3f4f6; }

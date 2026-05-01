@@ -1396,6 +1396,40 @@ function App() {
     return { ok: true as const, suggestions: response.suggestions }
   }
 
+  async function handleDraftDescription(codeName: string, references: Array<{ sourceTitle: string; text: string }>) {
+    const refLines = references.map((r) => `[${r.sourceTitle}] ${r.text}`).join('\n')
+    const inputText = `Code name: ${codeName}\n\nReferences:\n${refLines}`
+    const result = await callAi({ kind: 'draft_description', inputText, projectId: projectId ?? null })
+    if (!result.ok) return { ok: false as const, message: result.message }
+    const response = result.response as { description: string }
+    return { ok: true as const, description: response.description }
+  }
+
+  async function handleSummarizeSource(source: { title: string; content: string }) {
+    const inputText = `Source: ${source.title}\n\n${source.content}`
+    const result = await callAi({ kind: 'summarize_source', inputText, projectId: projectId ?? null })
+    if (!result.ok) return { ok: false as const, message: result.message }
+    const response = result.response as { summary: string }
+    return { ok: true as const, summary: response.summary }
+  }
+
+  async function handleDraftProjectMemo() {
+    const lines: string[] = []
+    for (const snap of querySnapshots) {
+      const queryName = savedQueries.find((q) => q.id === snap.queryId)?.name ?? 'Saved query'
+      lines.push(`Snapshot: "${snap.label || queryName}" (${snap.results.excerpts.length} excerpts)`)
+      for (const e of snap.results.excerpts.slice(0, 5)) {
+        lines.push(`- ${e.sourceTitle}: ${e.text.slice(0, 200)}`)
+      }
+      lines.push('')
+    }
+    const inputText = lines.join('\n')
+    const result = await callAi({ kind: 'draft_memo', inputText, projectId: projectId ?? null })
+    if (!result.ok) return { ok: false as const, message: result.message }
+    const response = result.response as { memo: string }
+    return { ok: true as const, memo: response.memo }
+  }
+
   function updateSource(sourceId: string, patch: Partial<Source>) {
     setSources((current) => current.map((source) => (source.id === sourceId ? { ...source, ...patch } : source)))
     if (patch.title) {
@@ -2532,11 +2566,13 @@ function App() {
             projectMemo={memos.find((memo) => memo.linkedType === 'project')}
             userId={session?.user?.id ?? null}
             projectId={projectId}
+            snapshotsCount={querySnapshots.length}
             onExportBackup={exportProjectBackup}
             onTitleChange={setProjectTitle}
             onDescriptionChange={setDescription}
             onProjectMemoChange={updateProjectMemo}
             onNewSource={() => overviewFileInputRef.current?.click()}
+            onDraftProjectMemo={handleDraftProjectMemo}
             onRestoreVersion={(version) => {
               setActiveSourceId(version.data.activeSourceId)
               setSources(version.data.sources)
@@ -2610,6 +2646,7 @@ function App() {
             splitCodeInto={splitCodeInto}
             onSelectCode={(id) => setActiveCodeId(id)}
             retagOrphan={retagOrphan}
+            onDraftDescription={handleDraftDescription}
           />
         )}
 
@@ -2950,6 +2987,7 @@ function App() {
             archiveActiveSource={archiveActiveSource}
             restoreActiveSource={restoreActiveSource}
             deleteActiveSource={deleteActiveSource}
+            onSummarizeSource={handleSummarizeSource}
           />
         )}
 

@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, Scissors, Trash2 } from 'lucide-react'
+import { AlertTriangle, Scissors, Sparkles, Trash2 } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { ReferenceList } from '../../ReferenceList'
+import { AiPreviewPanel } from '../../components/AiPreviewPanel'
+import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
 
 type SortedCode = Code & { depth: number }
 
@@ -24,6 +26,7 @@ type Props = {
   splitCodeInto: (sourceCodeId: string, excerptIds: string[], newCodeName: string, parentCodeId?: string) => void
   onSelectCode: (codeId: string) => void
   retagOrphan: (excerptId: string, codeId: string) => void
+  onDraftDescription: (codeName: string, references: Array<{ sourceTitle: string; text: string }>) => Promise<{ ok: true; description: string } | { ok: false; message: string }>
 }
 
 function normalizeName(name: string): string {
@@ -42,6 +45,18 @@ export function RefineDetail(props: Props) {
   const [splitName, setSplitName] = useState('')
   const [splitParentId, setSplitParentId] = useState<string>(() => props.activeCode.parentCodeId ?? '')
   const [splitSelected, setSplitSelected] = useState<Set<string>>(() => new Set())
+
+  const [aiPhase, setAiPhase] = useState<'idle' | 'preview' | 'loading' | 'result' | 'error'>('idle')
+  const [aiDraft, setAiDraft] = useState('')
+  const [aiError, setAiError] = useState<string | undefined>()
+
+  const referencesPreview = props.codeExcerpts
+    .map((e) => `${e.sourceTitle}: ${e.text.slice(0, 120)}`)
+    .join('\n')
+  const inputTokens = estimateInputTokens(referencesPreview)
+  const inputCost = estimateCostUsd(inputTokens)
+
+  const showDraftButton = props.codeExcerpts.length >= 3 && (props.activeCode.description ?? '').length < 30
 
   const handleMerge = () => {
     if (!mergeTargetCodeId) return
@@ -140,7 +155,19 @@ export function RefineDetail(props: Props) {
       </div>
 
       <label className="property-field">
-        <span>Description</span>
+        <span>
+          Description
+          {showDraftButton && aiPhase === 'idle' && (
+            <button
+              type="button"
+              className="refine-ai-trigger"
+              onClick={() => setAiPhase('preview')}
+            >
+              <Sparkles size={14} aria-hidden="true" />
+              Draft from references
+            </button>
+          )}
+        </span>
         <textarea
           className="code-description"
           value={props.activeCode.description}
@@ -148,6 +175,51 @@ export function RefineDetail(props: Props) {
           onChange={(event) => props.updateCode(props.activeCode.id, { description: event.target.value })}
         />
       </label>
+
+      {aiPhase !== 'idle' && (
+        <AiPreviewPanel
+          phase={aiPhase as 'preview' | 'loading' | 'result' | 'error'}
+          inputPreview={referencesPreview}
+          estimatedTokens={inputTokens}
+          estimatedCostUsd={inputCost}
+          errorMessage={aiError}
+          onCancel={() => { setAiPhase('idle'); setAiDraft(''); setAiError(undefined) }}
+          onSend={async () => {
+            setAiPhase('loading')
+            const result = await props.onDraftDescription(
+              props.activeCode.name,
+              props.codeExcerpts.map((e) => ({ sourceTitle: e.sourceTitle, text: e.text }))
+            )
+            if (result.ok) {
+              setAiDraft(result.description)
+              setAiPhase('result')
+            } else {
+              setAiError(result.message)
+              setAiPhase('error')
+            }
+          }}
+        >
+          {aiPhase === 'result' && (
+            <div className="ai-draft-preview">
+              <p>{aiDraft}</p>
+              <div className="ai-draft-actions">
+                <button type="button" onClick={() => { setAiPhase('idle'); setAiDraft('') }}>Discard</button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => {
+                    props.updateCode(props.activeCode.id, { description: aiDraft })
+                    setAiPhase('idle')
+                    setAiDraft('')
+                  }}
+                >
+                  Insert into description
+                </button>
+              </div>
+            </div>
+          )}
+        </AiPreviewPanel>
+      )}
 
       <div className="code-maintenance-row">
         <label className="property-field">
