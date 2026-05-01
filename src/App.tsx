@@ -17,7 +17,6 @@ import {
   Rows3,
   Search,
   Tags,
-  Trash2,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -58,6 +57,7 @@ import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
 import { ClassifySidebar } from './modes/classify/ClassifySidebar'
 import { AnalyzeSidebar } from './analyze/AnalyzeSidebar'
+import { AnalyzeInspector } from './analyze/AnalyzeInspector'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
@@ -2985,82 +2985,19 @@ function App() {
         )}
 
         {activeView === 'analyze' && (
-          <section className="panel">
-            <div className="panel-heading">
-              <Search size={18} aria-hidden="true" />
-              <h2>Query Summary</h2>
-            </div>
-            <dl className="properties-list">
-              <div>
-                <dt>Results</dt>
-                <dd>{analyzeResults.length}</dd>
-              </div>
-              <div>
-                <dt>Cases</dt>
-                <dd>{analyzeMatchingCases.length}</dd>
-              </div>
-              <div>
-                <dt>Codes</dt>
-                <dd>{new Set(analyzeResults.flatMap((excerpt) => excerpt.codeIds)).size}</dd>
-              </div>
-            </dl>
-            <div className="query-filter-list">
-              <strong>Active filters</strong>
-              {activeQueryFilters.length ? (
-                activeQueryFilters.map((filter) => <span key={filter}>{filter}</span>)
-              ) : (
-                <span>None. Showing all coded excerpts.</span>
-              )}
-            </div>
-            {activeSavedQuery && (
-              <button className="danger-button" type="button" onClick={() => deleteSavedQuery(activeSavedQuery.id)}>
-                <Trash2 size={17} aria-hidden="true" />
-                Delete saved query
-              </button>
-            )}
-            {activeSavedQuery && (
-              <section className="snapshots-panel">
-                <header className="snapshots-heading">
-                  <h3>Pinned snapshots</h3>
-                  <span>{querySnapshots.filter((s) => s.queryId === activeSavedQuery.id).length}</span>
-                </header>
-                {querySnapshots.filter((s) => s.queryId === activeSavedQuery.id).length === 0 && (
-                  <p className="snapshots-empty">No snapshots yet. Pin a result to capture this query's excerpts at a point in time.</p>
-                )}
-                <ul className="snapshots-list">
-                  {querySnapshots.filter((s) => s.queryId === activeSavedQuery.id).map((snap) => (
-                    <li key={snap.id}>
-                      <div className="snapshots-row-meta">
-                        <strong>{new Date(snap.capturedAt).toLocaleString()}</strong>
-                        <span>{snap.results.excerpts.length} excerpt{snap.results.excerpts.length === 1 ? '' : 's'}</span>
-                        {snap.label && <em>{snap.label}</em>}
-                      </div>
-                      <div className="snapshots-row-actions">
-                        <button type="button" onClick={() => downloadSnapshotCsv(snap.id)} title={`Download as ${exportFormat.toUpperCase()}`}>
-                          <Download size={13} aria-hidden="true" />
-                        </button>
-                        <button type="button" onClick={() => void deleteQuerySnapshot(snap.id)} title="Delete snapshot">
-                          <Trash2 size={13} aria-hidden="true" />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            <button className="secondary-button" type="button" onClick={exportActiveAnalysisCsv}>
-              <Download size={17} aria-hidden="true" />
-              {analyzePanel === 'matrix'
-                ? 'Export matrix CSV'
-                : analyzePanel === 'frequency'
-                  ? 'Export word CSV'
-                  : analyzePanel === 'cooccurrence'
-                    ? 'Export pairs CSV'
-                    : analyzePanel === 'crosstab'
-                      ? 'Export crosstabs CSV'
-                      : 'Export query CSV'}
-            </button>
-          </section>
+          <AnalyzeInspector
+            analyzePanel={analyzePanel}
+            analyzeResults={analyzeResults}
+            analyzeMatchingCases={analyzeMatchingCases}
+            activeQueryFilters={activeQueryFilters}
+            activeSavedQuery={activeSavedQuery ?? null}
+            querySnapshots={querySnapshots}
+            exportFormat={exportFormat}
+            onDeleteSavedQuery={deleteSavedQuery}
+            onDownloadSnapshotCsv={downloadSnapshotCsv}
+            onDeleteSnapshot={(id) => void deleteQuerySnapshot(id)}
+            onExportActiveAnalysisCsv={exportActiveAnalysisCsv}
+          />
         )}
 
         {activeView === 'report' && (
