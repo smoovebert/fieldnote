@@ -54,13 +54,17 @@
   }
 }
 
-/* Overview shows the project picker in the left rail; the right
-   inspector stays hidden so the grid drops to two columns. */
-.app-shell[data-view="overview"] {
+/* Modes whose right inspector is hidden drop to two columns so the
+   inspector slot doesn't leave a 340px gutter. Overview hides both
+   rails of the original 3-pane layout but uses col 1 for the project
+   picker. Classify has no inspector content; the rail is hidden too. */
+.app-shell[data-view="overview"],
+.app-shell[data-view="classify"] {
   grid-template-columns: 232px minmax(0, 1fr);
 }
 @media (max-width: 1280px) {
-  .app-shell[data-view="overview"] {
+  .app-shell[data-view="overview"],
+  .app-shell[data-view="classify"] {
     grid-template-columns: 200px minmax(0, 1fr);
   }
 }

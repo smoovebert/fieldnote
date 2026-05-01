@@ -2934,7 +2934,7 @@ function App() {
         {projectId && activeView === 'report' && <ReportDetail model={reportModel} />}
       </section>
 
-      {activeView !== 'overview' && <aside className="properties-view">
+      {activeView !== 'overview' && activeView !== 'classify' && <aside className="properties-view">
         {activeView === 'organize' && (
           <OrganizeInspector
             activeSource={activeSource}
