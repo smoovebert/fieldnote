@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Scissors, Trash2 } from 'lucide-react'
+import { AlertTriangle, Scissors, Trash2 } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { ReferenceList } from '../../ReferenceList'
 
@@ -9,6 +9,7 @@ type Props = {
   activeCode: Code
   codes: Code[]
   codeExcerpts: Excerpt[]
+  allExcerpts: Excerpt[]
   parentCodeOptions: SortedCode[]
   activeCodeParent: Code | undefined
   activeCodeChildren: Code[]
@@ -22,6 +23,7 @@ type Props = {
   splitExcerpt: (excerptId: string) => void
   splitCodeInto: (sourceCodeId: string, excerptIds: string[], newCodeName: string, parentCodeId?: string) => void
   onSelectCode: (codeId: string) => void
+  retagOrphan: (excerptId: string, codeId: string) => void
 }
 
 function normalizeName(name: string): string {
@@ -48,6 +50,13 @@ export function RefineDetail(props: Props) {
   }
 
   const duplicates = useMemo(() => findDuplicates(props.activeCode, props.codes), [props.activeCode, props.codes])
+
+  const codeIds = useMemo(() => new Set(props.codes.map((c) => c.id)), [props.codes])
+  const orphanExcerpts = useMemo(
+    () => props.allExcerpts.filter((e) => e.codeIds.length === 0 || e.codeIds.every((id) => !codeIds.has(id))),
+    [props.allExcerpts, codeIds],
+  )
+  const [orphanReviewOpen, setOrphanReviewOpen] = useState(false)
 
   const toggleSplit = (excerptId: string) => {
     setSplitSelected((current) => {
@@ -243,6 +252,53 @@ export function RefineDetail(props: Props) {
         onRemoveCode={props.removeCodeFromExcerpt}
         onSplit={props.splitExcerpt}
       />
+
+      {orphanExcerpts.length > 0 && (
+        <section className="orphan-review">
+          <header className="orphan-review-header">
+            <AlertTriangle size={15} aria-hidden="true" />
+            <strong>{orphanExcerpts.length} orphan reference{orphanExcerpts.length === 1 ? '' : 's'}</strong>
+            <span>Excerpts whose codes were deleted or never set.</span>
+            <button type="button" onClick={() => setOrphanReviewOpen((open) => !open)}>
+              {orphanReviewOpen ? 'Hide' : 'Review'}
+            </button>
+          </header>
+          {orphanReviewOpen && (
+            <ul className="orphan-review-list">
+              {orphanExcerpts.map((excerpt) => (
+                <li key={excerpt.id}>
+                  <div className="orphan-review-meta">
+                    <strong>{excerpt.sourceTitle}</strong>
+                    <span>{excerpt.text}</span>
+                  </div>
+                  <div className="orphan-review-actions">
+                    <select
+                      defaultValue=""
+                      aria-label="Re-tag with code"
+                      onChange={(event) => {
+                        if (event.target.value) {
+                          props.retagOrphan(excerpt.id, event.target.value)
+                          event.target.value = ''
+                        }
+                      }}
+                    >
+                      <option value="">Re-tag with code…</option>
+                      {props.parentCodeOptions.map((code) => (
+                        <option key={code.id} value={code.id}>
+                          {'-'.repeat(code.depth)} {code.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" className="orphan-delete" aria-label="Delete orphan" onClick={() => props.deleteExcerpt(excerpt.id)}>
+                      <Trash2 size={13} aria-hidden="true" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </article>
   )
 }

@@ -1729,6 +1729,14 @@ function App() {
     setExcerpts((current) => current.map((excerpt) => (excerpt.id === id ? { ...excerpt, note } : excerpt)))
   }
 
+  function retagOrphan(excerptId: string, codeId: string) {
+    setExcerpts((current) =>
+      current.map((excerpt) =>
+        excerpt.id === excerptId ? { ...excerpt, codeIds: [codeId] } : excerpt,
+      ),
+    )
+  }
+
   function deleteExcerpt(id: string) {
     const excerpt = excerpts.find((item) => item.id === id)
     if (!excerpt) return
@@ -2415,6 +2423,7 @@ function App() {
             activeCode={activeCode}
             codes={codes}
             codeExcerpts={codeExcerpts}
+            allExcerpts={excerpts}
             parentCodeOptions={parentCodeOptions}
             activeCodeParent={activeCodeParent}
             activeCodeChildren={activeCodeChildren}
@@ -2428,6 +2437,7 @@ function App() {
             splitExcerpt={splitExcerpt}
             splitCodeInto={splitCodeInto}
             onSelectCode={(id) => setActiveCodeId(id)}
+            retagOrphan={retagOrphan}
           />
         )}
 

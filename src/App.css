@@ -4694,3 +4694,114 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ----- Classify case groups ----------------------------------------- */
+.case-group { display: contents; }
+
+.case-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 12px 6px;
+  margin-top: 4px;
+  border-bottom: 1px solid var(--line, #e5e7eb);
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.02));
+}
+.case-group-header strong {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink, #1f2937);
+}
+.case-group-header span {
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+
+.classify-toolbar .inline-entry-label {
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+  padding-right: 6px;
+}
+
+/* ----- Orphan-reference review (Refine) ----------------------------- */
+.orphan-review {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  border-radius: 8px;
+}
+
+.orphan-review-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #92400e;
+}
+.orphan-review-header strong { font-weight: 700; }
+.orphan-review-header span { color: #92400e; opacity: 0.8; flex: 1 1 auto; }
+.orphan-review-header button {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  background: transparent;
+  color: #92400e;
+  font: 600 12px/1 inherit;
+  cursor: pointer;
+}
+.orphan-review-header button:hover { background: #fef3c7; }
+
+.orphan-review-list {
+  list-style: none;
+  margin: 8px 0 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.orphan-review-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 6px;
+}
+
+.orphan-review-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.orphan-review-meta strong { font-size: 12px; font-weight: 600; }
+.orphan-review-meta span {
+  font-size: 13px;
+  color: var(--ink, #1f2937);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.orphan-review-actions { flex: 0 0 auto; display: inline-flex; gap: 6px; align-items: center; }
+.orphan-review-actions select {
+  padding: 4px 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.orphan-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted, #6b7280);
+  cursor: pointer;
+}
+.orphan-delete:hover { background: #fee2e2; color: #b91c1c; }
