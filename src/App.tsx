@@ -295,6 +295,45 @@ function slugId(value: string, fallback = 'item') {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || fallback
 }
 
+/**
+ * Minimal RFC 4180-style CSV parser. Handles quoted fields, embedded commas,
+ * embedded newlines, and "" escapes. Returns an array of rows (each a string[]).
+ */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = []
+  let cell = ''
+  let row: string[] = []
+  let inQuotes = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i += 1 }
+        else { inQuotes = false }
+      } else {
+        cell += ch
+      }
+      continue
+    }
+    if (ch === '"') { inQuotes = true; continue }
+    if (ch === ',') { row.push(cell); cell = ''; continue }
+    if (ch === '\r') continue
+    if (ch === '\n') {
+      row.push(cell)
+      rows.push(row)
+      row = []
+      cell = ''
+      continue
+    }
+    cell += ch
+  }
+  if (cell !== '' || row.length > 0) {
+    row.push(cell)
+    rows.push(row)
+  }
+  return rows.filter((r) => r.some((c) => c.trim() !== ''))
+}
+
 
 
 
@@ -1293,6 +1332,105 @@ function App() {
     })
   }
 
+  function importAttributesCsv(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    event.target.value = ''
+
+    file.text().then((text) => {
+      const rows = parseCsv(text)
+      if (rows.length < 2) {
+        setSelectionHint('CSV needs a header row plus at least one case row.')
+        return
+      }
+      const header = rows[0]
+      const attrNames = header.slice(1).map((h) => h.trim()).filter(Boolean)
+      if (attrNames.length === 0) {
+        setSelectionHint('CSV needs at least one attribute column after the case-name column.')
+        return
+      }
+
+      const findOrCreateAttribute = (currentAttrs: Attribute[], name: string, freshIds: Map<string, string>) => {
+        const trimmed = name.trim()
+        if (!trimmed) return null
+        const existing = currentAttrs.find((a) => a.name.toLowerCase() === trimmed.toLowerCase())
+        if (existing) return existing.id
+        const cached = freshIds.get(trimmed.toLowerCase())
+        if (cached) return cached
+        const id = `attribute-${Date.now()}-${freshIds.size}`
+        freshIds.set(trimmed.toLowerCase(), id)
+        return id
+      }
+
+      const newAttrIds = new Map<string, string>()
+      const attrIdByHeaderIndex: Array<string | null> = attrNames.map((name) =>
+        findOrCreateAttribute(attributes, name, newAttrIds),
+      )
+
+      const newAttrs: Attribute[] = []
+      newAttrIds.forEach((id, lowerName) => {
+        const original = attrNames.find((n) => n.toLowerCase() === lowerName)!
+        newAttrs.push({ id, name: original, valueType: 'text' })
+      })
+
+      let updated = 0
+      let skipped = 0
+      const updatesByPair = new Map<string, string>() // `${caseId}::${attributeId}` -> value
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i]
+        const caseName = row[0]?.trim()
+        if (!caseName) {
+          skipped += 1
+          continue
+        }
+        const matchedCase = cases.find((c) => c.name.trim().toLowerCase() === caseName.toLowerCase())
+        if (!matchedCase) {
+          skipped += 1
+          continue
+        }
+        for (let col = 0; col < attrNames.length; col++) {
+          const attrId = attrIdByHeaderIndex[col]
+          if (!attrId) continue
+          const value = (row[col + 1] ?? '').trim()
+          if (!value) continue
+          updatesByPair.set(`${matchedCase.id}::${attrId}`, value)
+          updated += 1
+        }
+      }
+
+      if (newAttrs.length) {
+        setAttributes((current) => [...current, ...newAttrs])
+      }
+      if (updatesByPair.size) {
+        setAttributeValues((current) => {
+          const next = current.map((v) => {
+            const key = `${v.caseId}::${v.attributeId}`
+            if (updatesByPair.has(key)) {
+              const value = updatesByPair.get(key)!
+              updatesByPair.delete(key)
+              return { ...v, value }
+            }
+            return v
+          })
+          updatesByPair.forEach((value, key) => {
+            const [caseId, attributeId] = key.split('::')
+            next.push({ caseId, attributeId, value })
+          })
+          return next
+        })
+      }
+
+      const summary = `Imported ${updated} attribute value${updated === 1 ? '' : 's'}` +
+        (newAttrs.length ? `, created ${newAttrs.length} new attribute${newAttrs.length === 1 ? '' : 's'}` : '') +
+        (skipped > 0 ? `, skipped ${skipped} row${skipped === 1 ? '' : 's'} (no matching case)` : '') +
+        '.'
+      setSelectionHint(summary)
+    }).catch((error) => {
+      setSelectionHint(`Could not read CSV: ${error instanceof Error ? error.message : String(error)}`)
+    })
+  }
+
   function applyQueryDefinition(definition: QueryDefinition) {
     setQueryText(definition.text)
     setQueryCodeId(definition.codeId)
@@ -2052,6 +2190,7 @@ function App() {
             setNewAttributeName={setNewAttributeName}
             createCasesFromSources={createCasesFromSources}
             addAttribute={addAttribute}
+            importAttributesCsv={importAttributesCsv}
             selectActiveSource={selectActiveSource}
             assignSourceToCase={assignSourceToCase}
             updateCase={updateCase}

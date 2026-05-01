@@ -1,4 +1,5 @@
-import { Plus, Trash2, UserPlus } from 'lucide-react'
+import type { ChangeEvent } from 'react'
+import { FilePlus2, Plus, Trash2, UserPlus } from 'lucide-react'
 import type { Attribute, AttributeValue, Case, Source } from '../../lib/types'
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
   setNewAttributeName: (value: string) => void
   createCasesFromSources: () => void
   addAttribute: () => void
+  importAttributesCsv: (event: ChangeEvent<HTMLInputElement>) => void
   selectActiveSource: (id: string) => void
   assignSourceToCase: (sourceId: string, caseId: string) => void
   updateCase: (caseId: string, patch: Partial<Case>) => void
@@ -35,6 +37,11 @@ export function ClassifyDetail(props: Props) {
           <UserPlus size={16} aria-hidden="true" />
           Create cases from sources
         </button>
+        <label className="secondary-button" title="Import attribute values from CSV (first column = case name, headers = attribute names)">
+          <FilePlus2 size={16} aria-hidden="true" />
+          Import attributes CSV
+          <input type="file" accept=".csv" style={{ display: 'none' }} onChange={props.importAttributesCsv} />
+        </label>
         <label className="inline-entry">
           <input value={props.newAttributeName} placeholder="New attribute" onChange={(event) => props.setNewAttributeName(event.target.value)} />
           <button className="secondary-button" type="button" onClick={props.addAttribute}>
