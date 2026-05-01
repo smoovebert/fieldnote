@@ -990,20 +990,27 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 56px;
+  height: 64px;
   margin-bottom: 12px;
+  padding: 0;
 }
 
 .source-register-heading h2 {
   color: var(--ink);
   font-size: 18px;
+  line-height: 1.2;
   margin: 0;
 }
 
 .source-register-heading > div:first-child {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.source-register-heading > div:first-child .detail-kicker {
+  margin: 0;
 }
 
 .source-register-heading .reference-count {
