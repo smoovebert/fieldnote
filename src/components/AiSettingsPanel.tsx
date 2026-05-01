@@ -15,41 +15,62 @@ export function AiSettingsPanel({ userId, onClose }: Props) {
   const [keyInput, setKeyInput] = useState('')
   const [consent, setConsent] = useState(false)
   const [hostedConsentAt, setHostedConsentAt] = useState<string | null>(null)
+  const [hasKey, setHasKey] = useState<{ gemini: boolean; openai: boolean; anthropic: boolean }>({ gemini: false, openai: false, anthropic: false })
   const [status, setStatus] = useState('')
 
   useEffect(() => {
     loadAiSettings(userId).then((settings) => {
       if (!settings) return
       setProvider(settings.aiProvider)
-      // Initialize byokProvider from the saved provider so the dropdown
-      // reflects what's actually saved (otherwise switching to BYOK shows
-      // Gemini even if the user previously saved OpenAI/Anthropic).
       if (settings.aiProvider === 'openai-byok') setByokProvider('openai')
       else if (settings.aiProvider === 'anthropic-byok') setByokProvider('anthropic')
       else if (settings.aiProvider === 'gemini-byok') setByokProvider('gemini')
       setHostedConsentAt(settings.hostedAiConsentAt)
       if (settings.hostedAiConsentAt) setConsent(true)
+      setHasKey({
+        gemini: settings.hasGeminiKey,
+        openai: settings.hasOpenaiKey,
+        anthropic: settings.hasAnthropicKey,
+      })
     })
   }, [userId])
 
   const isHosted = provider === 'gemini-free'
+  const byokKeyAlreadyOnFile = !isHosted && hasKey[byokProvider]
 
+  // Save flow guarantees we never leave the account pointing at a *-byok
+  // provider that has no usable key:
+  //   1. If switching to BYOK and a fresh key was pasted, save the key
+  //      first. Only update the provider after that succeeds.
+  //   2. If switching to BYOK with no fresh key, allow it only when the
+  //      account already has a saved key for that provider; otherwise
+  //      block and prompt for a key.
+  //   3. Hosted-mode consent is recorded as before.
   const handleSave = async () => {
     setStatus('Saving...')
     try {
+      if (!isHosted) {
+        const trimmed = keyInput.trim()
+        if (trimmed) {
+          const result = await saveProviderKey({ provider: byokProvider, plaintextKey: trimmed })
+          if (!result.ok) {
+            setStatus(`Could not save key: ${result.message}`)
+            return
+          }
+          setKeyInput('')
+          setHasKey((current) => ({ ...current, [byokProvider]: true }))
+        } else if (!hasKey[byokProvider]) {
+          setStatus(`Paste a ${byokProvider} API key before switching to BYOK.`)
+          return
+        }
+      }
+
       if (isHosted && consent && !hostedConsentAt) {
         await recordHostedConsent(userId)
         setHostedConsentAt(new Date().toISOString())
       }
+
       await updateAiProvider(userId, provider)
-      if (!isHosted && keyInput.trim()) {
-        const result = await saveProviderKey({ provider: byokProvider, plaintextKey: keyInput.trim() })
-        if (!result.ok) {
-          setStatus(`Could not save key: ${result.message}`)
-          return
-        }
-        setKeyInput('')
-      }
       setStatus('Saved.')
     } catch (e) {
       setStatus(`Save failed: ${e instanceof Error ? e.message : 'unknown'}`)
@@ -101,11 +122,14 @@ export function AiSettingsPanel({ userId, onClose }: Props) {
               <input
                 type="password"
                 value={keyInput}
-                placeholder="paste here, then click Save"
+                placeholder={byokKeyAlreadyOnFile ? 'paste a new key to replace the saved one' : 'paste here, then click Save'}
                 autoComplete="off"
                 onChange={(e) => setKeyInput(e.target.value)}
               />
             </label>
+            {byokKeyAlreadyOnFile && (
+              <p className="ai-settings-note">A {byokProvider} key is already saved for this account. Leave the field blank to keep using it, or paste a new one to replace it.</p>
+            )}
             <p className="ai-settings-note">Your key is encrypted in our database and decrypted only inside the AI Edge Function. It never reaches the browser after saving.</p>
           </div>
         )}

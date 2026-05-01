@@ -8,13 +8,16 @@ import type { AiProvider, UserAiSettings } from '../ai/types'
 export async function loadAiSettings(userId: string): Promise<UserAiSettings | null> {
   const { data, error } = await supabase
     .from('fieldnote_user_settings_safe')
-    .select('ai_provider, hosted_ai_consent_at')
+    .select('ai_provider, hosted_ai_consent_at, has_gemini_key, has_openai_key, has_anthropic_key')
     .eq('user_id', userId)
     .maybeSingle()
   if (error || !data) return null
   return {
     aiProvider: data.ai_provider as AiProvider,
     hostedAiConsentAt: data.hosted_ai_consent_at,
+    hasGeminiKey: !!data.has_gemini_key,
+    hasOpenaiKey: !!data.has_openai_key,
+    hasAnthropicKey: !!data.has_anthropic_key,
   }
 }
 

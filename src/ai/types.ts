@@ -34,4 +34,7 @@ export type AiCallErrorReason =
 export type UserAiSettings = {
   aiProvider: AiProvider
   hostedAiConsentAt: string | null
+  hasGeminiKey: boolean
+  hasOpenaiKey: boolean
+  hasAnthropicKey: boolean
 }
