@@ -56,7 +56,10 @@ export function RefineDetail(props: Props) {
   const inputTokens = estimateInputTokens(referencesPreview)
   const inputCost = estimateCostUsd(inputTokens)
 
-  const showDraftButton = props.codeExcerpts.length >= 3 && (props.activeCode.description ?? '').length < 30
+  // Show whenever there's at least one reference. The draft lands in the
+  // AI preview panel first (the user accepts before it touches the
+  // description field), so we don't need to gate on description length.
+  const showDraftButton = props.codeExcerpts.length > 0
 
   const handleMerge = () => {
     if (!mergeTargetCodeId) return
