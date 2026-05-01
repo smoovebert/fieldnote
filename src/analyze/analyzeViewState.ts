@@ -1,3 +1,4 @@
+export type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence' | 'crosstab'
 export type WordFreqView = 'bar' | 'cloud' | 'table'
 export type CooccurView  = 'heatmap' | 'network' | 'table'
 export type MatrixView   = 'heatmap' | 'bars' | 'table'

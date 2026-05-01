@@ -28,6 +28,7 @@ import { useAutosave } from './persistence/useAutosave'
 import {
   DEFAULT_ANALYZE_VIEW,
   serialize as serializeAnalyzeView,
+  type AnalyzePanel,
   type AnalyzeViewState,
 } from './analyze/analyzeViewState'
 import { WordFreqView, type WordFreqRow } from './analyze/WordFreqView'
@@ -56,6 +57,7 @@ import { RefineSidebar } from './modes/refine/RefineSidebar'
 import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
 import { ClassifySidebar } from './modes/classify/ClassifySidebar'
+import { AnalyzeSidebar } from './analyze/AnalyzeSidebar'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
@@ -92,7 +94,7 @@ import type {
 import './App.css'
 
 type WorkspaceView = 'overview' | 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
-type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence' | 'crosstab'
+// AnalyzePanel moved to src/analyze/analyzeViewState.ts
 type MatrixColumnMode = 'case' | 'attribute'
 
 type MatrixColumn = {
@@ -3266,56 +3268,17 @@ function ListView({
         />
       )}
       {activeView === 'analyze' && (
-        <>
-          <button
-            className={!activeSavedQueryId && analyzePanel === 'query' ? 'list-item active' : 'list-item'}
-            type="button"
-            onClick={onUseCurrentQuery}
-          >
-            <Search size={17} aria-hidden="true" />
-            <div>
-              <strong>Current query</strong>
-              <span>Filter coded excerpts</span>
-            </div>
-          </button>
-          {savedQueries.map((query) => (
-            <button className={query.id === activeSavedQueryId && analyzePanel === 'query' ? 'list-item active' : 'list-item'} key={query.id} type="button" onClick={() => onOpenSavedQuery(query)}>
-              <FileText size={17} aria-hidden="true" />
-              <div>
-                <strong>{query.name}</strong>
-                <span>Saved query</span>
-              </div>
-            </button>
-          ))}
-          <button className={analyzePanel === 'matrix' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenMatrix}>
-            <Rows3 size={17} aria-hidden="true" />
-            <div>
-              <strong>Matrix coding</strong>
-              <span>Codes by case or attribute</span>
-            </div>
-          </button>
-          <button className={analyzePanel === 'frequency' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenFrequency}>
-            <BookOpenText size={17} aria-hidden="true" />
-            <div>
-              <strong>Word frequency</strong>
-              <span>Terms in filtered excerpts</span>
-            </div>
-          </button>
-          <button className={analyzePanel === 'cooccurrence' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenCoOccurrence}>
-            <ListTree size={17} aria-hidden="true" />
-            <div>
-              <strong>Co-occurrence</strong>
-              <span>Codes that appear together</span>
-            </div>
-          </button>
-          <button className={analyzePanel === 'crosstab' ? 'list-item active' : 'list-item'} type="button" onClick={onOpenCrosstab}>
-            <Grid3x3 size={17} aria-hidden="true" />
-            <div>
-              <strong>Crosstabs</strong>
-              <span>Two-attribute counts</span>
-            </div>
-          </button>
-        </>
+        <AnalyzeSidebar
+          analyzePanel={analyzePanel}
+          savedQueries={savedQueries}
+          activeSavedQueryId={activeSavedQueryId}
+          onUseCurrentQuery={onUseCurrentQuery}
+          onOpenSavedQuery={onOpenSavedQuery}
+          onOpenMatrix={onOpenMatrix}
+          onOpenFrequency={onOpenFrequency}
+          onOpenCoOccurrence={onOpenCoOccurrence}
+          onOpenCrosstab={onOpenCrosstab}
+        />
       )}
       {activeView === 'report' && (
         <article className="empty-list-state">
