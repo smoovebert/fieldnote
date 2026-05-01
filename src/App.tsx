@@ -431,6 +431,7 @@ async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kin
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
+  const userId = session?.user?.id ?? null
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projectTitle, setProjectTitle] = useState('Student Access Study')
   const [description, setDescription] = useState('')
@@ -545,7 +546,7 @@ function App() {
     return attributeValuesByAttribute.get(attributeId) ?? []
   }, [attributeValuesByAttribute])
 
-  async function applyProject(project: ProjectRow) {
+  const applyProject = useCallback(async (project: ProjectRow) => {
     setSaveStatus('Opening project...')
     const nextProject = await loadProject(project, supabase)
 
@@ -580,7 +581,6 @@ function App() {
     // Local-recovery prompt: if IndexedDB holds a snapshot newer than what
     // we just loaded from Supabase, the user has unsynced work from a prior
     // session (network loss, tab crash, browser update). Offer to restore.
-    const userId = session?.user?.id
     if (userId) {
       try {
         const snap = await readRecoverySnapshot(userId, project.id)
@@ -631,7 +631,7 @@ function App() {
         results: row.results as QueryResultSnapshot['results'],
       })))
     }
-  }
+  }, [userId])
 
   async function createProjectFromSeed(
     title: string,
@@ -777,7 +777,6 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const userId = session?.user?.id ?? null
   useEffect(() => {
     if (!userId) {
       queueMicrotask(() => {
@@ -826,7 +825,7 @@ function App() {
     return () => {
       isCurrent = false
     }
-  }, [userId])
+  }, [userId, applyProject])
 
   const persistencePayload = useMemo<SavePayload | null>(() => {
     if (!projectId) return null
