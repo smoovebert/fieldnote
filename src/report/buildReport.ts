@@ -204,13 +204,13 @@ export function buildReport(input: BuildReportInput): ReportModel {
       body: sourceMemoBySourceId.get(s.id)!,
     }))
 
-  // Annotated snapshots: include only those with a non-empty note. Order
-  // by capture time descending so the most recent interpretation appears
-  // first. Up to SAMPLE_CAP excerpts per snapshot are surfaced inline;
-  // the full list is downloadable separately from the inspector.
+  // Snapshots flagged for inclusion appear in the Report. The
+  // interpretation note is surfaced when present but is no longer the
+  // gating signal — researchers can promote a raw snapshot too. Order
+  // by capture time descending so the most recent appears first.
   const queryNameById = new Map(savedQueries.map((q) => [q.id, q.name]))
   const snapshotMemos: ReportModel['snapshotMemos'] = snapshots
-    .filter((s) => s.note.trim().length > 0)
+    .filter((s) => s.includeInReport)
     .slice()
     .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
     .map((s) => ({

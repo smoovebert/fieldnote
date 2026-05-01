@@ -3,7 +3,7 @@
 // context-aware "Export <thing> CSV" button.
 
 import type { MouseEvent } from 'react'
-import { Download, Search, Trash2 } from 'lucide-react'
+import { Download, FileText, Search, Trash2 } from 'lucide-react'
 import type { Case, Excerpt, SavedQuery } from '../lib/types'
 import type { AnalyzePanel } from './analyzeViewState'
 
@@ -13,6 +13,7 @@ type Snapshot = {
   capturedAt: string
   label?: string | null
   note?: string | null
+  includeInReport?: boolean
   results: { excerpts: Excerpt[] }
 }
 
@@ -28,6 +29,11 @@ type Props = {
   onDownloadSnapshotCsv: (snapshotId: string) => void
   onDeleteSnapshot: (snapshotId: string) => void
   onUpdateSnapshotNote: (snapshotId: string, note: string) => void
+  onUpdateSnapshotInclude: (snapshotId: string, includeInReport: boolean) => void
+  // Pin a snapshot of the live result with include_in_report = true and
+  // jump to Report mode. Only meaningful on the Find-excerpts panel
+  // backed by a saved query.
+  onSendActiveQueryToReport: () => void
   // exportActiveAnalysisCsv reads the click target to detect modifiers
   // (e.g. shift-click for a different format), so the event is forwarded
   // through unchanged rather than being swallowed by an arrow wrapper.
@@ -110,6 +116,17 @@ export function AnalyzeInspector(props: Props) {
           <span>None. Showing all coded excerpts.</span>
         )}
       </div>
+      {props.activeSavedQuery && props.analyzePanel === 'query' && (
+        <button
+          type="button"
+          className="primary-button analyze-send-to-report"
+          onClick={props.onSendActiveQueryToReport}
+          title="Pin a snapshot of these results and include it in the Report"
+        >
+          <FileText size={15} aria-hidden="true" />
+          Send to Report
+        </button>
+      )}
       {props.activeSavedQuery && (
         <button
           type="button"
@@ -144,6 +161,14 @@ export function AnalyzeInspector(props: Props) {
                   aria-label="Snapshot interpretation memo"
                   onChange={(event) => props.onUpdateSnapshotNote(snap.id, event.target.value)}
                 />
+                <label className="snapshots-include">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(snap.includeInReport)}
+                    onChange={(event) => props.onUpdateSnapshotInclude(snap.id, event.target.checked)}
+                  />
+                  <span>Include in Report</span>
+                </label>
                 <div className="snapshots-row-actions">
                   <button
                     type="button"

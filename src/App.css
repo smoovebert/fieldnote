@@ -4536,7 +4536,24 @@ textarea {
   border-color: var(--accent, #0f766e);
 }
 
+.snapshots-include {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-2, #374151);
+  cursor: pointer;
+}
+.snapshots-include input { margin: 0; }
+
 .snapshots-row-actions { grid-area: actions; display: inline-flex; gap: 2px; }
+
+.analyze-send-to-report {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
 .snapshots-row-actions button {
   display: inline-flex;
   align-items: center;

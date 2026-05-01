@@ -82,6 +82,10 @@ export type QueryResultSnapshot = {
   // "at this stage, this is how I understood the theme" note. Empty when the
   // snapshot has just been pinned and not yet annotated.
   note: string
+  // When true, the snapshot is included in the Report's "Analysis
+  // snapshots" section regardless of whether it has a note. Set by the
+  // "Send to report" action; togglable per-row from the inspector.
+  includeInReport: boolean
   resultKind: 'coded_excerpt'
   definition: QueryDefinition
   results: { excerpts: Array<{ id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }> }

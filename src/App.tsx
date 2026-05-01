@@ -627,6 +627,7 @@ function App() {
         capturedAt: row.captured_at as string,
         label: (row.label as string) ?? '',
         note: (row.note as string) ?? '',
+        includeInReport: Boolean(row.include_in_report),
         resultKind: 'coded_excerpt',
         definition: row.definition as QueryResultSnapshot['definition'],
         results: row.results as QueryResultSnapshot['results'],
@@ -1711,20 +1712,24 @@ function App() {
     }
   }
 
-  async function captureQuerySnapshot() {
+  // Shared persistence path for both "Pin snapshot" and "Send to report".
+  // Returns the persisted snapshot (or null on failure) so callers can act
+  // on it — e.g. sendActiveQueryToReport switches to Report mode after a
+  // successful capture.
+  async function persistSnapshot(label: string, includeInReport: boolean): Promise<QueryResultSnapshot | null> {
     if (!projectId || !activeSavedQueryId || !activeSavedQuery) {
       setSelectionHint('Save the query first, then pin a snapshot.')
-      return
+      return null
     }
     if (analyzePanel !== 'query') {
-      setSelectionHint('Snapshots can only be pinned from the Query results panel right now.')
-      return
+      setSelectionHint('Snapshots can only be pinned from the Find-excerpts panel right now.')
+      return null
     }
-    const label = window.prompt(`Optional label for this snapshot (e.g., "Before recoding pass 2"):`, '') ?? ''
     const payload = {
       project_id: projectId,
       query_id: activeSavedQueryId,
       label: label.trim(),
+      include_in_report: includeInReport,
       result_kind: 'coded_excerpt' as const,
       definition: currentQueryDefinition,
       results: {
@@ -1746,7 +1751,7 @@ function App() {
       .single()
     if (error) {
       setSaveStatus(errorMessage(error, 'Could not capture snapshot.'))
-      return
+      return null
     }
     const row = data as Record<string, unknown>
     const snapshot: QueryResultSnapshot = {
@@ -1756,12 +1761,34 @@ function App() {
       capturedAt: row.captured_at as string,
       label: (row.label as string) ?? '',
       note: (row.note as string) ?? '',
+      includeInReport: Boolean(row.include_in_report),
       resultKind: 'coded_excerpt',
       definition: row.definition as QueryResultSnapshot['definition'],
       results: row.results as QueryResultSnapshot['results'],
     }
     setQuerySnapshots((current) => [snapshot, ...current])
     setSaveStatus(`Snapshot captured (${payload.results.excerpts.length} excerpts).`)
+    return snapshot
+  }
+
+  async function captureQuerySnapshot() {
+    const label = window.prompt(`Optional label for this snapshot (e.g., "Before recoding pass 2"):`, '') ?? ''
+    await persistSnapshot(label, false)
+  }
+
+  // "Send to report" — pin a snapshot with include_in_report = true, then
+  // jump to Report mode so the researcher sees the section they just
+  // promoted. We auto-label with the current question sentence so the
+  // snapshot has a recognizable title in the report without making the
+  // user type one.
+  async function sendActiveQueryToReport() {
+    const queryName = savedQueries.find((q) => q.id === activeSavedQueryId)?.name ?? 'Saved query'
+    const defaultLabel = `${queryName} on ${new Date().toLocaleDateString()}`
+    const snapshot = await persistSnapshot(defaultLabel, true)
+    if (snapshot) {
+      setActiveView('report')
+      setSaveStatus('Snapshot sent to Report.')
+    }
   }
 
   // Update the interpretation note attached to a snapshot. Optimistic
@@ -1778,6 +1805,19 @@ function App() {
       .eq('id', snapshotId)
     if (error) {
       setSaveStatus(errorMessage(error, 'Could not save snapshot note.'))
+    }
+  }
+
+  async function updateSnapshotInclude(snapshotId: string, includeInReport: boolean) {
+    setQuerySnapshots((current) =>
+      current.map((s) => (s.id === snapshotId ? { ...s, includeInReport } : s)),
+    )
+    const { error } = await supabase
+      .from('fieldnote_query_results')
+      .update({ include_in_report: includeInReport })
+      .eq('id', snapshotId)
+    if (error) {
+      setSaveStatus(errorMessage(error, 'Could not update snapshot.'))
     }
   }
 
@@ -3029,6 +3069,8 @@ function App() {
             onDownloadSnapshotCsv={downloadSnapshotCsv}
             onDeleteSnapshot={(id) => void deleteQuerySnapshot(id)}
             onUpdateSnapshotNote={(id, note) => void updateSnapshotNote(id, note)}
+            onUpdateSnapshotInclude={(id, include) => void updateSnapshotInclude(id, include)}
+            onSendActiveQueryToReport={() => void sendActiveQueryToReport()}
             onExportActiveAnalysisCsv={exportActiveAnalysisCsv}
           />
         )}
