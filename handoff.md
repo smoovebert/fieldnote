@@ -559,18 +559,26 @@ of protection, weakest first:
 - Tell users to download a backup before any risky operation (bulk
   delete, mass merge, model migration).
 
-### 4. Supabase platform backups (operational, you run this)
+### 4. Supabase platform backups (we are intentionally on free tier)
 
-Supabase Pro plan ($25/mo) ships daily automated backups with 7-day
-point-in-time recovery. Free plan does **not** — only manual exports.
+Fieldnote runs on Supabase free tier. **No automated platform backups,
+no point-in-time recovery.** Mitigation is the layered local + manual
+strategy above (autosave → IndexedDB versioned history → user-driven
+`.fieldnote.json` exports). For one or a few researchers, this is
+adequate; the user's own browser + downloaded files are effectively
+the disaster-recovery system.
 
-**Recommended setup:**
+**Operational habits to compensate:**
 
-- Upgrade to Pro before any project carries real research data.
-- In Supabase dashboard: Database → Backups → confirm daily backups are
-  on.
-- Monthly: trigger a manual backup via the dashboard before the first
-  destructive migration of the month.
+- Before any schema migration, trigger a manual export from Supabase
+  dashboard (Project Settings → Database → Backups → Schedule → Export
+  CSV). Free tier supports CSV-per-table export; not pretty but
+  recoverable.
+- Tell users in the app to download a `.fieldnote.json` before risky
+  operations. The Overview "Your work is safe" panel says this.
+- If you ever start carrying research data that wouldn't be acceptable
+  to lose, that's the moment to upgrade ($25/mo Pro plan adds daily
+  auto-backups + 7-day PITR).
 
 ### 5. Pre-migration checklist (operational, you run this)
 

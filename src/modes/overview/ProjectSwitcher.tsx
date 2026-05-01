@@ -107,6 +107,9 @@ export function ProjectSwitcher(props: Props) {
             </button>
           </div>
           <div className="hps-backup">
+            <p className="hps-backup-hint">
+              Download a portable snapshot of this project, or restore one as a new project. Save the file somewhere safe (Drive, email) for an extra layer of protection beyond the cloud.
+            </p>
             <button
               type="button"
               className="hps-backup-action"

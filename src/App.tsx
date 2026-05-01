@@ -2472,10 +2472,25 @@ function App() {
             codes={codes}
             excerpts={excerpts}
             projectMemo={memos.find((memo) => memo.linkedType === 'project')}
+            userId={session?.user?.id ?? null}
+            projectId={projectId}
             onTitleChange={setProjectTitle}
             onDescriptionChange={setDescription}
             onProjectMemoChange={updateProjectMemo}
             onNewSource={() => overviewFileInputRef.current?.click()}
+            onRestoreVersion={(version) => {
+              setActiveSourceId(version.data.activeSourceId)
+              setSources(version.data.sources)
+              setCases(version.data.cases)
+              setAttributes(version.data.attributes)
+              setAttributeValues(version.data.attributeValues)
+              setSavedQueries(version.data.savedQueries)
+              setCodes(version.data.codes)
+              setMemos(version.data.memos)
+              setExcerpts(version.data.excerpts)
+              setDescription(version.data.description ?? '')
+              setSaveStatus(`Restored local version from ${version.dateUtc}. Saving to Supabase...`)
+            }}
           />
         )}
 
