@@ -25,11 +25,15 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get('authorization') ?? ''
   if (!authHeader.startsWith('Bearer ')) return jsonResponse(401, { ok: false, message: 'Missing bearer token' })
+  const userJwt = authHeader.slice('Bearer '.length)
 
+  // Service-role client without an Authorization override so PostgREST
+  // sees the request as service_role. Verify the user JWT separately.
+  // (See ai-call/index.ts for the same pattern and the rationale.)
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false, autoRefreshToken: false },
   })
-  const { data: userData, error: userErr } = await supabase.auth.getUser()
+  const { data: userData, error: userErr } = await supabase.auth.getUser(userJwt)
   if (userErr || !userData.user) return jsonResponse(401, { ok: false, message: 'Invalid session' })
   const userId = userData.user.id
 

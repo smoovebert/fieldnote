@@ -65,12 +65,19 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get('authorization') ?? ''
   if (!authHeader.startsWith('Bearer ')) return jsonResponse(401, { ok: false, reason: 'auth', message: 'Missing bearer token' })
+  const userJwt = authHeader.slice('Bearer '.length)
 
-  // Authenticate user via JWT
+  // Two clients: an admin client that runs as service_role for all DB/RPC
+  // work (required after the lockdown migration revoked client-side grants
+  // on the settings/quota tables), and an auth client used only to verify
+  // the caller's JWT. Mixing the two — service-role key + Authorization:
+  // <user JWT> on the same client — makes PostgREST treat the request as
+  // `authenticated`, which now lacks the privileges to read encrypted_keys
+  // or call reserve_ai_call.
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false, autoRefreshToken: false },
   })
-  const { data: userData, error: userErr } = await supabase.auth.getUser()
+  const { data: userData, error: userErr } = await supabase.auth.getUser(userJwt)
   if (userErr || !userData.user) return jsonResponse(401, { ok: false, reason: 'auth', message: 'Invalid session' })
   const userId = userData.user.id
 
