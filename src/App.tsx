@@ -4,7 +4,6 @@ import {
   BarChart3,
   BookOpenText,
   Cloud,
-  Database,
   Download,
   FileText,
   Folders,
@@ -56,6 +55,7 @@ import { RefineDetail } from './modes/refine/RefineDetail'
 import { RefineSidebar } from './modes/refine/RefineSidebar'
 import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
+import { ClassifySidebar } from './modes/classify/ClassifySidebar'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
@@ -3258,26 +3258,12 @@ function ListView({
         />
       )}
       {activeView === 'classify' && (
-        cases.length ? cases.map((item) => {
-          const firstSourceId = item.sourceIds[0] ?? activeSourceId
-          return (
-          <button className={item.sourceIds.includes(activeSourceId) ? 'list-item active' : 'list-item'} key={item.id} type="button" onClick={() => onSelectSource(firstSourceId)}>
-            <Database size={17} aria-hidden="true" />
-            <div>
-              <strong>{item.name}</strong>
-              <span>{item.sourceIds.length} source{item.sourceIds.length === 1 ? '' : 's'}</span>
-            </div>
-          </button>
-          )
-        }) : sources.map((source) => (
-          <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
-            <Database size={17} aria-hidden="true" />
-            <div>
-              <strong>{source.title}</strong>
-              <span>No case yet</span>
-            </div>
-          </button>
-        ))
+        <ClassifySidebar
+          cases={cases}
+          sources={sources}
+          activeSourceId={activeSourceId}
+          onSelectSource={onSelectSource}
+        />
       )}
       {activeView === 'analyze' && (
         <>
