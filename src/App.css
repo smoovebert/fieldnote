@@ -1061,14 +1061,29 @@ button {
   outline: none;
 }
 
+.analyze-tabbar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.analyze-tabbar .reference-count {
+  align-self: center;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .analyze-tabs {
   display: flex;
-  width: 100%;
   gap: 0;
   border: 0;
   background: transparent;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .analyze-tabs button {

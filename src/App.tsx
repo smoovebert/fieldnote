@@ -912,14 +912,6 @@ function App() {
     setAnalyzePanel('query')
   }
 
-  const analyzePanelTitle =
-    analyzePanel === 'matrix'
-      ? 'Matrix coding'
-      : analyzePanel === 'frequency'
-        ? 'Word frequency'
-        : analyzePanel === 'cooccurrence'
-          ? 'Code co-occurrence'
-          : activeSavedQuery?.name ?? 'Coded excerpt query'
   const analyzePanelCount =
     analyzePanel === 'matrix'
       ? `${matrixTotalReferences} matrix references`
@@ -2023,35 +2015,30 @@ function App() {
 
         {projectId && activeView === 'analyze' && (
           <article className="detail-card analyze-surface">
-            <div className="source-register-heading">
-              <div>
-                <p className="detail-kicker">Analyze</p>
-                <h2>{analyzePanelTitle}</h2>
+            <div className="analyze-tabbar">
+              <div className="analyze-tabs" role="tablist" aria-label="Analyze views">
+                <button className={analyzePanel === 'query' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('query')}>
+                  <Search size={15} aria-hidden="true" />
+                  Query results
+                </button>
+                <button className={analyzePanel === 'matrix' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('matrix')}>
+                  <Rows3 size={15} aria-hidden="true" />
+                  Matrix coding
+                </button>
+                <button className={analyzePanel === 'frequency' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('frequency')}>
+                  <BookOpenText size={15} aria-hidden="true" />
+                  Word frequency
+                </button>
+                <button className={analyzePanel === 'cooccurrence' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('cooccurrence')}>
+                  <ListTree size={15} aria-hidden="true" />
+                  Co-occurrence
+                </button>
+                <button className={analyzePanel === 'crosstab' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('crosstab')}>
+                  <Grid3x3 size={15} aria-hidden="true" />
+                  Crosstabs
+                </button>
               </div>
               <span className="reference-count">{analyzePanelCount}</span>
-            </div>
-
-            <div className="analyze-tabs" role="tablist" aria-label="Analyze views">
-              <button className={analyzePanel === 'query' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('query')}>
-                <Search size={15} aria-hidden="true" />
-                Query results
-              </button>
-              <button className={analyzePanel === 'matrix' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('matrix')}>
-                <Rows3 size={15} aria-hidden="true" />
-                Matrix coding
-              </button>
-              <button className={analyzePanel === 'frequency' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('frequency')}>
-                <BookOpenText size={15} aria-hidden="true" />
-                Word frequency
-              </button>
-              <button className={analyzePanel === 'cooccurrence' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('cooccurrence')}>
-                <ListTree size={15} aria-hidden="true" />
-                Co-occurrence
-              </button>
-              <button className={analyzePanel === 'crosstab' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('crosstab')}>
-                <Grid3x3 size={15} aria-hidden="true" />
-                Crosstabs
-              </button>
             </div>
 
             <div className="query-builder">
