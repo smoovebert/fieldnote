@@ -45,7 +45,7 @@ import {
   type AttributeFilter,
   type QueryDefinition,
 } from './analyze/queryDefinition'
-import { buildReport } from './report/buildReport'
+import { applyReportIncludes, buildReport, DEFAULT_REPORT_INCLUDES, type ReportIncludes } from './report/buildReport'
 import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
 import { OverviewMode } from './modes/overview/OverviewMode'
@@ -393,6 +393,7 @@ function App() {
   const [newProjectTitle, setNewProjectTitle] = useState('')
   const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv')
+  const [reportIncludes, setReportIncludes] = useState<ReportIncludes>(DEFAULT_REPORT_INCLUDES)
   const [activeView, setActiveView] = useState<WorkspaceView>('overview')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
@@ -964,7 +965,7 @@ function App() {
     })
   }, [analyzeResults, codes, cases, attributeValues, analyzeView.crosstab])
 
-  const reportModel = useMemo(
+  const reportModelFull = useMemo(
     () =>
       buildReport({
         projectTitle,
@@ -977,6 +978,10 @@ function App() {
         memos,
       }),
     [projectTitle, sources, codes, excerpts, cases, attributes, attributeValues, memos],
+  )
+  const reportModel = useMemo(
+    () => applyReportIncludes(reportModelFull, reportIncludes),
+    [reportModelFull, reportIncludes],
   )
 
   function handleCrosstabCellSelect(codeId: string, v1: string, v2: string) {
@@ -1993,6 +1998,8 @@ function App() {
         <section className="list-view" aria-label="Objects">
           {activeView === 'report' && (
             <ReportSidebar
+              reportIncludes={reportIncludes}
+              onReportIncludesChange={setReportIncludes}
               exportFormat={exportFormat}
               onExportFormatChange={setExportFormat}
               exportCsv={exportCsv}

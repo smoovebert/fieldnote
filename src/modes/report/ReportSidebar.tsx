@@ -1,7 +1,10 @@
 import type { MouseEvent } from 'react'
 import { Database, Download, FileText, MessageSquareText, Rows3, Search } from 'lucide-react'
+import type { ReportIncludes } from '../../report/buildReport'
 
 type Props = {
+  reportIncludes: ReportIncludes
+  onReportIncludesChange: (next: ReportIncludes) => void
   exportFormat: 'csv' | 'xlsx'
   onExportFormatChange: (next: 'csv' | 'xlsx') => void
   exportCsv: (event: MouseEvent<HTMLButtonElement>) => void
@@ -12,7 +15,17 @@ type Props = {
   exportMemosCsv: (event: MouseEvent<HTMLButtonElement>) => void
 }
 
+const SECTION_LABELS: Array<{ key: keyof ReportIncludes; label: string }> = [
+  { key: 'projectMemo', label: 'Project memo' },
+  { key: 'codebook', label: 'Codebook' },
+  { key: 'sampleExcerpts', label: 'Coded excerpts (samples per code)' },
+  { key: 'cases', label: 'Cases' },
+  { key: 'sourceMemos', label: 'Source memos' },
+]
+
 export function ReportSidebar({
+  reportIncludes,
+  onReportIncludesChange,
   exportFormat,
   onExportFormatChange,
   exportCsv,
@@ -23,7 +36,23 @@ export function ReportSidebar({
   exportMemosCsv,
 }: Props) {
   const formatLabel = exportFormat.toUpperCase()
+  const toggle = (key: keyof ReportIncludes) =>
+    onReportIncludesChange({ ...reportIncludes, [key]: !reportIncludes[key] })
   return (
+    <>
+    <div className="report-sections-panel">
+      <p className="fn-label report-sections-heading">Report sections</p>
+      {SECTION_LABELS.map(({ key, label }) => (
+        <label key={key} className="report-section-toggle">
+          <input
+            type="checkbox"
+            checked={reportIncludes[key]}
+            onChange={() => toggle(key)}
+          />
+          <span>{label}</span>
+        </label>
+      ))}
+    </div>
     <div className="raw-data-panel">
       <div className="raw-data-heading-row">
         <p className="fn-label raw-data-heading">Raw data</p>
@@ -69,5 +98,6 @@ export function ReportSidebar({
         <span>Memos {formatLabel}</span>
       </button>
     </div>
+    </>
   )
 }

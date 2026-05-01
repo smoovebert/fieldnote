@@ -43,6 +43,37 @@ export type BuildReportInput = {
   now?: Date
 }
 
+export type ReportIncludes = {
+  projectMemo: boolean
+  codebook: boolean
+  sampleExcerpts: boolean
+  cases: boolean
+  sourceMemos: boolean
+}
+
+export const DEFAULT_REPORT_INCLUDES: ReportIncludes = {
+  projectMemo: true,
+  codebook: true,
+  sampleExcerpts: true,
+  cases: true,
+  sourceMemos: true,
+}
+
+/**
+ * Apply user-selected section toggles to a built ReportModel by nulling /
+ * emptying the skipped sections. Cover is always preserved.
+ */
+export function applyReportIncludes(model: ReportModel, includes: ReportIncludes): ReportModel {
+  return {
+    cover: model.cover,
+    projectMemo: includes.projectMemo ? model.projectMemo : null,
+    codebook: includes.codebook ? model.codebook : [],
+    sampleExcerpts: includes.sampleExcerpts ? model.sampleExcerpts : [],
+    cases: includes.cases ? model.cases : [],
+    sourceMemos: includes.sourceMemos ? model.sourceMemos : [],
+  }
+}
+
 const SAMPLE_CAP = 3
 
 function isoDate(d: Date): string {

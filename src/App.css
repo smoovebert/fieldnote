@@ -4358,3 +4358,36 @@ textarea {
 .raw-data-format button + button {
   border-left: 1px solid rgba(255, 255, 255, 0.16);
 }
+
+/* ----- Report sections panel ------------------------------------------ */
+.app-shell[data-shell="new"] .report-sections-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-shell[data-shell="new"] .report-sections-heading {
+  margin: 0 0 6px 0;
+  color: var(--shell-ink-3, #9ca3af);
+}
+
+.app-shell[data-shell="new"] .report-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--shell-ink-2, #d1d5db);
+  cursor: pointer;
+}
+
+.app-shell[data-shell="new"] .report-section-toggle input[type="checkbox"] {
+  flex: 0 0 auto;
+  accent-color: #4a6cf7;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
