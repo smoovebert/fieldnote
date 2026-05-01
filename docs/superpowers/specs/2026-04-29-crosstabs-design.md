@@ -108,7 +108,7 @@ type CrosstabResult = {
 }
 ```
 
-The composite column key is `${col1Value}∥${col2Value}` (U+2225). The separator is rejected for use in attribute values — vanishingly unlikely in practice but worth a sanity check.
+The composite column key is `${col1Value}${SEP}${col2Value}` where SEP is U+001F (Unit Separator, ASCII control char). U+001F was chosen because text inputs cannot produce it — the collision class is closed without needing input validation. (An earlier draft used U+2225/∥ and proposed rejecting that value from attribute inputs; that approach was abandoned in favor of the unforgeable separator.)
 
 ### State
 

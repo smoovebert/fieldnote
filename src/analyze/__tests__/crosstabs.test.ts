@@ -155,7 +155,7 @@ describe('buildCrosstab', () => {
     expect(sumCols).toBe(result.grandTotal)
   })
 
-  it('uses ∥ separator so values containing spaces do not collide', () => {
+  it('uses an unforgeable separator so values containing spaces do not collide', () => {
     // Two distinct (code, attr1, attr2) combos that would alias under a space
     // delimiter: code "trust safety" + value "urban"  vs.  code "trust" + value "safety urban"
     const result = buildCrosstab({
