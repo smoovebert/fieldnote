@@ -63,6 +63,7 @@ import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
 import { wrapHighlightedTranscript } from './modes/code/transcript'
 import { CodeDetail } from './modes/code/CodeDetail'
+import { CodePickerPanel } from './components/CodePickerPanel'
 import { ReferenceList } from './ReferenceList'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
@@ -2129,6 +2130,26 @@ function App() {
     downloadInFormat(rows, 'fieldnote-memos', 'Memos')
   }
 
+  async function downloadReportPdf() {
+    try {
+      await exportReportPdf(reportModel, projectTitle)
+      setSaveStatus('PDF exported.')
+    } catch (error) {
+      console.error('Could not export PDF:', error)
+      setSaveStatus(errorMessage(error, 'Could not export PDF.'))
+    }
+  }
+
+  async function downloadReportDocx() {
+    try {
+      await exportReportDocx(reportModel, projectTitle)
+      setSaveStatus('Word report exported.')
+    } catch (error) {
+      console.error('Could not export Word report:', error)
+      setSaveStatus(errorMessage(error, 'Could not export Word report.'))
+    }
+  }
+
   function downloadCsv(rows: string[][], filename: string) {
     const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
@@ -2427,7 +2448,7 @@ function App() {
                 <button
                   type="button"
                   className="primary-button toolbar-code-action"
-                  onClick={() => void exportReportPdf(reportModel, projectTitle)}
+                  onClick={() => void downloadReportPdf()}
                 >
                   <Download size={18} aria-hidden="true" />
                   Export PDF
@@ -2435,7 +2456,7 @@ function App() {
                 <button
                   type="button"
                   className="primary-button toolbar-code-action"
-                  onClick={() => void exportReportDocx(reportModel, projectTitle)}
+                  onClick={() => void downloadReportDocx()}
                 >
                   <FileText size={18} aria-hidden="true" />
                   Export Word
@@ -2924,53 +2945,18 @@ function App() {
         )}
 
         {(activeView === 'code' || activeView === 'refine') && (
-          <section className="panel" id="codes">
-            <div className="panel-heading">
-              <Tags size={18} aria-hidden="true" />
-              <h2>{activeView === 'code' ? 'Active Codes' : 'Codebook'}</h2>
-            </div>
-            <div className="code-picker">
-              {sortedCodes.map((code) => {
-                const refCount = excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length
-                return (
-                  <button
-                    key={code.id}
-                    className={(activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id) ? 'selected' : ''}
-                    style={{ marginLeft: activeView === 'refine' ? code.depth * 14 : 0 }}
-                    type="button"
-                    aria-pressed={activeView === 'code' ? selectedCodeIds.includes(code.id) : activeCode.id === code.id}
-                    onClick={() => {
-                      if (activeView === 'code') {
-                        toggleSelectedCode(code.id)
-                        return
-                      }
-                      setActiveCodeId(code.id)
-                    }}
-                  >
-                    <span className="code-pick-dot" style={{ background: code.color }} />
-                    <span className="code-pick-name">{code.name}</span>
-                    {code.depth > 0 && activeView === 'refine' && <small className="code-pick-child">Child</small>}
-                    <span className="code-pick-refs fn-mono">{refCount}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="new-code">
-              <input
-                value={newCodeName}
-                placeholder="New code"
-                aria-label="New code name"
-                onChange={(event) => setNewCodeName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') addCode()
-                }}
-              />
-              <button className="icon-button" type="button" onClick={addCode} aria-label="Add code">
-                <Plus size={18} aria-hidden="true" />
-              </button>
-            </div>
-          </section>
+          <CodePickerPanel
+            variant={activeView === 'code' ? 'code' : 'refine'}
+            sortedCodes={sortedCodes}
+            excerpts={excerpts}
+            selectedCodeIds={selectedCodeIds}
+            activeCodeId={activeCode.id}
+            newCodeName={newCodeName}
+            onSelectCode={setActiveCodeId}
+            onToggleSelectedCode={toggleSelectedCode}
+            onNewCodeNameChange={setNewCodeName}
+            onAddCode={addCode}
+          />
         )}
 
         {(activeView === 'organize' || activeView === 'code' || activeView === 'refine') && (
