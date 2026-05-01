@@ -374,15 +374,38 @@ function errorMessage(error: unknown, fallback: string) {
 }
 
 async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kind'>> {
-  if (file.name.toLowerCase().endsWith('.docx')) {
+  const lowered = file.name.toLowerCase()
+  if (lowered.endsWith('.docx')) {
     const mammoth = await import('mammoth/mammoth.browser')
     const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })
     return { content: result.value.trim(), kind: 'Transcript' }
   }
 
+  if (lowered.endsWith('.pdf')) {
+    const pdfjs = await import('pdfjs-dist')
+    // The default workerSrc points at a node-style URL that doesn't resolve in
+    // bundled browsers. Vite + ?url gives us a stable asset URL.
+    const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
+    const data = new Uint8Array(await file.arrayBuffer())
+    const doc = await pdfjs.getDocument({ data }).promise
+    const pages: string[] = []
+    for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+      const page = await doc.getPage(pageNum)
+      const content = await page.getTextContent()
+      const text = content.items
+        .map((item) => ('str' in item ? item.str : ''))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      pages.push(`--- Page ${pageNum} ---\n\n${text}`)
+    }
+    return { content: pages.join('\n\n'), kind: 'Document' }
+  }
+
   return {
     content: await file.text(),
-    kind: file.name.toLowerCase().endsWith('.csv') ? 'Document' : 'Transcript',
+    kind: lowered.endsWith('.csv') ? 'Document' : 'Transcript',
   }
 }
 

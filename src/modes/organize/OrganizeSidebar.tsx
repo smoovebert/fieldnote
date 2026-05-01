@@ -25,7 +25,7 @@ export function OrganizeSidebar(props: Props) {
       <label className="folder-row import-row">
         <FilePlus2 size={16} aria-hidden="true" />
         Import sources
-        <input type="file" accept=".txt,.md,.csv,.docx" multiple onChange={importTranscript} />
+        <input type="file" accept=".txt,.md,.csv,.docx,.pdf" multiple onChange={importTranscript} />
       </label>
       <SourcesView
         sources={activeSources}

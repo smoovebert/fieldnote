@@ -24,7 +24,7 @@ export function OrganizeDetail(props: Props) {
         <label className="secondary-button import-inline">
           <FilePlus2 size={17} aria-hidden="true" />
           Import
-          <input type="file" accept=".txt,.md,.csv,.docx" multiple onChange={importTranscript} />
+          <input type="file" accept=".txt,.md,.csv,.docx,.pdf" multiple onChange={importTranscript} />
         </label>
       </div>
       <div className="source-table" role="table" aria-label="Project sources">
