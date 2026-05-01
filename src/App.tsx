@@ -2655,6 +2655,7 @@ function ListView({
       )}
       {activeView === 'refine' && (
         <>
+          <p className="code-tree-hint">Drag a code onto another to nest it. Drop above to unparent.</p>
           <div
             className={`code-tree-root-drop${rootDropActive ? ' is-drop-target' : ''}`}
             onDragOver={(event) => {
