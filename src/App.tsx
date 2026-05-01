@@ -85,7 +85,6 @@ import type {
 import './App.css'
 
 type WorkspaceView = 'overview' | 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
-type SourceFolderFilter = 'All' | 'Archived' | string
 type AnalyzePanel = 'query' | 'matrix' | 'frequency' | 'cooccurrence' | 'crosstab'
 type MatrixColumnMode = 'case' | 'attribute'
 
@@ -355,7 +354,6 @@ function App() {
   const [newProjectTitle, setNewProjectTitle] = useState('')
   const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [activeView, setActiveView] = useState<WorkspaceView>('overview')
-  const [sourceFolderFilter, setSourceFolderFilter] = useState<SourceFolderFilter>('All')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
   const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
@@ -409,12 +407,6 @@ function App() {
   const activeSources = sources.filter((source) => !source.archived)
   const archivedSources = sources.filter((source) => source.archived)
   const sourceFolders = Array.from(new Set(['Internals', 'Externals', ...activeSources.map((source) => source.folder).filter(Boolean)]))
-  const visibleSources =
-    sourceFolderFilter === 'Archived'
-      ? archivedSources
-      : sourceFolderFilter === 'All'
-        ? activeSources
-        : activeSources.filter((source) => source.folder === sourceFolderFilter)
   const activeSourceMemo = memos.find((memo) => memo.linkedType === 'source' && memo.linkedId === activeSource.id)
   const activeSourceWords = activeSource.content.trim() ? activeSource.content.trim().split(/\s+/).length : 0
   const projectMemo = memos.find((memo) => memo.linkedType === 'project') ?? activeMemo
@@ -504,7 +496,6 @@ function App() {
     setQueryName('')
     setActiveSavedQueryId('')
     setAnalyzePanel('query')
-    setSourceFolderFilter('All')
     hasLoadedRemoteProject.current = true
     setSaveStatus('Project open.')
   }
@@ -1310,7 +1301,6 @@ function App() {
 
   function restoreActiveSource() {
     updateSource(activeSource.id, { archived: false })
-    setSourceFolderFilter(activeSource.folder || 'All')
   }
 
   function deleteActiveSource() {
@@ -1421,8 +1411,6 @@ function App() {
     const files = Array.from(event.target.files ?? [])
     if (!files.length) return
 
-    const targetFolder = sourceFolderFilter !== 'All' && sourceFolderFilter !== 'Archived' ? sourceFolderFilter : 'Internals'
-
     Promise.all(
       files.map(async (file, index) => {
         const sourceFile = await readSourceFile(file)
@@ -1430,7 +1418,7 @@ function App() {
           id: `source-${Date.now()}-${index}`,
           title: file.name.replace(/\.[^.]+$/, ''),
           kind: sourceFile.kind,
-          folder: targetFolder,
+          folder: 'Internals',
           content: sourceFile.content || '[No readable text found in this file.]',
           importedAt: new Date().toISOString(),
         }
@@ -1438,7 +1426,6 @@ function App() {
     ).then((newSources) => {
       setSources((current) => [...newSources, ...current])
       selectActiveSource(newSources[0].id)
-      setSourceFolderFilter(targetFolder)
       setActiveView('organize')
       setSelectionHint(`${newSources.length} source${newSources.length === 1 ? '' : 's'} imported.`)
       event.target.value = ''
@@ -1804,7 +1791,6 @@ function App() {
               activeSourceId={activeSource.id}
               activeCodeId={activeCode.id}
               sources={activeSources}
-              visibleSources={sources}
               cases={cases}
               savedQueries={savedQueries}
               activeSavedQueryId={activeSavedQueryId}
@@ -1939,11 +1925,10 @@ function App() {
 
         {projectId && activeView === 'organize' && (
           <OrganizeDetail
-            visibleSources={visibleSources}
+            sources={activeSources}
             activeSource={activeSource}
             excerpts={excerpts}
             memos={memos}
-            sourceFolderFilter={sourceFolderFilter}
             importTranscript={importTranscript}
             selectActiveSource={selectActiveSource}
           />
@@ -2591,7 +2576,6 @@ function ListView({
   activeSourceId,
   activeCodeId,
   sources,
-  visibleSources,
   cases,
   savedQueries,
   activeSavedQueryId,
@@ -2611,7 +2595,6 @@ function ListView({
   activeSourceId: string
   activeCodeId: string
   sources: Source[]
-  visibleSources: Source[]
   cases: Case[]
   savedQueries: SavedQuery[]
   activeSavedQueryId: string
@@ -2633,20 +2616,8 @@ function ListView({
     <>
       <div className="pane-title">
         <FileText size={16} aria-hidden="true" />
-        <span>{activeView === 'organize' || activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Queries' : 'Exports'}</span>
+        <span>{activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Queries' : 'Exports'}</span>
       </div>
-      {activeView === 'organize' &&
-        visibleSources.map((source) => (
-          <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
-            <FileText size={17} aria-hidden="true" />
-            <div>
-              <strong>{source.title}</strong>
-              <span>
-                {source.kind} - {excerpts.filter((excerpt) => excerpt.sourceId === source.id).length} references
-              </span>
-            </div>
-          </button>
-        ))}
       {activeView === 'code' && (
         <SourcesView
           sources={sources}

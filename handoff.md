@@ -411,22 +411,33 @@ Implemented:
 - Added first-pass crosstabs in Analyze: codes × the cartesian product of two attributes, row/column totals, Count / Row % / Col % toggle, and CSV export.
 - Replaced the single attribute filter slot with an array of `(attributeId, value)` filters AND'd together; legacy saved queries auto-migrate on read. Crosstab cells now drill into the query view with a smart merge that preserves text/case filters and replaces conflicting code/attribute filters so the drilled query result count matches the cell count.
 - Moved CSV export into Report mode.
+- M6 Report: real preview, formatted Word + PDF outputs, sidebar Raw-data summary.
+- Top-nav restructure: modes moved from a left mode-switcher to a top horizontal nav (Overview · Organize · Code · Refine · Classify · Analyze · Report) alongside brand block + project switcher.
+- Phase 4 persistence split: extracted `src/persistence/{shape,io,useAutosave}` from App.tsx. shape.ts is pure (11 row-builders + normalize/compose + postgrestInList), io.ts is async Supabase, useAutosave is the React hook owning debounce + in-flight guard. App.tsx dropped ~415 lines.
+- Pure destructive-op modules in `src/lib/{code,excerpt,case,source}Operations.ts` with 38+ unit tests covering merge/delete/split/restore semantics; prior inline App-methods replaced by these.
+- Project Overview mode: per-project landing with title + description (new column on `fieldnote_projects`), Progress and Ontology stat cards, full-width Project memo textarea. Default landing when opening a project. Header has project switcher + top nav.
+- Unified `SourcesView` component (folder headers + collapsible nested source rows) used by Organize sidebar and Code sidebar — same display everywhere sources appear.
+- Width gate: app shows a "needs a wider screen" message below 1024px instead of rendering a broken layout.
+- Auto-load most-recent project on sign-in (was: user landed on empty Create form even when projects existed).
+- Crosstab col-key separator switched from `∥` (printable) to U+001F (control char) to defuse the value-collision class. Regression test added.
 
 Still needed:
 
-- Project rename/delete/share controls.
+- Project delete/share controls (rename works via inline-edit on Overview).
 - Mode-specific right rails outside Organize need another design pass.
 - Organize mode still needs folder rename/delete, archive filters beyond the basic archive bucket, and richer source previews.
 - Refine mode still needs hierarchy drag-and-drop, stronger code splitting, and deeper codebook cleanup tools.
 - Classify still needs attribute import, case groups, and better filtering.
 - M5.3 (query result snapshots): persist `fieldnote_query_results` rows for point-in-time captures.
-- Report preview and Word/PDF export remain placeholders for MVP.
+- Non-text source types (PDF, DOCX rich content, audio/video, image regions) — only plain-text import works today.
+- Tablet/mobile: blocked behind a 1024px gate, no responsive design.
+- Persistence-layer integration tests (mocked Supabase) — deferred during Phase 4.
 
 ## Required Next Step
 
 Do **not** add more one-off UI panels.
 
-Next implementation should pick up M6 Report mode: report preview / formatted Word/PDF outputs, reusing `src/analyze/exportImage.ts`.
+Top of the open list: **Refine hierarchy drag-and-drop**. Parent assignment exists via select dropdown; users want to drag a code onto another to nest, drag to root to unparent. Core qualitative-research interaction.
 
 ## Design Direction
 
@@ -457,10 +468,5 @@ https://fieldnote-seven.vercel.app
 
 ## Recent Commits
 
-- `5339fd2` Add M5.1 Analyze visualizations (integrate views, lazy NetworkGraph chunk)
-- `d7ee415` Document mode-based product plan
-- `5589edd` Add handoff and enlarge memo rail
-- `254523b` Make right rail memo context aware
-- `71e7c7e` Make research workspace flow functional
-- `3cf63ab` Add Supabase auth schema migration
-- `61690a6` Replace access key with Supabase auth
+For an up-to-date list run `git log --oneline -15`. The handoff bullets above
+are the canonical narrative; commit history is the canonical record.

@@ -3,24 +3,23 @@ import { FilePlus2, FileText } from 'lucide-react'
 import type { Excerpt, Memo, Source } from '../../lib/types'
 
 type Props = {
-  visibleSources: Source[]
+  sources: Source[]
   activeSource: Source
   excerpts: Excerpt[]
   memos: Memo[]
-  sourceFolderFilter: string
   importTranscript: (event: ChangeEvent<HTMLInputElement>) => void
   selectActiveSource: (id: string) => void
 }
 
 export function OrganizeDetail(props: Props) {
-  const { visibleSources, activeSource, excerpts, memos, sourceFolderFilter, importTranscript, selectActiveSource } = props
+  const { sources, activeSource, excerpts, memos, importTranscript, selectActiveSource } = props
 
   return (
     <article className="detail-card organize-surface">
       <div className="source-register-heading">
         <div>
           <p className="detail-kicker">Source register</p>
-          <h2>{sourceFolderFilter === 'All' ? 'All sources' : sourceFolderFilter}</h2>
+          <h2>All sources</h2>
         </div>
         <label className="secondary-button import-inline">
           <FilePlus2 size={17} aria-hidden="true" />
@@ -37,7 +36,7 @@ export function OrganizeDetail(props: Props) {
           <small>References</small>
           <small>Memo</small>
         </div>
-        {visibleSources.map((source) => {
+        {sources.map((source) => {
           const referenceCount = excerpts.filter((excerpt) => excerpt.sourceId === source.id).length
           const hasMemo = memos.some((memo) => memo.linkedType === 'source' && memo.linkedId === source.id && memo.body.trim())
 
@@ -52,10 +51,10 @@ export function OrganizeDetail(props: Props) {
             </button>
           )
         })}
-        {!visibleSources.length && (
+        {!sources.length && (
           <article className="empty-list-state">
             <FileText size={20} aria-hidden="true" />
-            <strong>No sources in this folder</strong>
+            <strong>No sources yet</strong>
             <span>Import a text file or move an existing source here from the properties rail.</span>
           </article>
         )}
