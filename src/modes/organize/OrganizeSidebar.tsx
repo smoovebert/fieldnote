@@ -9,10 +9,12 @@ type Props = {
   activeSourceId: string | null
   onSelectSource: (id: string) => void
   importTranscript: (event: ChangeEvent<HTMLInputElement>) => void
+  onRenameFolder: (oldName: string, newName: string) => void
+  onDeleteFolder: (name: string) => void
 }
 
 export function OrganizeSidebar(props: Props) {
-  const { activeSources, archivedSources, activeSourceId, onSelectSource, importTranscript } = props
+  const { activeSources, archivedSources, activeSourceId, onSelectSource, importTranscript, onRenameFolder, onDeleteFolder } = props
 
   return (
     <section className="folder-pane" aria-label="Sources">
@@ -30,6 +32,8 @@ export function OrganizeSidebar(props: Props) {
         archivedSources={archivedSources}
         activeSourceId={activeSourceId}
         onSelectSource={onSelectSource}
+        onRenameFolder={onRenameFolder}
+        onDeleteFolder={onDeleteFolder}
       />
     </section>
   )

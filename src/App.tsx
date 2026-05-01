@@ -1166,6 +1166,22 @@ function App() {
     }
   }
 
+  function renameFolder(oldName: string, newName: string) {
+    if (oldName === 'Internals' || !newName.trim()) return
+    if (newName === oldName) return
+    setSources((current) => current.map((source) => (source.folder === oldName ? { ...source, folder: newName } : source)))
+  }
+
+  function deleteFolder(name: string) {
+    if (name === 'Internals') return
+    const affected = sources.filter((source) => source.folder === name).length
+    const message = affected === 0
+      ? `Delete the empty folder "${name}"?`
+      : `Delete "${name}"? Its ${affected} source${affected === 1 ? '' : 's'} will move to Internals.`
+    if (!window.confirm(message)) return
+    setSources((current) => current.map((source) => (source.folder === name ? { ...source, folder: 'Internals' } : source)))
+  }
+
   function updateProjectTitle(title: string) {
     setProjectTitle(title)
   }
@@ -1804,6 +1820,8 @@ function App() {
               selectActiveSource(id)
             }}
             importTranscript={importTranscript}
+            onRenameFolder={renameFolder}
+            onDeleteFolder={deleteFolder}
           />
         )}
 

@@ -4197,3 +4197,63 @@ textarea {
 .list-item[draggable="true"].is-dragging {
   cursor: grabbing;
 }
+
+.sources-view-folder-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.sources-view-folder-row > .sources-view-folder {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sources-view-folder-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.sources-view-folder-row:hover .sources-view-folder-actions,
+.sources-view-folder-actions:focus-within {
+  opacity: 1;
+}
+
+.sources-view-folder-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--shell-ink-3, #9ca3af);
+  cursor: pointer;
+}
+
+.sources-view-folder-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--shell-ink, #ffffff);
+}
+
+.sources-view-folder-action.sources-view-folder-action-danger:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+}
+
+.sources-view-folder-rename {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  padding: 2px 6px;
+  border-radius: 4px;
+  outline: 1px solid rgba(255, 255, 255, 0.32);
+}
