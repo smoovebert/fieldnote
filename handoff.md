@@ -75,7 +75,7 @@ Major parity gaps:
 - non-text source types
 - media/image region coding
 - annotations, sentiment codes, and relationships
-- full source search and deeper formal query system
+- deeper formal query system beyond the shipped header search
 - advanced visualizations beyond current first-pass charts
 - transcription
 - AI assistant
@@ -87,18 +87,19 @@ Remaining functionality grouped by LOE:
 **Small**
 
 - ~~Folder rename/delete~~ ✓ shipped (Internals protected; archive filters beyond the bucket still TBD).
-- ~~Attribute import from CSV~~ ✓ shipped (case groups still TBD).
+- ~~Attribute import from CSV~~ ✓ shipped.
+- ~~Basic case grouping view~~ ✓ shipped (group cases by an attribute in Classify; persistent case sets still TBD).
 - ~~Saved query result snapshots for point-in-time evidence captures~~ ✓ shipped (coded_excerpt only; other panel kinds TBD).
 - ~~Report settings for included sections/fields~~ ✓ shipped.
-- Code hierarchy polish beyond drag-and-drop: clearer tree controls, bulk cleanup, and hierarchy reporting (split + dedupe banner shipped; bulk-multi-select recode still TBD).
+- Code hierarchy polish beyond drag-and-drop: clearer tree controls, bulk cleanup, and hierarchy reporting (split, exact dedupe banner, and orphan review shipped; bulk-multi-select recode still TBD).
 - ~~Excel/XLSX versions of current CSV exports~~ ✓ shipped.
 - First-run UX with sample-vs-blank choice ✓ shipped.
 
 **Medium**
 
-- Full source search across uncoded source text, memos, code definitions, and case fields.
-- Richer PDF/DOCX import preview while still coding extracted text.
-- ~~Codebook cleanup: split code + duplicate detection~~ ✓ shipped (orphan-reference review + bulk recode multi-select still TBD).
+- ~~Full-project search~~ ✓ shipped in the header (sources, memos, codes, cases, and excerpts; deeper formal query tools still TBD).
+- Richer PDF/DOCX preview while still coding extracted text (PDF and DOCX text extraction shipped; native page/rich preview still TBD).
+- ~~Codebook cleanup: split code + duplicate detection~~ ✓ shipped (orphan-reference review also shipped; bulk recode multi-select still TBD).
 - First-class analysis objects: saved matrices/crosstabs/charts with stored results — extend the existing `fieldnote_query_results` table to other panel kinds.
 - More visualization surfaces: hierarchy chart, relationship map, concept map v1.
 - ~~Report builder customization (sections/fields)~~ ✓ shipped (embedded chart outputs in the Report still TBD).
@@ -393,8 +394,8 @@ Typing in a missing context memo creates it automatically.
 - AI draft panel is only a placeholder.
 - Analyze has useful filters (now multi-attribute), saved queries, matrix coding, word frequency, code co-occurrence, crosstabs with cell drill-down, and coded-excerpt query snapshots. Remaining gap: snapshots for non-query analysis panels and first-class saved analysis objects.
 - Report mode has a real preview, section toggles, formatted Word/PDF outputs, and CSV/XLSX raw-data exports. Remaining gaps are embedded chart bundles and full archive export.
-- Classify mode has real cases, source assignments, editable text attributes, and attribute CSV import. Remaining gap: case groups.
-- Code hierarchy supports parent assignment, tree display, drag-to-nest, drag-to-root, split code, and exact duplicate-name review. Remaining gaps are bulk recode multi-select, orphan reference review, and fuzzy duplicate detection.
+- Classify mode has real cases, source assignments, editable text attributes, attribute CSV import, and attribute-based grouping. Remaining gap: persistent case sets.
+- Code hierarchy supports parent assignment, tree display, drag-to-nest, drag-to-root, split code, exact duplicate-name review, and orphan reference review. Remaining gaps are bulk recode multi-select and fuzzy duplicate detection.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
 
@@ -460,16 +461,20 @@ Implemented:
 - Report customization: section toggles in the Report sidebar (Project memo, Codebook, Coded excerpts, Cases, Source memos) flow through to live preview + PDF + Word exports.
 - Saved-query result snapshots: `fieldnote_query_results` table (RLS via project ownership) captures point-in-time excerpt lists for any saved coded-excerpt query. Pin button in Analyze, snapshot list with download/delete in the right inspector.
 - Refine codebook cleanup: split code (move selected references to a new code), duplicate-name banner with click-to-jump links, and clearer "Merge / bulk recode" label on the existing merge.
+- Header search: Cmd/Ctrl+K project search across source text, memos, code names/descriptions, case names/notes, and coded excerpts.
+- Import extraction: PDF files now use `pdfjs-dist` for real page text extraction; DOCX imports preserve more block/list structure via Mammoth HTML -> sanitized structured text.
+- Classify case grouping: the case sheet can group cases by any attribute value.
+- Refine orphan review: references whose codes were deleted or missing can be reviewed, re-tagged, or deleted.
 
 Still needed:
 
 - Project share controls (delete works; sharing/inviting is unbuilt).
 - Mode-specific right rails outside Organize need another design pass.
 - Organize mode still needs richer source previews.
-- Classify still needs case groups and richer filtering.
+- Classify still needs persistent case sets and richer filtering.
 - Snapshots beyond coded-excerpt queries (matrix / wordfreq / co-occurrence / crosstab snapshots) — extension of the existing `fieldnote_query_results` table via the `result_kind` discriminator.
-- Codebook cleanup beyond split/dedupe: bulk recode UX (multi-select rows in a code's references and re-tag without deleting source), orphan reference review, fuzzy-match duplicate detection (currently exact-normalized match only).
-- Non-text source types (PDF as PDF, DOCX rich content, audio/video, image regions) — only plain-text extraction/import works today.
+- Codebook cleanup beyond split/dedupe/orphan review: bulk recode UX (multi-select rows in a code's references and re-tag without deleting source), fuzzy-match duplicate detection (currently exact-normalized match only).
+- Non-text source types (PDF as PDF with page anchors, DOCX rich preview, audio/video, image regions) — text extraction/import works today, but native source rendering/coding is not built.
 - Tablet/mobile: blocked behind a 1024px gate, no responsive design.
 - Persistence-layer integration tests (mocked Supabase) — deferred during Phase 4.
 
@@ -482,15 +487,15 @@ Project sharing is parked (most QDA usage is solo; building it before
 the demand exists is unjustified). Top of the remaining list, in
 recommended order:
 
-1. **Full source search** — search across uncoded source text + memos
-   + code definitions + case fields. Highest-frequency missing tool.
-2. **Non-text source types** — coding PDF as PDF (with page anchors),
+1. **Non-text source types** — coding PDF as PDF (with page anchors),
    richer DOCX, eventually audio/video with transcript-linked playback.
-3. **AI-assist** — suggested codes / summaries / "find more like this".
+2. **AI-assist** — suggested codes / summaries / "find more like this".
    Real differentiator; needs its own brainstorm before scoping.
-4. Lower-priority polish: richer source previews; case groups in
-   Classify; orphan-reference review; multi-select bulk recode in
-   Refine; embedded chart outputs in the formatted Report.
+3. **Saved analysis objects beyond coded-query snapshots** — matrices,
+   crosstabs, word frequency, and co-occurrence snapshots.
+4. Lower-priority polish: richer source previews; persistent case sets,
+   multi-select bulk recode in Refine, fuzzy duplicate detection, and
+   embedded chart outputs in the formatted Report.
 
 ## Design Direction
 

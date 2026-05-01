@@ -157,13 +157,13 @@ That is intentional for MVP, but it is not the full product definition.
 
 ### Major Parity Gaps
 
-- non-text source types
-- PDF/DOCX rich parsing and preview beyond plain-text extraction
+- native non-text source rendering/coding
+- PDF/DOCX rich preview beyond the shipped plain-text extraction
 - image/media region coding
 - audio/video transcription and playback
-- deeper codebook cleanup tools beyond split code, exact duplicate review, and hierarchy drag editing
+- deeper codebook cleanup tools beyond split code, exact duplicate review, orphan review, and hierarchy drag editing
 - annotations and relationships
-- full source search and deeper formal queries
+- deeper formal queries beyond the shipped full-project header search
 - snapshots for non-query analysis panels and first-class analysis objects
 - advanced visualizations beyond current first-pass charts
 - AI-assisted analysis
@@ -176,15 +176,15 @@ That is intentional for MVP, but it is not the full product definition.
 #### Small
 
 - Richer archive filters.
-- Basic case groups.
+- Persistent case sets beyond the shipped attribute grouping view.
 - Snapshots for matrix, word frequency, co-occurrence, and crosstab panels.
-- Code hierarchy cleanup polish: clearer tree controls, hierarchy reporting, orphan review, and bulk recode tools.
+- Code hierarchy cleanup polish: clearer tree controls, hierarchy reporting, and bulk recode tools.
 
 #### Medium
 
-- Full source search across uncoded text, memos, code definitions, cases, and attributes.
-- PDF/DOCX preview while coding extracted text.
-- Codebook cleanup tools beyond the shipped split/exact-duplicate pass: bulk recode, orphan-reference review, fuzzy duplicate-code review.
+- Formal search/query tools beyond the shipped header search across sources, memos, codes, cases, and excerpts.
+- PDF/DOCX native preview while coding extracted text.
+- Codebook cleanup tools beyond the shipped split/exact-duplicate/orphan-review pass: bulk recode and fuzzy duplicate-code review.
 - Saved analysis objects for matrices, crosstabs, and charts.
 - Hierarchy charts, relationship maps, and concept maps v1.
 - Embedded charts and chart bundles in Report mode.
@@ -1011,4 +1011,4 @@ Best candidates:
 
 - Analyze: first-class saved analysis objects and snapshots for matrix, word frequency, co-occurrence, and crosstab panels.
 - Report: embedded charts or full archive export.
-- Refine: bulk recode multi-select, orphan reference review, and fuzzy duplicate detection.
+- Refine: bulk recode multi-select and fuzzy duplicate detection.
