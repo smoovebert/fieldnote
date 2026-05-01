@@ -72,7 +72,7 @@ import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import { SourcesView } from './components/SourcesView'
 import { BACKUP_MIME, backupFilename, buildBackup, validateBackup } from './lib/backup'
-import { deleteRecoverySnapshot, isLocalAheadOfRemote, readRecoverySnapshot, writeRecoverySnapshot } from './lib/localRecovery'
+import { deleteRecoverySnapshot, isLocalAheadOfRemote, readRecoverySnapshot } from './lib/localRecovery'
 import type {
   Attribute,
   AttributeValue,
@@ -661,10 +661,18 @@ function App() {
     }
   }
 
-  async function createProjectFromSeed(title: string, seed: ProjectData) {
+  async function createProjectFromSeed(
+    title: string,
+    seed: ProjectData,
+    settings?: { lineNumberingMode?: LineNumberingMode; lineNumberingWidth?: number; description?: string },
+  ) {
     if (!session?.user || isCreatingProject) return
     setIsCreatingProject(true)
     setSaveStatus('Creating project...')
+
+    const lnMode = settings?.lineNumberingMode ?? DEFAULT_LINE_NUMBERING_MODE
+    const lnWidth = settings?.lineNumberingWidth ?? DEFAULT_LINE_NUMBERING_WIDTH
+    const desc = settings?.description ?? seed.description ?? ''
 
     try {
       const {
@@ -680,6 +688,7 @@ function App() {
         .insert({
           owner_id: user.id,
           title,
+          description: desc,
           active_source_id: seed.activeSourceId,
           source_title: seed.sources[0]?.title ?? '',
           transcript: seed.sources[0]?.content ?? '',
@@ -688,6 +697,8 @@ function App() {
           codes: seed.codes,
           memos: seed.memos,
           excerpts: seed.excerpts,
+          line_numbering_mode: lnMode,
+          line_numbering_width: lnWidth,
         })
         .select('*')
         .single()
@@ -696,7 +707,7 @@ function App() {
       const nextProject = createdProject as ProjectRow
       await saveProject(nextProject.id, {
         title,
-        description: '',
+        description: desc,
         active_source_id: seed.activeSourceId,
         source_title: seed.sources[0]?.title ?? '',
         transcript: seed.sources[0]?.content ?? '',
@@ -709,9 +720,9 @@ function App() {
         attributes: seed.attributes,
         attributeValues: seed.attributeValues,
         savedQueries: seed.savedQueries,
-        line_numbering_mode: DEFAULT_LINE_NUMBERING_MODE,
-        line_numbering_width: DEFAULT_LINE_NUMBERING_WIDTH,
-        projectData: seed,
+        line_numbering_mode: lnMode,
+        line_numbering_width: lnWidth,
+        projectData: { ...seed, description: desc },
       }, supabase)
       setProjectRows((current) => [nextProject, ...current])
       setNewProjectTitle('')
@@ -747,10 +758,16 @@ function App() {
   async function deleteProject(projectIdToDelete: string) {
     const target = projectRows.find((row) => row.id === projectIdToDelete)
     const label = target?.title || 'this project'
-    const confirmed = window.confirm(
-      `Delete "${label}"? This permanently removes the project and all its sources, codes, memos, excerpts, cases, and saved queries. This cannot be undone.`,
-    )
-    if (!confirmed) return
+    // Backup-first opportunity only applies to the active project (we can only
+    // export what's currently loaded). For other projects, skip straight to confirm.
+    if (projectIdToDelete === projectId) {
+      if (!offerBackupBeforeRisky(`Delete "${label}"? Permanently removes the project and all its sources, codes, memos, excerpts, cases, attribute values, and saved queries.`)) return
+    } else {
+      const confirmed = window.confirm(
+        `Delete "${label}"? This permanently removes the project and all its sources, codes, memos, excerpts, cases, and saved queries. This cannot be undone.`,
+      )
+      if (!confirmed) return
+    }
 
     setSaveStatus('Deleting project...')
     try {
@@ -867,6 +884,13 @@ function App() {
     projectId,
     payload: persistencePayload,
     supabase,
+    userId: session?.user?.id ?? null,
+    projectRow: projectId
+      ? (() => {
+          const row = projectRows.find((p) => p.id === projectId)
+          return row ? { id: row.id, title: row.title, updated_at: row.updated_at ?? null } : null
+        })()
+      : null,
     setSaveStatus,
     onSaved: (savedPayload) => {
       setProjectRows((current) =>
@@ -889,17 +913,9 @@ function App() {
             : project
         )
       )
-      // Write a local recovery snapshot of the just-saved state. If the next
-      // remote save fails, this is the rescue copy.
-      const userId = session?.user?.id
-      const currentRow = projectRows.find((row) => row.id === projectId)
-      if (userId && currentRow) {
-        void writeRecoverySnapshot({
-          userId,
-          projectRow: currentRow,
-          data: savedPayload.projectData,
-        })
-      }
+      // The IDB recovery snapshot is now written eagerly inside useAutosave
+      // (writeRecoveryDraft before the network attempt; markRecoverySnapshotSynced
+      // after success). Keeping it here would double-write; the hook owns it.
     },
   })
 
@@ -1250,10 +1266,9 @@ function App() {
     if (descendantCodeIds(codes, activeCode.id).includes(targetCode.id)) return
 
     const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id)).length
-    const shouldMerge = window.confirm(
+    if (!offerBackupBeforeRisky(
       `Merge "${activeCode.name}" into "${targetCode.name}"? ${references} coded reference${references === 1 ? '' : 's'} will move to "${targetCode.name}", and "${activeCode.name}" will be removed from the codebook.`
-    )
-    if (!shouldMerge) return
+    )) return
 
     const next = libMergeCodeInto({
       codes,
@@ -2149,7 +2164,32 @@ function App() {
       excerpts: backup.excerpts,
     }
     const restoredTitle = `${backup.project.title} (restored)`
-    await createProjectFromSeed(restoredTitle, seed)
+    await createProjectFromSeed(restoredTitle, seed, {
+      lineNumberingMode: backup.project.lineNumberingMode,
+      lineNumberingWidth: backup.project.lineNumberingWidth,
+      description: backup.project.description,
+    })
+  }
+
+  /**
+   * Offer the user a chance to download a `.fieldnote.json` backup
+   * before a risky/destructive action. Two-step:
+   *   1) "Download a backup first?" [OK = download, then proceed]
+   *      [Cancel = skip and go to step 2]
+   *   2) "Proceed without a backup?" [OK = proceed] [Cancel = abort]
+   * Returns true when the caller should proceed, false when the user
+   * cancelled outright.
+   */
+  function offerBackupBeforeRisky(actionDescription: string): boolean {
+    if (!projectId) return true // no project to back up
+    const wantsBackup = window.confirm(
+      `${actionDescription}\n\nThis is destructive. Download a .fieldnote.json backup first? (Strongly recommended.)\n\nOK = download backup, then continue. Cancel = skip the backup.`,
+    )
+    if (wantsBackup) {
+      exportProjectBackup()
+      return true
+    }
+    return window.confirm(`Proceed without a backup? OK = continue. Cancel = abort the whole operation.`)
   }
 
   function exportProjectBackup() {
@@ -2474,6 +2514,7 @@ function App() {
             projectMemo={memos.find((memo) => memo.linkedType === 'project')}
             userId={session?.user?.id ?? null}
             projectId={projectId}
+            onExportBackup={exportProjectBackup}
             onTitleChange={setProjectTitle}
             onDescriptionChange={setDescription}
             onProjectMemoChange={updateProjectMemo}

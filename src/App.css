@@ -4984,3 +4984,19 @@ textarea {
   line-height: 1.4;
   color: var(--muted, #6b7280);
 }
+
+.overview-safety-backup {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #16a34a;
+  border-radius: 6px;
+  background: #16a34a;
+  color: #ffffff;
+  font: 700 13px/1 inherit;
+  cursor: pointer;
+}
+.overview-safety-backup:hover { background: #15803d; border-color: #15803d; }
+.overview-safety-backup:disabled { opacity: 0.45; cursor: not-allowed; background: #16a34a; border-color: #16a34a; }

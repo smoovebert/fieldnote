@@ -12,7 +12,7 @@
 //   leaving the browser. Capped at LAST_N_VERSIONS per project; older
 //   rows are pruned automatically.
 
-import type { ProjectData, ProjectRow } from './types'
+import type { ProjectData } from './types'
 
 const DB_NAME = 'fieldnote-recovery'
 const DB_VERSION = 2
@@ -28,6 +28,13 @@ export type RecoverySnapshot = {
   description: string
   capturedAt: string // ISO timestamp from the client clock
   remoteUpdatedAt: string | null // last seen Supabase updated_at
+  /**
+   * True when this snapshot reflects state that has been confirmed in
+   * Supabase. False when the snapshot is a pre-save draft — these
+   * exist precisely so a network failure between debounce and write
+   * doesn't lose the user's most recent edits.
+   */
+  synced: boolean
   data: ProjectData
 }
 
@@ -77,11 +84,69 @@ function utcDate(now = new Date()) {
   return now.toISOString().slice(0, 10)
 }
 
-export async function writeRecoverySnapshot(input: {
+// The recovery store only needs id/title/updated_at from the project row;
+// everything else is captured inside the ProjectData payload.
+export type RecoveryProjectMeta = { id: string; title: string; updated_at: string | null }
+
+/**
+ * Write a draft snapshot — call this BEFORE attempting the remote
+ * save so that if the network fails between the user's edit and
+ * Supabase accepting the write, the latest state still survives in
+ * IndexedDB. `synced` is set to false; call markRecoverySnapshotSynced
+ * after the remote save succeeds.
+ *
+ * Daily versioned history is also written here (overwriting today's
+ * version), so even unsynced drafts get rolled into the daily history.
+ */
+export async function writeRecoveryDraft(input: {
   userId: string
-  projectRow: ProjectRow
+  projectRow: RecoveryProjectMeta
   data: ProjectData
 }): Promise<void> {
+  await writeSnapshotInternal(input, false)
+}
+
+/**
+ * Mark the latest recovery snapshot for (userId, projectId) as synced.
+ * Called from the autosave hook after Supabase confirms the write.
+ */
+export async function markRecoverySnapshotSynced(userId: string, projectId: string): Promise<void> {
+  const db = await openDb()
+  const key = snapshotKey(userId, projectId)
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_LATEST, 'readwrite')
+    const store = tx.objectStore(STORE_LATEST)
+    const getReq = store.get(key)
+    getReq.onsuccess = () => {
+      const existing = getReq.result as RecoverySnapshot | undefined
+      if (!existing) {
+        resolve()
+        return
+      }
+      store.put({ ...existing, synced: true })
+    }
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error ?? new Error('Could not mark snapshot synced'))
+  })
+}
+
+/**
+ * Backwards-compatible alias for writeRecoveryDraft + immediate sync.
+ * Used by code paths that already have confirmed-saved state.
+ */
+export async function writeRecoverySnapshot(input: {
+  userId: string
+  projectRow: RecoveryProjectMeta
+  data: ProjectData
+}): Promise<void> {
+  await writeSnapshotInternal(input, true)
+}
+
+async function writeSnapshotInternal(input: {
+  userId: string
+  projectRow: RecoveryProjectMeta
+  data: ProjectData
+}, synced: boolean): Promise<void> {
   const db = await openDb()
   const now = new Date()
   const dateUtc = utcDate(now)
@@ -95,6 +160,7 @@ export async function writeRecoverySnapshot(input: {
     description: input.data.description ?? '',
     capturedAt,
     remoteUpdatedAt: input.projectRow.updated_at ?? null,
+    synced,
     data: input.data,
   }
 

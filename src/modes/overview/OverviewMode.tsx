@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { BarChart3, History, Network, Plus, RotateCcw } from 'lucide-react'
+import { BarChart3, Download, History, Network, Plus, RotateCcw } from 'lucide-react'
 import type { Code, Excerpt, Memo, Source } from '../../lib/types'
 import { computeOntology, computeProgress } from './stats'
 import { StatCard } from './StatCard'
@@ -20,6 +20,7 @@ type Props = {
   onProjectMemoChange: (next: string) => void
   onNewSource: () => void
   onRestoreVersion: (version: ProjectVersion) => void
+  onExportBackup: () => void
 }
 
 export function OverviewMode(props: Props) {
@@ -131,6 +132,15 @@ export function OverviewMode(props: Props) {
         <p className="overview-safety-note">
           <strong>Habit:</strong> download a backup before any big restructuring (mass merges, deletes, or imports). It takes a second and gives you a known-good rollback point.
         </p>
+        <button
+          type="button"
+          className="overview-safety-backup"
+          onClick={props.onExportBackup}
+          disabled={!props.projectId}
+        >
+          <Download size={14} aria-hidden="true" />
+          Download backup now (.fieldnote.json)
+        </button>
       </section>
 
       {versions.length > 0 && (

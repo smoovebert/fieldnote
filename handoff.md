@@ -613,21 +613,38 @@ update local state and remote in the same handler.
 
 ### 7. Catastrophic-recovery runbook
 
-If something goes wrong:
+We are intentionally on Supabase free tier. **There is no platform
+auto-restore, no point-in-time recovery, no 24h RPO.** Real recovery
+order, in priority of how good the data is:
 
 1. **App is still up, user is panicking:** tell them to use "Backup
-   current project" immediately. The download is a snapshot they can
-   re-import as a new project.
-2. **Supabase data corrupted:** restore from the latest Supabase
-   automated backup (dashboard → Database → Backups → Restore).
-   Acceptable RPO is 24 h on the daily backup tier.
-3. **User thinks they lost work after a crash:** on next sign-in, the
-   IndexedDB recovery dialog should appear. If they declined and want
-   it back, DevTools → Application → IndexedDB → fieldnote-recovery →
-   project_snapshots — the row is keyed `<userId>::<projectId>`.
+   current project" (project switcher dropdown OR the green safety panel
+   on Overview) immediately. The download is a snapshot they can
+   re-import as a new project. This is the highest-fidelity copy
+   available — every authored object plus settings.
+2. **User thinks they lost work after a crash:** on next sign-in, the
+   IndexedDB recovery dialog appears automatically when the local copy
+   is newer than the remote. If they declined and want it back: DevTools
+   → Application → IndexedDB → `fieldnote-recovery` → `project_snapshots`
+   — the row is keyed `<userId>::<projectId>`. The `project_versions`
+   store has up to 10 daily versions per project.
+3. **Supabase data corrupted or gone (unrecoverable on free tier):**
+   - Best case: a recent `.fieldnote.json` from the user → import as a
+     new project.
+   - Next: the user's IndexedDB recovery (#2 above) on the same browser
+     they last used.
+   - Last resort: a manual Supabase CSV export you took **before** the
+     incident (Project Settings → Database → Export). If you didn't
+     take one, the data is gone.
 4. **Bad deploy is in production:** revert in Vercel dashboard → that
    release → "Promote to production." Vercel keeps the previous build
-   instantly available.
+   instantly available. This restores the app code; it does NOT touch
+   user data, which lives in Supabase.
+
+**There is no magic Supabase rollback on free tier.** The recovery
+chain is `.fieldnote.json` → IndexedDB → manual Supabase CSV export.
+If Stacey ever carries data she truly cannot lose, that's the moment
+to pay $25/mo for Pro and unlock daily auto-backups + 7-day PITR.
 
 ## Recent Commits
 
