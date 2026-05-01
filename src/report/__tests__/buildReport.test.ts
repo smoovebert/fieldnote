@@ -237,4 +237,47 @@ describe('buildReport', () => {
     })
     expect(m.cover.counts).toEqual({ sources: 1, codes: 1, references: 2, cases: 1 })
   })
+
+  it('includes only annotated snapshots, sorted by capturedAt desc', () => {
+    const m = buildReport({
+      projectTitle: 'P',
+      sources: [],
+      codes: [],
+      excerpts: [],
+      cases: [],
+      attributes: [],
+      attributeValues: [],
+      memos: [],
+      savedQueries: [
+        { id: 'q-access', name: 'Access barriers', queryType: 'coded_excerpt', definition: { codeId: 'c1', caseId: '', text: '', attributes: [] } },
+      ],
+      snapshots: [
+        {
+          id: 's-old', projectId: 'p', queryId: 'q-access',
+          capturedAt: '2026-04-25T10:00:00Z', label: 'pre-merge',
+          note: 'Theme reads as financial first.', resultKind: 'coded_excerpt',
+          definition: { codeId: 'c1', caseId: '', text: '', attributes: [] },
+          results: { excerpts: [{ id: 'e1', sourceTitle: 'Interview 01', codeIds: ['c1'], text: 'tuition was tight', note: '', sourceId: 'src-01' }] },
+        },
+        {
+          id: 's-new', projectId: 'p', queryId: 'q-access',
+          capturedAt: '2026-05-01T10:00:00Z', label: '',
+          note: '', resultKind: 'coded_excerpt',
+          definition: { codeId: 'c1', caseId: '', text: '', attributes: [] },
+          results: { excerpts: [] },
+        },
+        {
+          id: 's-newest', projectId: 'p', queryId: 'q-access',
+          capturedAt: '2026-05-02T10:00:00Z', label: 'post-merge',
+          note: 'Splits into financial vs. cultural.', resultKind: 'coded_excerpt',
+          definition: { codeId: 'c1', caseId: '', text: '', attributes: [] },
+          results: { excerpts: [] },
+        },
+      ],
+      now: FIXED_DATE,
+    })
+    expect(m.snapshotMemos.map((s) => s.snapshotId)).toEqual(['s-newest', 's-old'])
+    expect(m.snapshotMemos[0].queryName).toBe('Access barriers')
+    expect(m.snapshotMemos[0].label).toBe('post-merge')
+  })
 })

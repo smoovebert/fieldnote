@@ -131,6 +131,26 @@ export async function exportReportPdf(
     }
   }
 
+  // Analysis snapshots — only annotated ones, surfacing the
+  // researcher's interpretation alongside the captured evidence.
+  if (model.snapshotMemos.length > 0) {
+    sectionBreak()
+    writeWrapped('ANALYSIS SNAPSHOTS', { size: 14, bold: true, gap: 16 })
+    for (const sm of model.snapshotMemos) {
+      const titleSuffix = sm.label ? ` — ${sm.label}` : ''
+      writeWrapped(`${sm.queryName}${titleSuffix}`, { size: 12, bold: true, gap: 4 })
+      writeWrapped(
+        `Captured ${new Date(sm.capturedAtIso).toLocaleString()} · ${sm.excerptCount} excerpt${sm.excerptCount === 1 ? '' : 's'}`,
+        { size: 9, color: 120, gap: 6 },
+      )
+      writeWrapped(sm.note, { size: 11, gap: 8 })
+      for (const sample of sm.samples) {
+        writeWrapped(`"${sample.text}"`, { size: 11, gap: 2 })
+        writeWrapped(`— ${sample.sourceTitle}`, { size: 9, color: 120, gap: 8 })
+      }
+    }
+  }
+
   const blob = doc.output('blob')
   downloadBlob(blob, `fieldnote-${slugify(projectTitle)}-${model.cover.dateIso}.pdf`)
 }

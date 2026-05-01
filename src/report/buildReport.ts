@@ -1,5 +1,5 @@
 import type {
-  Attribute, AttributeValue, Case, Code, Excerpt, Memo, Source,
+  Attribute, AttributeValue, Case, Code, Excerpt, Memo, QueryResultSnapshot, SavedQuery, Source,
 } from '../lib/types'
 
 export type ReportModel = {
@@ -29,6 +29,19 @@ export type ReportModel = {
     sources: Array<{ id: string; title: string }>
   }>
   sourceMemos: Array<{ sourceId: string; sourceTitle: string; body: string }>
+  // Annotated saved-query snapshots: only those with a non-empty note
+  // appear, since the value of this section is the researcher's
+  // interpretation, not the raw excerpt list (which is exportable
+  // separately as CSV/XLSX from the snapshot row).
+  snapshotMemos: Array<{
+    snapshotId: string
+    queryName: string
+    label: string
+    capturedAtIso: string
+    note: string
+    excerptCount: number
+    samples: Array<{ sourceTitle: string; text: string }>
+  }>
 }
 
 export type BuildReportInput = {
@@ -40,6 +53,10 @@ export type BuildReportInput = {
   attributes: Attribute[]
   attributeValues: AttributeValue[]
   memos: Memo[]
+  // Optional with empty default — older callers (and tests) that don't
+  // care about snapshot memos can omit these without breaking.
+  savedQueries?: SavedQuery[]
+  snapshots?: QueryResultSnapshot[]
   now?: Date
 }
 
@@ -49,6 +66,7 @@ export type ReportIncludes = {
   sampleExcerpts: boolean
   cases: boolean
   sourceMemos: boolean
+  snapshotMemos: boolean
 }
 
 export const DEFAULT_REPORT_INCLUDES: ReportIncludes = {
@@ -57,6 +75,7 @@ export const DEFAULT_REPORT_INCLUDES: ReportIncludes = {
   sampleExcerpts: true,
   cases: true,
   sourceMemos: true,
+  snapshotMemos: true,
 }
 
 /**
@@ -71,6 +90,7 @@ export function applyReportIncludes(model: ReportModel, includes: ReportIncludes
     sampleExcerpts: includes.sampleExcerpts ? model.sampleExcerpts : [],
     cases: includes.cases ? model.cases : [],
     sourceMemos: includes.sourceMemos ? model.sourceMemos : [],
+    snapshotMemos: includes.snapshotMemos ? model.snapshotMemos : [],
   }
 }
 
@@ -82,6 +102,8 @@ function isoDate(d: Date): string {
 
 export function buildReport(input: BuildReportInput): ReportModel {
   const { projectTitle, sources, codes, excerpts, cases, attributes, attributeValues, memos } = input
+  const savedQueries = input.savedQueries ?? []
+  const snapshots = input.snapshots ?? []
   const dateIso = isoDate(input.now ?? new Date())
 
   const projectMemoBody = memos.find((m) => m.linkedType === 'project')?.body?.trim() ?? ''
@@ -182,6 +204,28 @@ export function buildReport(input: BuildReportInput): ReportModel {
       body: sourceMemoBySourceId.get(s.id)!,
     }))
 
+  // Annotated snapshots: include only those with a non-empty note. Order
+  // by capture time descending so the most recent interpretation appears
+  // first. Up to SAMPLE_CAP excerpts per snapshot are surfaced inline;
+  // the full list is downloadable separately from the inspector.
+  const queryNameById = new Map(savedQueries.map((q) => [q.id, q.name]))
+  const snapshotMemos: ReportModel['snapshotMemos'] = snapshots
+    .filter((s) => s.note.trim().length > 0)
+    .slice()
+    .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
+    .map((s) => ({
+      snapshotId: s.id,
+      queryName: queryNameById.get(s.queryId) ?? 'Saved query',
+      label: s.label,
+      capturedAtIso: s.capturedAt,
+      note: s.note.trim(),
+      excerptCount: s.results.excerpts.length,
+      samples: s.results.excerpts.slice(0, SAMPLE_CAP).map((e) => ({
+        sourceTitle: e.sourceTitle,
+        text: e.text,
+      })),
+    }))
+
   return {
     cover: {
       title: projectTitle,
@@ -198,5 +242,6 @@ export function buildReport(input: BuildReportInput): ReportModel {
     sampleExcerpts,
     cases: reportCases,
     sourceMemos,
+    snapshotMemos,
   }
 }

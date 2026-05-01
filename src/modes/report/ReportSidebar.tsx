@@ -21,6 +21,7 @@ const SECTION_LABELS: Array<{ key: keyof ReportIncludes; label: string }> = [
   { key: 'sampleExcerpts', label: 'Coded excerpts (samples per code)' },
   { key: 'cases', label: 'Cases' },
   { key: 'sourceMemos', label: 'Source memos' },
+  { key: 'snapshotMemos', label: 'Analysis snapshots (annotated)' },
 ]
 
 export function ReportSidebar({

@@ -46,6 +46,10 @@ npm run dev
 
 Then open the local URL Vite prints and sign up or sign in.
 
+## User Manual
+
+For a researcher-facing guide to the Fieldnote workflow, see [`docs/user-manual.md`](docs/user-manual.md).
+
 ## Checks
 
 ```bash

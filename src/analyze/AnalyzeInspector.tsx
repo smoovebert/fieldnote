@@ -12,6 +12,7 @@ type Snapshot = {
   queryId: string
   capturedAt: string
   label?: string | null
+  note?: string | null
   results: { excerpts: Excerpt[] }
 }
 
@@ -26,6 +27,7 @@ type Props = {
   onDeleteSavedQuery: (id: string) => void
   onDownloadSnapshotCsv: (snapshotId: string) => void
   onDeleteSnapshot: (snapshotId: string) => void
+  onUpdateSnapshotNote: (snapshotId: string, note: string) => void
   // exportActiveAnalysisCsv reads the click target to detect modifiers
   // (e.g. shift-click for a different format), so the event is forwarded
   // through unchanged rather than being swallowed by an arrow wrapper.
@@ -135,6 +137,13 @@ export function AnalyzeInspector(props: Props) {
                   <span>{snap.results.excerpts.length} excerpt{snap.results.excerpts.length === 1 ? '' : 's'}</span>
                   {snap.label && <em>{snap.label}</em>}
                 </div>
+                <textarea
+                  className="snapshots-note"
+                  value={snap.note ?? ''}
+                  placeholder="At this stage, this is how I understood the theme..."
+                  aria-label="Snapshot interpretation memo"
+                  onChange={(event) => props.onUpdateSnapshotNote(snap.id, event.target.value)}
+                />
                 <div className="snapshots-row-actions">
                   <button
                     type="button"

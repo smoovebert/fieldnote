@@ -101,6 +101,24 @@ export async function exportReportDocx(
     }
   }
 
+  // Analysis snapshots — include only those the researcher annotated.
+  if (model.snapshotMemos.length > 0) {
+    sections.push(heading('Analysis snapshots', 2))
+    for (const sm of model.snapshotMemos) {
+      const titleSuffix = sm.label ? ` — ${sm.label}` : ''
+      sections.push(heading(`${sm.queryName}${titleSuffix}`, 3))
+      sections.push(para(
+        `Captured ${new Date(sm.capturedAtIso).toLocaleString()} · ${sm.excerptCount} excerpt${sm.excerptCount === 1 ? '' : 's'}`,
+        { color: '606060' },
+      ))
+      sections.push(para(sm.note))
+      for (const sample of sm.samples) {
+        sections.push(para(`"${sample.text}"`))
+        sections.push(para(`— ${sample.sourceTitle}`, { color: '606060' }))
+      }
+    }
+  }
+
   const docFile = new Document({ sections: [{ children: sections }] })
   const blob = await Packer.toBlob(docFile)
   downloadBlob(blob, `fieldnote-${slugify(projectTitle)}-${model.cover.dateIso}.docx`)

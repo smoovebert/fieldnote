@@ -78,6 +78,10 @@ export type QueryResultSnapshot = {
   queryId: string
   capturedAt: string
   label: string
+  // Free-form interpretation memo attached to the snapshot — the researcher's
+  // "at this stage, this is how I understood the theme" note. Empty when the
+  // snapshot has just been pinned and not yet annotated.
+  note: string
   resultKind: 'coded_excerpt'
   definition: QueryDefinition
   results: { excerpts: Array<{ id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }> }

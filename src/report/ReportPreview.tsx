@@ -108,6 +108,30 @@ export function ReportPreview({ model }: Props) {
           ))}
         </section>
       )}
+
+      {model.snapshotMemos.length > 0 && (
+        <section className="report-section report-snapshot-memos">
+          <h2>Analysis snapshots</h2>
+          {model.snapshotMemos.map((sm) => (
+            <div key={sm.snapshotId} className="report-snapshot-block">
+              <h3 className="report-snapshot-title">{sm.queryName}{sm.label ? ` — ${sm.label}` : ''}</h3>
+              <p className="report-snapshot-meta">
+                Captured {new Date(sm.capturedAtIso).toLocaleString()} · {sm.excerptCount} excerpt{sm.excerptCount === 1 ? '' : 's'}
+              </p>
+              <p className="report-snapshot-note">{sm.note}</p>
+              {sm.samples.length > 0 && (
+                <ul className="report-snapshot-samples">
+                  {sm.samples.map((sample, i) => (
+                    <li key={i}>
+                      <em>{sample.sourceTitle}:</em> &ldquo;{sample.text}&rdquo;
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
     </article>
   )
 }

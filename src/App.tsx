@@ -626,6 +626,7 @@ function App() {
         queryId: row.query_id as string,
         capturedAt: row.captured_at as string,
         label: (row.label as string) ?? '',
+        note: (row.note as string) ?? '',
         resultKind: 'coded_excerpt',
         definition: row.definition as QueryResultSnapshot['definition'],
         results: row.results as QueryResultSnapshot['results'],
@@ -1094,8 +1095,10 @@ function App() {
         attributes,
         attributeValues,
         memos,
+        savedQueries,
+        snapshots: querySnapshots,
       }),
-    [projectTitle, sources, codes, excerpts, cases, attributes, attributeValues, memos],
+    [projectTitle, sources, codes, excerpts, cases, attributes, attributeValues, memos, savedQueries, querySnapshots],
   )
   const reportModel = useMemo(
     () => applyReportIncludes(reportModelFull, reportIncludes),
@@ -1752,12 +1755,30 @@ function App() {
       queryId: row.query_id as string,
       capturedAt: row.captured_at as string,
       label: (row.label as string) ?? '',
+      note: (row.note as string) ?? '',
       resultKind: 'coded_excerpt',
       definition: row.definition as QueryResultSnapshot['definition'],
       results: row.results as QueryResultSnapshot['results'],
     }
     setQuerySnapshots((current) => [snapshot, ...current])
     setSaveStatus(`Snapshot captured (${payload.results.excerpts.length} excerpts).`)
+  }
+
+  // Update the interpretation note attached to a snapshot. Optimistic
+  // local update + best-effort remote write — if the network drops, the
+  // snapshot list still reflects the user's edit and the next save retry
+  // catches up.
+  async function updateSnapshotNote(snapshotId: string, note: string) {
+    setQuerySnapshots((current) =>
+      current.map((s) => (s.id === snapshotId ? { ...s, note } : s)),
+    )
+    const { error } = await supabase
+      .from('fieldnote_query_results')
+      .update({ note })
+      .eq('id', snapshotId)
+    if (error) {
+      setSaveStatus(errorMessage(error, 'Could not save snapshot note.'))
+    }
   }
 
   async function deleteQuerySnapshot(snapshotId: string) {
@@ -3007,6 +3028,7 @@ function App() {
             onDeleteSavedQuery={deleteSavedQuery}
             onDownloadSnapshotCsv={downloadSnapshotCsv}
             onDeleteSnapshot={(id) => void deleteQuerySnapshot(id)}
+            onUpdateSnapshotNote={(id, note) => void updateSnapshotNote(id, note)}
             onExportActiveAnalysisCsv={exportActiveAnalysisCsv}
           />
         )}
