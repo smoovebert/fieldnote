@@ -1172,11 +1172,20 @@ button {
 
 .query-builder {
   display: grid;
-  grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(140px, 1fr)) auto;
-  align-items: end;
+  grid-template-columns: 1.5fr 1fr 1fr 1.4fr auto;
+  align-items: start;
   gap: 10px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--line);
+}
+
+.query-builder .property-field {
+  min-width: 0;
+}
+
+.query-builder .query-clear {
+  align-self: end;
+  height: 38px;
 }
 
 .query-builder .secondary-button {
