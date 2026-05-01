@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { ChevronDown, Plus } from 'lucide-react'
+import { ChevronDown, Plus, Trash2 } from 'lucide-react'
 import type { ProjectRow } from '../../lib/types'
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
   onSelectProject: (project: ProjectRow) => void
   onNewProjectTitleChange: (next: string) => void
   onCreateProject: () => void
+  onDeleteProject: (projectId: string) => void
 }
 
 export function ProjectSwitcher(props: Props) {
@@ -48,7 +49,7 @@ export function ProjectSwitcher(props: Props) {
               <li className="hps-empty">No projects yet.</li>
             )}
             {props.projects.map((project) => (
-              <li key={project.id}>
+              <li key={project.id} className="hps-row">
                 <button
                   type="button"
                   className={project.id === props.activeProjectId ? 'active' : ''}
@@ -61,6 +62,19 @@ export function ProjectSwitcher(props: Props) {
                   <span className="hps-meta">
                     {project.updated_at ? new Date(project.updated_at).toLocaleDateString() : '-'}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  className="hps-delete"
+                  aria-label={`Delete ${project.title || 'this project'}`}
+                  title="Delete project"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    props.onDeleteProject(project.id)
+                    setOpen(false)
+                  }}
+                >
+                  <Trash2 size={13} aria-hidden="true" />
                 </button>
               </li>
             ))}

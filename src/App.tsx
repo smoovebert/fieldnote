@@ -564,6 +564,39 @@ function App() {
     }
   }
 
+  async function deleteProject(projectIdToDelete: string) {
+    const target = projectRows.find((row) => row.id === projectIdToDelete)
+    const label = target?.title || 'this project'
+    const confirmed = window.confirm(
+      `Delete "${label}"? This permanently removes the project and all its sources, codes, memos, excerpts, cases, and saved queries. This cannot be undone.`,
+    )
+    if (!confirmed) return
+
+    setSaveStatus('Deleting project...')
+    try {
+      const { error } = await supabase.from('fieldnote_projects').delete().eq('id', projectIdToDelete)
+      if (error) throw error
+
+      const remaining = projectRows.filter((row) => row.id !== projectIdToDelete)
+      setProjectRows(remaining)
+
+      if (projectIdToDelete === projectId) {
+        if (remaining.length > 0) {
+          await applyProject(remaining[0])
+        } else {
+          hasLoadedRemoteProject.current = false
+          setProjectId(null)
+          setDescription('')
+          setSaveStatus('Create your first project.')
+        }
+      } else {
+        setSaveStatus('Project deleted.')
+      }
+    } catch (error) {
+      setSaveStatus(errorMessage(error as Error, 'Could not delete project.'))
+    }
+  }
+
   useEffect(() => {
     if (!isSupabaseConfigured) return
 
@@ -1695,6 +1728,7 @@ function App() {
             onSelectProject={(project) => void applyProject(project)}
             onNewProjectTitleChange={setNewProjectTitle}
             onCreateProject={() => void createProject()}
+            onDeleteProject={(id) => void deleteProject(id)}
           />
         </div>
 

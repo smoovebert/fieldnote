@@ -4003,6 +4003,30 @@ textarea {
 .hps-list button:hover { background: #f3f4f6; }
 .hps-list button.active { background: #eef2ff; }
 .hps-title { font-weight: 600; }
+
+.hps-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+.hps-row > button:first-child { flex: 1 1 auto; }
+.hps-delete {
+  flex: 0 0 auto;
+  width: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 100ms ease, color 100ms ease, background 100ms ease;
+}
+.hps-row:hover .hps-delete,
+.hps-delete:focus-visible { opacity: 1; }
+.hps-delete:hover { background: #fee2e2; color: #b91c1c; }
 .hps-meta { font-size: 12px; color: #6b7280; }
 .hps-empty { padding: 12px 10px; color: #6b7280; font-size: 13px; }
 .hps-create {
