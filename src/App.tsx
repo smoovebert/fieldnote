@@ -20,6 +20,7 @@ import {
   Rows3,
   Search,
   Settings,
+  Sparkles,
   Tags,
   Trash2,
   X,
@@ -2356,11 +2357,11 @@ function App() {
           <button
             type="button"
             className="settings-icon-btn"
-            aria-label="AI settings"
-            title="AI settings"
+            aria-label="AI assist settings"
+            title="AI assist settings"
             onClick={() => setAiSettingsOpen(true)}
           >
-            <Settings size={16} aria-hidden="true" />
+            <Sparkles size={16} aria-hidden="true" />
           </button>
           {projectId && (
             <button
