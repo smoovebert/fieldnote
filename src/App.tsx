@@ -1771,7 +1771,7 @@ function App() {
         onChange={importTranscript}
       />
 
-      <aside
+      {activeView !== 'overview' && <aside
         className={`workspace-sidebar ${sidebarCollapsed ? 'is-collapsed' : ''}`}
         aria-label="Workspace sidebar"
       >
@@ -1847,7 +1847,7 @@ function App() {
             <span className="sidebar-collapse-label">{sidebarCollapsed ? 'Expand' : 'Collapse'}</span>
           </button>
         </div>
-      </aside>
+      </aside>}
 
       <section className="detail-view" id="sources">
         <header className="detail-toolbar">
