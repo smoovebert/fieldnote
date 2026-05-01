@@ -2778,7 +2778,7 @@ function DetailTitle({
   if (activeView === 'report') {
     return <h2 className="static-detail-title">Report</h2>
   }
-  if (activeView === 'organize') {
+  if (activeView === 'organize' || activeView === 'overview') {
     return <input className="title-input" value={projectTitle} aria-label="Project title" onChange={(event) => onProjectTitleChange(event.target.value)} />
   }
   return <input className="title-input" value={activeSource.title} aria-label="Source title" onChange={(event) => onSourceTitleChange(event.target.value)} />
