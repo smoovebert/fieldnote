@@ -19,8 +19,6 @@ import {
   Plus,
   Rows3,
   Search,
-  Settings,
-  Sparkles,
   Tags,
   Trash2,
   X,
@@ -2343,26 +2341,6 @@ function App() {
             <Cloud size={14} aria-hidden="true" />
             <span>{saveStatus}</span>
           </div>
-          {projectId && (
-            <button
-              type="button"
-              className="header-icon-button"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Project settings"
-              title="Project settings"
-            >
-              <Settings size={18} aria-hidden="true" />
-            </button>
-          )}
-          <button
-            type="button"
-            className="settings-icon-btn"
-            aria-label="AI assist settings"
-            title="AI assist settings"
-            onClick={() => setAiSettingsOpen(true)}
-          >
-            <Sparkles size={16} aria-hidden="true" />
-          </button>
           {projectId && (
             <button
               type="button"
