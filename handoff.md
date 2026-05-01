@@ -541,8 +541,10 @@ of protection, weakest first:
 
 ### 2. IndexedDB local recovery (in-app, automatic)
 
-- Every successful Supabase save also writes the latest project state to
-  IndexedDB (`fieldnote-recovery` DB, `project_snapshots` store).
+- Every edit writes a pre-save draft to IndexedDB
+  (`fieldnote-recovery` DB, `project_snapshots` store) before the
+  network attempt. After Supabase confirms the save, that snapshot is
+  marked `synced: true`.
 - On project load, if the local copy's `capturedAt` is >5 s newer than
   the remote `updated_at`, the user gets a confirm dialog to restore.
 - Single snapshot per (user, project); each save overwrites. Survives

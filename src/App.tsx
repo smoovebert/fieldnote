@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import {
   BarChart3,
@@ -499,7 +499,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
-  const hasLoadedRemoteProject = useRef(false)
+  const [hasLoadedRemoteProject, setHasLoadedRemoteProject] = useState(false)
   const overviewFileInputRef = useRef<HTMLInputElement>(null)
 
   const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
@@ -555,23 +555,22 @@ function App() {
     cases.forEach((item) => item.sourceIds.forEach((sourceId) => map.set(sourceId, item)))
     return map
   }, [cases])
-  const valuesForAttribute = useMemo(() => {
-    const cache = new Map<string, string[]>()
-    return (attributeId: string): string[] => {
-      if (!attributeId) return []
-      const cached = cache.get(attributeId)
-      if (cached) return cached
-      const values = Array.from(
-        new Set(
-          attributeValues
-            .filter((av) => av.attributeId === attributeId && av.value.trim())
-            .map((av) => av.value.trim()),
-        ),
-      ).sort()
-      cache.set(attributeId, values)
-      return values
+  const attributeValuesByAttribute = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const attributeValue of attributeValues) {
+      const trimmed = attributeValue.value.trim()
+      if (!trimmed) continue
+      const existing = map.get(attributeValue.attributeId) ?? []
+      if (!existing.includes(trimmed)) existing.push(trimmed)
+      map.set(attributeValue.attributeId, existing)
     }
+    for (const values of map.values()) values.sort()
+    return map
   }, [attributeValues])
+  const valuesForAttribute = useCallback((attributeId: string): string[] => {
+    if (!attributeId) return []
+    return attributeValuesByAttribute.get(attributeId) ?? []
+  }, [attributeValuesByAttribute])
 
   async function applyProject(project: ProjectRow) {
     setSaveStatus('Opening project...')
@@ -602,7 +601,7 @@ function App() {
     setQueryName('')
     setActiveSavedQueryId('')
     setAnalyzePanel('query')
-    hasLoadedRemoteProject.current = true
+    setHasLoadedRemoteProject(true)
     setSaveStatus('Project open.')
 
     // Local-recovery prompt: if IndexedDB holds a snapshot newer than what
@@ -781,7 +780,7 @@ function App() {
         if (remaining.length > 0) {
           await applyProject(remaining[0])
         } else {
-          hasLoadedRemoteProject.current = false
+          setHasLoadedRemoteProject(false)
           setProjectId(null)
           setDescription('')
           setSaveStatus('Create your first project.')
@@ -808,8 +807,8 @@ function App() {
   const userId = session?.user?.id ?? null
   useEffect(() => {
     if (!userId) {
-      hasLoadedRemoteProject.current = false
       queueMicrotask(() => {
+        setHasLoadedRemoteProject(false)
         setProjectId(null)
         setDescription('')
         setProjectRows([])
@@ -819,8 +818,8 @@ function App() {
     }
 
     let isCurrent = true
-    hasLoadedRemoteProject.current = false
     queueMicrotask(() => {
+      setHasLoadedRemoteProject(false)
       setProjectId(null)
       setDescription('')
       setSaveStatus('Loading projects...')
@@ -880,7 +879,7 @@ function App() {
   }, [projectId, projectTitle, description, activeSourceId, activeSource, projectMemo, sources, codes, memos, excerpts, cases, attributes, attributeValues, savedQueries, lineNumberingMode, lineNumberingWidth, projectData])
 
   useAutosave({
-    enabled: Boolean(session?.user && projectId && hasLoadedRemoteProject.current),
+    enabled: Boolean(session?.user && projectId && hasLoadedRemoteProject),
     projectId,
     payload: persistencePayload,
     supabase,

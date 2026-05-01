@@ -120,7 +120,7 @@ export function OverviewMode(props: Props) {
             <strong>Auto-saves</strong> — every change is sent to Supabase within a second. The status pill at the top of the page shows <em>Saving... / Saved</em>; if it ever turns red, the change failed and you should fix the connection or download a backup before closing the tab.
           </li>
           <li>
-            <strong>Local recovery</strong> — every successful save also writes a copy to your browser. If you reopen the project and the local copy is newer than the server (e.g. you lost connection), you'll get a prompt to restore it.
+            <strong>Local recovery</strong> — every edit is first written to your browser, then synced to Supabase. If you reopen the project and the local copy is newer than the server (e.g. you lost connection), you'll get a prompt to restore it.
           </li>
           <li>
             <strong>Local history</strong> — the last {LAST_N_VERSIONS_HINT} daily versions of every project are kept in your browser. Roll back from the list below.
