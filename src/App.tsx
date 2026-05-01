@@ -71,6 +71,7 @@ import {
 import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import { SourcesView } from './components/SourcesView'
+import { AiSettingsPanel } from './components/AiSettingsPanel'
 import { BACKUP_MIME, backupFilename, buildBackup, validateBackup } from './lib/backup'
 import { deleteRecoverySnapshot, isLocalAheadOfRemote, readRecoverySnapshot } from './lib/localRecovery'
 import type {
@@ -497,6 +498,7 @@ function App() {
   const [lineNumberingMode, setLineNumberingMode] = useState<LineNumberingMode>(DEFAULT_LINE_NUMBERING_MODE)
   const [lineNumberingWidth, setLineNumberingWidth] = useState(DEFAULT_LINE_NUMBERING_WIDTH)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const [hasLoadedRemoteProject, setHasLoadedRemoteProject] = useState(false)
@@ -2309,6 +2311,15 @@ function App() {
               <Settings size={18} aria-hidden="true" />
             </button>
           )}
+          <button
+            type="button"
+            className="settings-icon-btn"
+            aria-label="AI settings"
+            title="AI settings"
+            onClick={() => setAiSettingsOpen(true)}
+          >
+            <Settings size={16} aria-hidden="true" />
+          </button>
           {projectId && (
             <button
               type="button"
@@ -3127,6 +3138,9 @@ function App() {
         onWidthChange={setLineNumberingWidth}
         onClose={() => setSettingsOpen(false)}
       />
+    )}
+    {aiSettingsOpen && session?.user && (
+      <AiSettingsPanel userId={session.user.id} onClose={() => setAiSettingsOpen(false)} />
     )}
     </>
   )
