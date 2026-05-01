@@ -893,7 +893,7 @@ This unlocks:
 
 - report builder
 - persisted export history and regenerated DOCX/PDF outputs
-- Excel export
+- persisted export history and regenerated XLSX outputs
 - chart export
 - project archive export
 

@@ -67,7 +67,7 @@ Full feature ambition:
 Current MVP slice:
 
 ```text
-projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV/Word/PDF exports
+projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV/XLSX/Word/PDF exports
 ```
 
 Major parity gaps:
@@ -80,7 +80,7 @@ Major parity gaps:
 - transcription
 - AI assistant
 - collaboration and inter-coder reliability
-- archive, Excel, and reference/bibliography export formats
+- archive and reference/bibliography export formats
 
 Remaining functionality grouped by LOE:
 
@@ -90,7 +90,6 @@ Remaining functionality grouped by LOE:
 - Attribute import from CSV and basic case groups.
 - Saved query result snapshots for point-in-time evidence captures.
 - Report settings for included sections/fields.
-- Excel/XLSX versions of current CSV exports.
 - Code hierarchy polish beyond drag-and-drop: clearer tree controls, bulk cleanup, and hierarchy reporting.
 
 **Medium**
@@ -360,6 +359,7 @@ Typing in a missing context memo creates it automatically.
 - Analyze mode can export the current query result set as CSV.
 - Analyze mode can export the current matrix coding table as CSV.
 - Analyze mode can export current word frequency and code co-occurrence results as CSV.
+- Report raw-data exports can be downloaded as CSV or XLSX.
 - Report mode has a live report preview plus formatted Word (`.docx`) and PDF exports.
 
 ### Analyze
@@ -390,7 +390,7 @@ Typing in a missing context memo creates it automatically.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
 - Analyze is first-pass only: it has useful filters (now multi-attribute), saved queries, matrix coding, word frequency, code co-occurrence, and crosstabs (with cell drill-down), but no stored query result snapshots yet.
-- Report mode has a real preview and formatted Word/PDF outputs; remaining gaps are report customization, Excel exports, embedded chart bundles, and full archive export.
+- Report mode has a real preview, formatted Word/PDF outputs, and CSV/XLSX raw-data exports; remaining gaps are report customization, embedded chart bundles, and full archive export.
 - Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
 - Code hierarchy supports parent assignment, tree display, drag-to-nest, and drag-to-root; remaining gaps are deeper code splitting and codebook cleanup.
 - Project sharing has database groundwork but no invite UI.

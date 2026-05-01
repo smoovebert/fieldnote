@@ -150,7 +150,7 @@ Support getting research out of the system:
 The current build only covers a narrow but important spine:
 
 ```text
-projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV/Word/PDF exports
+projects -> text import -> text coding -> codebook refinement -> memos -> basic cases -> CSV/XLSX/Word/PDF exports
 ```
 
 That is intentional for MVP, but it is not the full product definition.
@@ -169,7 +169,7 @@ That is intentional for MVP, but it is not the full product definition.
 - AI-assisted analysis
 - project sharing and team workflows
 - inter-coder reliability
-- Excel, archive, and reference/bibliography export formats
+- archive and reference/bibliography export formats
 
 ### Remaining Functionality By LOE
 
@@ -179,7 +179,6 @@ That is intentional for MVP, but it is not the full product definition.
 - Attribute CSV import and basic case groups.
 - Saved query result snapshots.
 - Report section/field toggles.
-- XLSX exports that mirror the existing CSV exports.
 - Code hierarchy cleanup polish: clearer tree controls, hierarchy reporting, and bulk tools.
 
 #### Medium
@@ -229,7 +228,7 @@ Current MVP loop target:
 
 - Code mode should avoid duplicate references when the same passage is coded again.
 - Refine mode should let users edit code names, colors, descriptions, and reference notes.
-- Report mode should keep the formatted Word/PDF path useful while adding customization, Excel exports, and archive support.
+- Report mode should keep the formatted Word/PDF and CSV/XLSX paths useful while adding customization and archive support.
 
 Each mode should answer one question:
 
@@ -751,6 +750,7 @@ First MVP pass implemented:
 - case sheet CSV
 - coded excerpts by case CSV
 - current Analyze query CSV
+- XLSX versions of raw-data exports
 - report preview
 - formatted Word export
 - formatted PDF export
@@ -758,7 +758,6 @@ First MVP pass implemented:
 Still missing:
 
 - report builder customization
-- Excel/XLSX export
 - embedded chart bundles
 - full project archive
 
@@ -1012,5 +1011,5 @@ The mode shell is now in place. The next code pass should deepen one of the part
 Best candidates:
 
 - Analyze: stored query result snapshots or first-class saved analysis objects.
-- Report: report customization, Excel exports, embedded charts, or full archive export.
+- Report: report customization, embedded charts, or full archive export.
 - Refine: richer codebook cleanup, stronger splitting, and bulk recode tools.

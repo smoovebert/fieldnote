@@ -115,7 +115,7 @@ export function Landing() {
           </div>
           <div id="outputs">
             <strong>Evidence gets out.</strong>
-            <p>Export coded excerpts, codebooks, case sheets, memos, charts, Word reports, PDFs, and raw CSVs.</p>
+            <p>Export coded excerpts, codebooks, case sheets, memos, charts, Word reports, PDFs, CSVs, and XLSX workbooks.</p>
           </div>
         </section>
       </main>

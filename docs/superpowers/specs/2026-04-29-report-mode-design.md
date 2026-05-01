@@ -4,7 +4,7 @@ Status: approved 2026-04-29. Ready for implementation plan.
 
 ## Goal
 
-Report mode becomes a single comprehensive research report. The main pane shows a live HTML preview of the assembled report. Two primary actions in the topbar — `Export PDF` and `Export Word` — produce formatted, downloadable files from the same data model. The existing 6 CSV exports move to the sidebar as a secondary "Raw data" cluster.
+Report mode becomes a single comprehensive research report. The main pane shows a live HTML preview of the assembled report. Two primary actions in the topbar — `Export PDF` and `Export Word` — produce formatted, downloadable files from the same data model. The existing 6 raw-data exports move to the sidebar as a secondary "Raw data" cluster with CSV/XLSX format selection.
 
 ## Non-goals (v1)
 
@@ -97,7 +97,7 @@ In Report mode:
 - Topbar's right-side tools cluster gets two primary action buttons (Code-mode-style):
   - `Export PDF` → calls `exportReportPdf(reportModel, projectTitle)`.
   - `Export Word` → calls `exportReportDocx(reportModel, projectTitle)`.
-- Sidebar in Report mode gets a new "Raw data" section listing the 6 existing CSV exports as compact `.fn-sb-source`-style rows (using the existing handlers — `exportCsv`, `exportCodebookCsv`, `exportCaseSheetCsv`, `exportCaseExcerptCsv`, `exportAnalyzeCsv`, `exportMemosCsv`). The handlers stay where they are in App.tsx; the sidebar just exposes them.
+- Sidebar in Report mode gets a new "Raw data" section listing the 6 existing raw exports as compact `.fn-sb-source`-style rows (using the existing handlers — `exportCsv`, `exportCodebookCsv`, `exportCaseSheetCsv`, `exportCaseExcerptCsv`, `exportAnalyzeCsv`, `exportMemosCsv`). A CSV/XLSX segmented control determines whether those handlers download `.csv` files or matching `.xlsx` workbooks.
 
 The earlier hide-list-view-in-Report decision is reversed for this phase — the sidebar now has Raw-data content. The mode-aware sidebar logic is adjusted accordingly.
 
@@ -141,7 +141,7 @@ Both lazy-loaded — `import('jspdf')` inside `exportReportPdf` so they don't sh
 2. Switch to Report mode → preview renders below the topbar; sections appear cleanly; no awkward placeholders for empty sub-data.
 3. Click `Export PDF` → file downloads, opens in any PDF reader, sections present and paginated, text is selectable, code names + excerpt text are in selectable text (not images).
 4. Click `Export Word` → file downloads, opens in Word/Google Docs/Pages as an editable doc; section headings styled as Word heading levels.
-5. Sidebar `Raw data` section: each of the 6 CSV buttons still works as before.
+5. Sidebar `Raw data` section: each of the 6 raw-data rows works in both CSV and XLSX modes.
 
 **No new component tests.** Preview is presentational; data is tested in the builder.
 
