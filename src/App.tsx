@@ -2298,24 +2298,35 @@ function App() {
   }
 
   /**
-   * Offer the user a chance to download a `.fieldnote.json` backup
-   * before a risky/destructive action. Two-step:
-   *   1) "Download a backup first?" [OK = download, then proceed]
-   *      [Cancel = skip and go to step 2]
-   *   2) "Proceed without a backup?" [OK = proceed] [Cancel = abort]
-   * Returns true when the caller should proceed, false when the user
-   * cancelled outright.
+   * Confirm a destructive action and auto-download a defensive backup.
+   *
+   * Why one confirm, not two: Chromium-based browsers (including Arc)
+   * surface a "Prevent this page from creating additional dialogs"
+   * checkbox after a few rapid window.confirm calls. The previous
+   * version of this helper showed two confirms back-to-back (offer
+   * backup → proceed-without-backup), which combined with the
+   * destructive action's own confirm produced three dialogs in a row
+   * and tripped that suppression. Once tripped, every subsequent
+   * window.confirm returns false silently — meaning every destructive
+   * flow aborted with no feedback to the user. Single confirm + an
+   * unconditional best-effort backup avoids the trap and still gives
+   * the safety net.
    */
   function offerBackupBeforeRisky(actionDescription: string): boolean {
     if (!projectId) return true // no project to back up
-    const wantsBackup = window.confirm(
-      `${actionDescription}\n\nThis is destructive. Download a .fieldnote.json backup first? (Strongly recommended.)\n\nOK = download backup, then continue. Cancel = skip the backup.`,
+    const proceed = window.confirm(
+      `${actionDescription}\n\nThis is destructive and cannot be undone. A .fieldnote.json backup of the current project will be downloaded automatically before continuing.`,
     )
-    if (wantsBackup) {
+    if (!proceed) return false
+    try {
       exportProjectBackup()
-      return true
+    } catch (err) {
+      // Backup failure shouldn't block the user — they already accepted
+      // the action. Log so it's visible if Stacey reports a missing
+      // backup later.
+      console.warn('Pre-action backup failed:', err)
     }
-    return window.confirm(`Proceed without a backup? OK = continue. Cancel = abort the whole operation.`)
+    return true
   }
 
   function exportProjectBackup() {
