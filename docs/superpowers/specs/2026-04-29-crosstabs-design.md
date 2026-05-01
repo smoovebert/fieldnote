@@ -177,4 +177,4 @@ Manual / visual checks in dev:
 - Heatmap of crosstab counts (would need single-value-per-cell, so percent toggle would have to choose).
 - 3+ attribute crosstabs.
 - **Click-to-drill on a cell**, which requires extending the analyze filter model to hold a second attribute filter (and applying the row code at the same time). This is the natural follow-up once the filter model is multi-attribute.
-- Stored query result snapshots (M5.3) remain pending and are unaffected by this work.
+- Coded-excerpt query result snapshots shipped later in M5.3. Crosstab snapshots remain a follow-up via the existing `result_kind` discriminator.

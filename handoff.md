@@ -105,8 +105,8 @@ Remaining functionality grouped by LOE:
 
 **Large**
 
-- Project sharing UI, roles, reviewer workflow, coding assignments, and conflict handling.
-- Inter-coder reliability workflow.
+- Project sharing UI, roles, reviewer workflow, coding assignments, and conflict handling. **Parked** — qual research is mostly solo; not on the immediate path. Schema groundwork (`fieldnote_project_members`, `fieldnote_project_invites`, RLS rewrites for ~10 tables) is documented but unbuilt.
+- Inter-coder reliability workflow. **Parked** with sharing.
 - Audio/video upload, transcription, speaker labels, and transcript-linked playback.
 - Image/PDF/media region coding with durable file storage.
 - AI summaries, suggested codes/sub-codes, thematic suggestions, and ask-your-data with human approval.
@@ -391,10 +391,10 @@ Typing in a missing context memo creates it automatically.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
-- Analyze is first-pass only: it has useful filters (now multi-attribute), saved queries, matrix coding, word frequency, code co-occurrence, and crosstabs (with cell drill-down), but no stored query result snapshots yet.
-- Report mode has a real preview, formatted Word/PDF outputs, and CSV/XLSX raw-data exports; remaining gaps are report customization, embedded chart bundles, and full archive export.
-- Classify mode has real cases, source assignments, and editable text attributes, but no attribute import or case groups yet.
-- Code hierarchy supports parent assignment, tree display, drag-to-nest, and drag-to-root; remaining gaps are deeper code splitting and codebook cleanup.
+- Analyze has useful filters (now multi-attribute), saved queries, matrix coding, word frequency, code co-occurrence, crosstabs with cell drill-down, and coded-excerpt query snapshots. Remaining gap: snapshots for non-query analysis panels and first-class saved analysis objects.
+- Report mode has a real preview, section toggles, formatted Word/PDF outputs, and CSV/XLSX raw-data exports. Remaining gaps are embedded chart bundles and full archive export.
+- Classify mode has real cases, source assignments, editable text attributes, and attribute CSV import. Remaining gap: case groups.
+- Code hierarchy supports parent assignment, tree display, drag-to-nest, drag-to-root, split code, and exact duplicate-name review. Remaining gaps are bulk recode multi-select, orphan reference review, and fuzzy duplicate detection.
 - Project sharing has database groundwork but no invite UI.
 - Supabase email signup hit a temporary rate limit during automated testing.
 
@@ -477,11 +477,20 @@ Still needed:
 
 Do **not** add more one-off UI panels.
 
-The MVP path and most of Phase A/B Small + Medium items are done. Top
-of the remaining list: **Project sharing UI + roles** (Large) — biggest
-unbuilt piece on the wishlist; needs auth/RLS design + invite flow.
-Lower-effort follow-ups: full source search; richer source previews;
-non-text source types; case groups in Classify.
+The MVP path and most of Phase A/B Small + Medium items are done.
+Project sharing is parked (most QDA usage is solo; building it before
+the demand exists is unjustified). Top of the remaining list, in
+recommended order:
+
+1. **Full source search** — search across uncoded source text + memos
+   + code definitions + case fields. Highest-frequency missing tool.
+2. **Non-text source types** — coding PDF as PDF (with page anchors),
+   richer DOCX, eventually audio/video with transcript-linked playback.
+3. **AI-assist** — suggested codes / summaries / "find more like this".
+   Real differentiator; needs its own brainstorm before scoping.
+4. Lower-priority polish: richer source previews; case groups in
+   Classify; orphan-reference review; multi-select bulk recode in
+   Refine; embedded chart outputs in the formatted Report.
 
 ## Design Direction
 

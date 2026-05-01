@@ -161,10 +161,10 @@ That is intentional for MVP, but it is not the full product definition.
 - PDF/DOCX rich parsing and preview beyond plain-text extraction
 - image/media region coding
 - audio/video transcription and playback
-- deeper codebook cleanup tools beyond the current parent/child tree and drag editing
+- deeper codebook cleanup tools beyond split code, exact duplicate review, and hierarchy drag editing
 - annotations and relationships
 - full source search and deeper formal queries
-- persisted query result snapshots and first-class analysis objects
+- snapshots for non-query analysis panels and first-class analysis objects
 - advanced visualizations beyond current first-pass charts
 - AI-assisted analysis
 - project sharing and team workflows
@@ -175,20 +175,19 @@ That is intentional for MVP, but it is not the full product definition.
 
 #### Small
 
-- Folder rename/delete and richer archive filters.
-- Attribute CSV import and basic case groups.
-- Saved query result snapshots.
-- Report section/field toggles.
-- Code hierarchy cleanup polish: clearer tree controls, hierarchy reporting, and bulk tools.
+- Richer archive filters.
+- Basic case groups.
+- Snapshots for matrix, word frequency, co-occurrence, and crosstab panels.
+- Code hierarchy cleanup polish: clearer tree controls, hierarchy reporting, orphan review, and bulk recode tools.
 
 #### Medium
 
 - Full source search across uncoded text, memos, code definitions, cases, and attributes.
 - PDF/DOCX preview while coding extracted text.
-- Codebook cleanup tools: split code, bulk recode, duplicate-code review, orphan-reference review.
+- Codebook cleanup tools beyond the shipped split/exact-duplicate pass: bulk recode, orphan-reference review, fuzzy duplicate-code review.
 - Saved analysis objects for matrices, crosstabs, and charts.
 - Hierarchy charts, relationship maps, and concept maps v1.
-- Report builder customization and embedded charts.
+- Embedded charts and chart bundles in Report mode.
 
 #### Large
 
@@ -1010,6 +1009,6 @@ The mode shell is now in place. The next code pass should deepen one of the part
 
 Best candidates:
 
-- Analyze: stored query result snapshots or first-class saved analysis objects.
-- Report: report customization, embedded charts, or full archive export.
-- Refine: richer codebook cleanup, stronger splitting, and bulk recode tools.
+- Analyze: first-class saved analysis objects and snapshots for matrix, word frequency, co-occurrence, and crosstab panels.
+- Report: embedded charts or full archive export.
+- Refine: bulk recode multi-select, orphan reference review, and fuzzy duplicate detection.

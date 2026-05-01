@@ -1,6 +1,6 @@
 # M6 — Report Mode Design
 
-Status: approved 2026-04-29. Ready for implementation plan.
+Status: implemented. Initial v1 shipped 2026-04-29; section toggles shipped 2026-05-01.
 
 ## Goal
 
@@ -8,7 +8,6 @@ Report mode becomes a single comprehensive research report. The main pane shows 
 
 ## Non-goals (v1)
 
-- Per-section toggles or custom report builder.
 - Embedded charts from Analyze (matrix / word frequency / co-occurrence images). Defer.
 - Per-code "show all excerpts" view. Sample cap of 3 per code is fixed.
 - Cover-page customization (logos, alt titles). Uses project title only.
@@ -25,6 +24,8 @@ Report mode becomes a single comprehensive research report. The main pane shows 
 6. **Source memos** — every source that has a non-empty memo body. Each entry: source title as a sub-heading, memo body as flowing prose. Skipped if no source memos.
 
 Empty sections are silently skipped — no awkward "No data" placeholders. The cover stat line always renders even with zero counts.
+
+Report customization now includes section toggles for Project memo, Codebook, Coded excerpts, Cases, and Source memos. Those toggles flow through the live preview and the formatted PDF/Word exports.
 
 ## Architecture
 
@@ -148,7 +149,7 @@ Both lazy-loaded — `import('jspdf')` inside `exportReportPdf` so they don't sh
 ## Out-of-scope follow-ups
 
 - Embedded Analyze charts in a "Methodology snapshot" section.
-- Per-section toggles / custom report builder UI.
+- More granular custom report builder UI beyond the shipped section toggles.
 - Cover page customization.
 - Markdown / LaTeX exporters (would slot in alongside PDF/Word using the same `ReportModel`).
 - Linked references — the report has prose, not in-text citations linking back to specific excerpts in the app.
