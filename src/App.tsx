@@ -3,8 +3,6 @@ import type { ChangeEvent, MouseEvent } from 'react'
 import {
   BarChart3,
   BookOpenText,
-  ChevronLeft,
-  ChevronRight,
   Cloud,
   Database,
   Download,
@@ -486,15 +484,7 @@ function App() {
   const [analyzeView, setAnalyzeView] = useState<AnalyzeViewState>(DEFAULT_ANALYZE_VIEW)
   const [matrixColumnMode, setMatrixColumnMode] = useState<MatrixColumnMode>('case')
   const [matrixAttributeId, setMatrixAttributeId] = useState('')
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem('fieldnote.sidebarCollapsed') === 'true'
-  })
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem('fieldnote.sidebarCollapsed', String(sidebarCollapsed))
-  }, [sidebarCollapsed])
   const [lineNumberingMode, setLineNumberingMode] = useState<LineNumberingMode>(DEFAULT_LINE_NUMBERING_MODE)
   const [lineNumberingWidth, setLineNumberingWidth] = useState(DEFAULT_LINE_NUMBERING_WIDTH)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -2293,24 +2283,6 @@ function App() {
             onExportBackup={exportProjectBackup}
             onImportBackup={(file) => void importProjectBackup(file)}
           />
-          {projectId && (
-            <HeaderSearch
-              sources={sources}
-              codes={codes}
-              excerpts={excerpts}
-              cases={cases}
-              memos={memos}
-              onOpenSource={(id) => { selectActiveSource(id); setActiveView('code') }}
-              onOpenCode={(id) => { setActiveCodeId(id); setActiveView('refine') }}
-              onOpenCase={(id) => {
-                const targetCase = cases.find((c) => c.id === id)
-                if (targetCase?.sourceIds[0]) selectActiveSource(targetCase.sourceIds[0])
-                setActiveView('classify')
-              }}
-              onOpenMemo={(id) => { setActiveMemoId(id) }}
-              onOpenExcerpt={(sourceId) => { selectActiveSource(sourceId); setActiveView('code') }}
-            />
-          )}
         </div>
 
         <nav className="app-header-modes" aria-label="Research modes">
@@ -2332,6 +2304,25 @@ function App() {
             )
           })}
         </nav>
+
+        {projectId && (
+          <HeaderSearch
+            sources={sources}
+            codes={codes}
+            excerpts={excerpts}
+            cases={cases}
+            memos={memos}
+            onOpenSource={(id) => { selectActiveSource(id); setActiveView('code') }}
+            onOpenCode={(id) => { setActiveCodeId(id); setActiveView('refine') }}
+            onOpenCase={(id) => {
+              const targetCase = cases.find((c) => c.id === id)
+              if (targetCase?.sourceIds[0]) selectActiveSource(targetCase.sourceIds[0])
+              setActiveView('classify')
+            }}
+            onOpenMemo={(id) => { setActiveMemoId(id) }}
+            onOpenExcerpt={(sourceId) => { selectActiveSource(sourceId); setActiveView('code') }}
+          />
+        )}
 
         <div className="header-tools">
           <div
@@ -2365,7 +2356,7 @@ function App() {
       />
 
       {activeView !== 'overview' && <aside
-        className={`workspace-sidebar ${sidebarCollapsed ? 'is-collapsed' : ''}`}
+        className="workspace-sidebar"
         aria-label="Workspace sidebar"
       >
         {activeView === 'organize' && (
@@ -2435,18 +2426,6 @@ function App() {
         </section>
         )}
 
-        <div className="sidebar-account">
-          <button
-            type="button"
-            className="sidebar-collapse-toggle"
-            onClick={() => setSidebarCollapsed((current) => !current)}
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {sidebarCollapsed ? <ChevronRight size={14} aria-hidden="true" /> : <ChevronLeft size={14} aria-hidden="true" />}
-            <span className="sidebar-collapse-label">{sidebarCollapsed ? 'Expand' : 'Collapse'}</span>
-          </button>
-        </div>
       </aside>}
 
       <section className="detail-view" id="sources">
