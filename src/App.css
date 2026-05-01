@@ -3985,7 +3985,7 @@ textarea {
   padding: 8px;
 }
 .hps-list { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; }
-.hps-list button {
+.hps-list .hps-row > button:first-child {
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -4000,8 +4000,8 @@ textarea {
   color: inherit;
   font: inherit;
 }
-.hps-list button:hover { background: #f3f4f6; }
-.hps-list button.active { background: #eef2ff; }
+.hps-list .hps-row > button:first-child:hover { background: #f3f4f6; }
+.hps-list .hps-row > button:first-child.active { background: #eef2ff; }
 .hps-title { font-weight: 600; }
 
 .hps-row {
