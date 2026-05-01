@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import {
   BarChart3,
@@ -47,6 +47,7 @@ import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
 import { OverviewMode } from './modes/overview/OverviewMode'
 import { OverviewSidebar } from './modes/overview/OverviewSidebar'
+import { OverviewInspector } from './modes/overview/OverviewInspector'
 import { HeaderSearch } from './components/HeaderSearch'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportSidebar } from './modes/report/ReportSidebar'
@@ -492,7 +493,6 @@ function App() {
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const [hasLoadedRemoteProject, setHasLoadedRemoteProject] = useState(false)
-  const overviewFileInputRef = useRef<HTMLInputElement>(null)
 
   const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
   const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
@@ -2333,15 +2333,6 @@ function App() {
         </div>
       </header>
 
-      <input
-        ref={overviewFileInputRef}
-        type="file"
-        multiple
-        accept=".txt,.md,.docx,.pdf"
-        style={{ display: 'none' }}
-        onChange={importTranscript}
-      />
-
       <aside
         className="workspace-sidebar"
         aria-label="Workspace sidebar"
@@ -2526,15 +2517,10 @@ function App() {
             userId={session?.user?.id ?? null}
             projectId={projectId}
             snapshotsCount={querySnapshots.length}
-            lineNumberingMode={lineNumberingMode}
-            lineNumberingWidth={lineNumberingWidth}
             onExportBackup={exportProjectBackup}
-            onOpenProjectSettings={() => setSettingsOpen(true)}
-            onOpenAiSettings={() => setAiSettingsOpen(true)}
             onTitleChange={setProjectTitle}
             onDescriptionChange={setDescription}
             onProjectMemoChange={updateProjectMemo}
-            onNewSource={() => overviewFileInputRef.current?.click()}
             onDraftProjectMemo={handleDraftProjectMemo}
             onRestoreVersion={(version) => {
               setActiveSourceId(version.data.activeSourceId)
@@ -2934,7 +2920,16 @@ function App() {
         {projectId && activeView === 'report' && <ReportDetail model={reportModel} />}
       </section>
 
-      {activeView !== 'overview' && activeView !== 'classify' && <aside className="properties-view">
+      {activeView !== 'classify' && <aside className="properties-view">
+        {activeView === 'overview' && (
+          <OverviewInspector
+            userId={session?.user?.id ?? null}
+            lineNumberingMode={lineNumberingMode}
+            lineNumberingWidth={lineNumberingWidth}
+            onOpenProjectSettings={() => setSettingsOpen(true)}
+            onOpenAiSettings={() => setAiSettingsOpen(true)}
+          />
+        )}
         {activeView === 'organize' && (
           <OrganizeInspector
             activeSource={activeSource}
