@@ -8,11 +8,12 @@ Ship a thin, principled AI-assist layer in Fieldnote that augments coding withou
 
 ## Principles (load-bearing — every later decision derives from these)
 
-1. **AI proposes, never writes.** Every AI output passes through an approval gate. The codebook, memos, and excerpts are user-authored; the AI is a clipboard.
+1. **AI proposes, never writes.** Every AI output passes through an approval gate. The codebook, memos, and excerpts are user-authored; the AI is a clipboard. AI drafts live in a separate preview surface and only enter project state when the user clicks Insert / Apply.
 2. **Visibility before send.** Every AI call shows a preview of exactly what text and how many tokens will leave the device. No hidden context.
 3. **Local-first features stay deterministic.** Word frequency, crosstabs, search, etc. are clearly *not* AI. Outputs that mix the two are labeled.
-4. **Bring your own key is a first-class path.** Power users with institutional API budgets pay their own provider; nothing routes through Fieldnote's server in that case.
-5. **Cache deterministic ops, never cache brainstorming.** Same source content → same summary forever. Same selected text → fresh code suggestions every time.
+4. **Provider keys never reach the browser.** Both Fieldnote's shared Gemini key and any user-supplied BYOK key live exclusively in Edge Function secrets. All provider calls — hosted and BYOK — go through the Edge Function. This closes the entire XSS / browser-extension / devtools key-leak class.
+5. **Hard caps before kill switches.** Per-user daily limits, per-request token caps, and per-minute rate limits are enforced server-side on every hosted call. Spend monitoring and the kill switch are backstops for emergencies, not the primary brake.
+6. **Cache deterministic ops, never cache brainstorming.** Same source content → same summary for the same user. Same selected text → fresh code suggestions every time. Cache is user-scoped: two users with identical inputs never share a cache entry.
 
 ## Non-goals (v1)
 
@@ -21,27 +22,31 @@ Ship a thin, principled AI-assist layer in Fieldnote that augments coding withou
 - Streaming responses (just await full response)
 - AI-drafted source memos or code memos beyond the project memo
 - Auto-applying any AI output without an explicit approval click
-- Per-user usage quotas (replaced by spend monitoring + kill switch)
 
 ## Architecture
 
-Two paths sharing a single router and prompt-template source of truth.
-
-### Hosted path (default — `aiProvider === 'gemini-free'`)
+**Single path:** every AI call — hosted OR BYOK — routes through a Supabase Edge Function. Provider API keys (ours or the user's) never touch the browser.
 
 ```
-Browser → Supabase Edge Function (/ai-call) → Gemini Flash → Edge Function → Browser
+Browser → Supabase Edge Function (/ai-call) → provider → Edge Function → Browser
 ```
 
-The Edge Function holds the Gemini API key in Supabase secrets. The browser never sees the key. The Function writes one row to `fieldnote_ai_calls` per call (audit + spend ledger).
+The Function holds:
+- The shared Gemini API key (Supabase secret) for `gemini-free` users
+- The encryption secret for decrypting user-supplied BYOK keys server-side at call time
 
-### BYOK path (`aiProvider === '<provider>-byok'`)
+Routing inside the Function:
+- `aiProvider === 'gemini-free'` → use the shared Gemini key
+- `aiProvider === '<provider>-byok'` → load the user's `encrypted_keys[provider]`, decrypt with the server-side encryption secret, call the provider, discard the plaintext key in memory
 
-```
-Browser → user's provider API → Browser
-```
+The browser **never** receives a provider key. This closes the XSS / extension / devtools leak class entirely and avoids browser-CORS-restricted provider APIs (Anthropic and OpenAI block direct browser calls anyway in practice).
 
-User's API key lives encrypted in `fieldnote_user_settings.encrypted_keys` (pgcrypto symmetric encryption keyed off a server-side encryption secret stored in Supabase secrets). Encryption happens server-side in a `/save-key` Edge Function — the browser sends the plaintext key over HTTPS once at save time, the function encrypts and stores. To use the key, a separate `/get-my-keys` Edge Function decrypts and returns the plaintext to the authenticated user once per session; the browser caches it in memory until reload. After that one-shot retrieval, AI calls go direct from browser to provider — no per-call round-trip through Fieldnote's server. Browser writes its own audit row to `fieldnote_ai_calls` for the user's records (no cost estimation since the user is billed by their provider).
+Settings flow:
+- `/save-key` Edge Function — browser POSTs `{ provider, plaintextKey }` over HTTPS once. Function encrypts with the server secret and stores in `fieldnote_user_settings.encrypted_keys`. Returns OK.
+- No `/get-my-keys` function. The browser has no reason to read keys back.
+- Test-connection in Settings: a dedicated `/ai-call?kind=test_connection` flow that runs a tiny ping prompt with the user's key (decrypted server-side, used, discarded).
+
+The Function writes one row to `fieldnote_ai_calls` per call (audit + spend ledger).
 
 ### Router
 
@@ -49,11 +54,11 @@ User's API key lives encrypted in `fieldnote_user_settings.encrypted_keys` (pgcr
 
 ### Prompt templates
 
-`src/ai/prompts.ts` is the single source of truth. Each template has a versioned id (e.g. `SUGGEST_CODES_V1`). Bumping the version invalidates the cache for that kind.
+`supabase/functions/ai-call/prompts.ts` is the **server-only** source of truth. Each template has a versioned id (e.g. `SUGGEST_CODES_V1`). Bumping the version invalidates the cache for that kind.
 
-The Edge Function needs the same prompt logic but Supabase Edge Functions run on Deno and can't import from `src/`. A small **predeploy script** (`scripts/sync-edge-prompts.ts`) copies `src/ai/prompts.ts` to `supabase/functions/ai-call/prompts.ts`, rewriting any TypeScript imports for Deno compatibility. The script runs in the build step (`npm run build` and the Vercel deploy hook) and fails CI if the source file's exports change shape. The copy is gitignored to prevent manual drift.
+The browser sends only `{ kind, inputText, projectId }`. The Edge Function validates `kind` against a fixed allow-list and constructs the prompt server-side. A malicious client cannot inject arbitrary prompts because the browser never sees or sends a prompt — only structured inputs the Function knows how to consume.
 
-Both client and server validate the incoming `kind` against a fixed allow-list before constructing the prompt — a malicious client cannot inject arbitrary prompts to burn the project-wide API key.
+This single-source-of-truth design also closes the prompt-drift problem the earlier draft of this spec tried to solve with a sync script: there's only one place prompts live, full stop.
 
 ## Schema
 
@@ -71,6 +76,11 @@ create table fieldnote_user_settings (
   updated_at timestamptz default now()
 );
 
+-- RLS on fieldnote_user_settings: a user can SELECT/UPDATE their own row.
+-- Critically: the encrypted_keys column is exposed via SELECT but it's
+-- ciphertext — useless without the encryption secret which lives only
+-- in Edge Function secrets, never accessible to the client.
+
 -- Audit log + spend ledger + cache. One row per AI call (cached or live).
 create table fieldnote_ai_calls (
   id uuid primary key default gen_random_uuid(),
@@ -81,7 +91,9 @@ create table fieldnote_ai_calls (
   provider text not null,
   -- 'gemini-free' | 'gemini-byok' | 'openai-byok' | 'anthropic-byok'
   content_hash text not null,
-  -- sha256(model || '\n' || prompt_template_id || '\n' || input_text)
+  -- sha256(user_id || '\n' || model || '\n' || prompt_template_id || '\n' || input_text)
+  -- user_id is part of the hash so cache lookups are user-scoped by construction;
+  -- two users with identical input never share cache entries.
   prompt_tokens int,
   completion_tokens int,
   estimated_cost_usd numeric(10, 6),
@@ -91,11 +103,21 @@ create table fieldnote_ai_calls (
   created_at timestamptz default now()
 );
 
-create index on fieldnote_ai_calls (content_hash, kind);
+create index on fieldnote_ai_calls (user_id, content_hash, kind);
 create index on fieldnote_ai_calls (user_id, created_at desc);
 create index on fieldnote_ai_calls (created_at) where provider = 'gemini-free';
 
--- Daily spend log written by a cron job (pg_cron or Vercel cron).
+-- Per-user daily usage roll-up. Hard cap enforced before each call.
+create table fieldnote_ai_usage (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date date not null,
+  call_count int not null default 0,
+  prompt_tokens int not null default 0,
+  completion_tokens int not null default 0,
+  primary key (user_id, date)
+);
+
+-- Daily aggregate spend log written by a cron job.
 create table fieldnote_ai_cost_log (
   date date primary key,
   total_usd numeric(10, 4) not null default 0,
@@ -104,9 +126,17 @@ create table fieldnote_ai_cost_log (
 );
 ```
 
-RLS: standard user-scoped policies on `fieldnote_user_settings` and `fieldnote_ai_calls`; `fieldnote_ai_cost_log` is admin-read-only.
+**RLS:** user-scoped on `fieldnote_user_settings`, `fieldnote_ai_calls`, and `fieldnote_ai_usage` — a user can only SELECT their own rows. `fieldnote_ai_cost_log` is admin-read-only.
 
-Encryption: `pgp_sym_encrypt(value, $SUPABASE_ENCRYPTION_SECRET)` for `encrypted_keys` values. Decryption client-side via the same secret pulled from a session-bound Supabase Vault read.
+**Encryption:** `pgp_sym_encrypt(value, $AI_KEY_ENCRYPTION_SECRET)` on `encrypted_keys` values. The secret lives **only** in Supabase Edge Function secrets. The browser never has access. All decrypt operations happen server-side inside the Function on each call, in memory only — the plaintext key is never logged, never returned to the client, never persisted anywhere unencrypted.
+
+**Cache scoping:** The content hash includes `user_id` so cache lookups are user-scoped by construction. Two users coding the same passage will never share a cache entry. (The cost is marginal — Flash is ~$0.0001/call.)
+
+**Retention / deletion:**
+- `fieldnote_ai_calls.project_id` is nullable but cascades on project delete — when a user deletes a project, all its AI cache rows go with it.
+- `user_id` cascades on user delete — full data scrub when a user closes their account.
+- A "Clear AI cache" button in Settings deletes the user's `fieldnote_ai_calls` rows on demand.
+- Drafts that the user discards are not stored; only applied/inserted text persists in the project tables.
 
 ## UI surfaces
 
@@ -153,8 +183,12 @@ In `RefineDetail`, when the active code has ≥3 references and the description 
 
 Click flow:
 1. Inline preview: "This will send the names + first sentence of all 8 references, ~610 tokens (~$0.0001)." [Cancel] [Send]
-2. On Send, "Thinking..." spinner replaces the description input.
-3. Result populates the description input value (does not auto-save). User can edit before clicking the existing description-update path.
+2. On Send, "Thinking..." spinner.
+3. Result lands in a **separate AI draft preview panel** below the description input — not in the description field itself. The panel shows the drafted text with two actions: [Insert into description] and [Discard].
+4. Clicking Insert replaces the description input value; the user can edit before the existing autosave path persists it.
+5. Clicking Discard removes the draft preview without touching the description.
+
+Critically: the AI draft never reaches the `code.description` autosave path until the user clicks Insert. If they navigate away mid-preview, the draft is lost (intentional — drafts aren't research data).
 
 ### "Summarize source" — Organize
 
@@ -173,27 +207,52 @@ In `OverviewMode`, near the project memo textarea, a small button: `✨ Draft fr
 Click flow:
 1. Preview: "Will send the labels + excerpts from your N pinned snapshots, ~M tokens." Only enabled when ≥1 snapshot exists. [Cancel] [Send]
 2. Spinner.
-3. Result populates the project memo textarea (replaces existing content with confirmation if non-empty).
+3. Result lands in a **separate AI draft preview panel** below the project memo textarea — not in the textarea itself. Panel shows the drafted memo text with two actions: [Insert into memo] and [Discard].
+4. Insert replaces the project memo content (with a confirm dialog if the existing memo is non-empty: "This will replace your existing project memo. Continue?"). After Insert, the user can edit before the standard autosave fires.
+5. Discard removes the preview.
 
-## Caching, cost monitoring, kill switch
+Same principle as `draft_description`: AI text never reaches the project's autosave path until the user explicitly clicks Insert.
+
+## Caching, quotas, cost monitoring, kill switch
 
 ### Cache (deterministic kinds only)
 
 `cacheable: true` for `draft_description`, `summarize_source`, `draft_memo`. `cacheable: false` for `suggest_codes` (brainstorming, fresh ideas every time).
 
-Hash: `sha256(model + '\n' + prompt_template_id + '\n' + inputText)`.
+Hash: `sha256(user_id + '\n' + model + '\n' + prompt_template_id + '\n' + inputText)`. The user_id is in the hash so cache scoping is enforced by hash construction, not just by RLS — even if RLS were misconfigured, two users would never share a cache entry.
 
-Lookup happens in `router.ts` before any provider call. Cache hits return immediately with `cacheHit: true`.
+Lookup happens server-side in the Edge Function before any provider call. Cache hits return immediately with `cacheHit: true`.
+
+### Quotas (hard caps, enforced server-side)
+
+The Edge Function enforces these limits per request, on the **hosted** path only:
+
+| Limit | Free tier (`gemini-free`) | BYOK |
+|---|---|---|
+| Calls per user per day | 50 | unlimited |
+| Tokens per request (input) | 20,000 | 50,000 |
+| Tokens per request (output) | 2,000 | 4,000 |
+| Calls per minute per user | 10 | 30 |
+
+Why these numbers:
+- 50 calls/day on free tier covers a serious researcher's workload (typical session: 10–30 suggest-code calls + 1–2 summaries) while preventing scripted abuse from burning the shared Gemini key.
+- 20k input tokens caps a single source summary to roughly the size of an 80-page interview — anything bigger needs explicit chunking, not silent truncation.
+- 10 RPM rate limit per user blocks accidental loops without visibly impeding manual use.
+- BYOK gets higher caps because the user is paying — but still bounded as a sanity check (a runaway loop on the user's side shouldn't burn $1000 silently).
+
+Quota enforcement: at the start of each `/ai-call`, the Function reads `fieldnote_ai_usage` for `(user_id, today)`, checks the daily count, and increments after a successful call. Rate limit (RPM) uses a small in-memory token bucket inside the Function (best-effort, since Edge Functions can scale horizontally — the day cap is the real safety belt).
+
+When a quota is hit, the Function returns `{ ok: false, reason: 'quota', message: 'Daily free-tier limit reached. Add your own key in Settings to continue.' }` without calling the provider. UI surfaces this as the same banner pattern as the kill switch.
 
 ### Cost monitoring
 
-Daily Supabase pg_cron job aggregates `fieldnote_ai_calls` where `provider = 'gemini-free'` for the prior 24 hours and writes to `fieldnote_ai_cost_log`. A Supabase webhook (configurable threshold, default $5/day) emails the project owner if exceeded.
+Daily Supabase pg_cron job aggregates `fieldnote_ai_calls` where `provider = 'gemini-free'` for the prior 24 hours and writes to `fieldnote_ai_cost_log`. A Supabase webhook (configurable threshold, default $5/day) emails the project owner if exceeded. This is a backstop, **not** the primary brake — the per-user quotas above are the primary brake.
 
 Per-call: the Edge Function returns the cost estimate alongside the response so the client can show "This call: ~$0.0001" in the UI footer of the suggestion panel.
 
 ### Kill switch
 
-Single env var on the Edge Function: `AI_KILL_SWITCH=1`. When set, the Function returns `{ ok: false, reason: 'kill-switch', message: 'Hosted AI temporarily disabled. Add your own API key in Settings to continue.' }` without calling Gemini. The client surfaces this as a sticky yellow banner in the AI surfaces; users with their own key are unaffected.
+Single env var on the Edge Function: `AI_KILL_SWITCH=1`. When set, the Function returns `{ ok: false, reason: 'kill-switch', message: 'Hosted AI temporarily disabled. Add your own API key in Settings to continue.' }` without calling Gemini. The client surfaces this as a sticky yellow banner in the AI surfaces; users with their own key are unaffected. This is the "something went wrong, stop everything" emergency — quotas handle the routine cases.
 
 ## Implementation order
 
@@ -206,18 +265,16 @@ Single env var on the Edge Function: `AI_KILL_SWITCH=1`. When set, the Function 
 ## Files
 
 **Created:**
-- `src/ai/router.ts` — entry point, both paths
-- `src/ai/prompts.ts` — prompt templates with versioned ids (single source of truth)
+- `src/ai/client.ts` — browser-side entry point that POSTs to `/ai-call` and returns the typed result
 - `src/ai/types.ts` — shared types (`AiCallInput`, `AiCallResult`, `AiResponse`)
 - `src/components/AiSettingsPanel.tsx` — modal, provider picker, key entry, IRB checkbox
-- `src/components/AiSuggestionsPanel.tsx` — generic preview/loading/results panel reused by all four tools
-- `scripts/sync-edge-prompts.ts` — predeploy script that copies `src/ai/prompts.ts` to the Edge Function
-- `supabase/functions/ai-call/index.ts` — Edge Function entry
+- `src/components/AiPreviewPanel.tsx` — generic preview/loading/results panel reused by all four tools (separate draft preview surface so AI text never auto-flows into autosaving fields)
+- `supabase/functions/ai-call/index.ts` — Edge Function entry: routing, decryption, quotas, cache, provider call
+- `supabase/functions/ai-call/prompts.ts` — prompt templates with versioned ids (single source of truth, server-side only)
 - `supabase/functions/save-key/index.ts` — Edge Function for encrypted key storage
-- `supabase/functions/get-my-keys/index.ts` — Edge Function for one-shot decryption per session
 - `supabase/migrations/20260501190000_add_ai_assist_tables.sql` — schema migration
 
-`supabase/functions/ai-call/prompts.ts` is generated by the predeploy script and gitignored.
+There is **no** browser-side prompts module and **no** `get-my-keys` function. Prompts are server-only because all provider calls happen server-side; the browser only sends `{ kind, inputText, projectId }`.
 
 **Modified:**
 - `src/App.tsx` — Settings gear icon in header; wire AI router into Code/Refine/Organize/Overview surfaces
@@ -228,11 +285,17 @@ Single env var on the Edge Function: `AI_KILL_SWITCH=1`. When set, the Function 
 
 ## Verification
 
-1. With no key set, click Suggest codes → IRB modal appears once → check + Send → 5 suggestions appear → ✓/✗ subset → Apply → those codes appear in the codebook and on the excerpt.
-2. With a Gemini BYOK key set, run the same flow → confirm no Edge Function call (DevTools network tab); call goes direct to `generativelanguage.googleapis.com`.
-3. Run summarize on a source twice → first hits provider, second is instant from cache. Edit the source, run again → fresh call.
-4. Set `AI_KILL_SWITCH=1` on the Edge Function → free-tier user sees the banner; BYOK user is unaffected.
-5. Predeploy script test: change `src/ai/prompts.ts`, run the deploy script, verify `supabase/functions/ai-call/prompts.ts` is regenerated. The Function continues to use the same prompt logic without manual sync.
+1. **Suggest codes (free tier).** With no key set, click Suggest codes → IRB modal appears once → check + Send → 5 suggestions appear → ✓/✗ subset → Apply → those codes appear in the codebook and on the excerpt.
+2. **BYOK still routes through Edge Function.** With a Gemini BYOK key saved, run the same flow → DevTools network tab shows the call to `/ai-call` (Supabase Edge Function), NOT to `generativelanguage.googleapis.com` directly. The browser never sees the user's key.
+3. **Cache scoping.** User A summarizes source X, gets a result. User B (different account) on the same project content runs summarize on the same source → fresh provider call, separate cache row. Confirms `user_id` is in the hash.
+4. **Quota enforcement.** Free-tier user makes 50 calls in a day → 51st call returns `{ ok: false, reason: 'quota' }` from the Edge Function (not a 429 from Gemini). Banner shown.
+5. **Rate limit.** Free-tier user fires 11 calls in 60 seconds → 11th returns `quota` reason with rate-limit message.
+6. **Token cap.** Hosted user attempts to summarize a 30,000-token source → request rejected at the Edge Function before any provider call.
+7. **Kill switch.** Set `AI_KILL_SWITCH=1` → free-tier user sees the banner; BYOK user is also blocked (because BYOK calls also route through the Function). Confirm the kill switch is the universal off switch.
+8. **No client-side keys.** Search the deployed JS bundle for any string matching `sk-` or `AIza` → none. Network tab inspection shows no plaintext keys in any response from `/save-key`, `/ai-call`, or `/get-my-keys` (the last function is removed).
+9. **Draft autosave isolation.** Click `✨ Draft from references`, get a draft, navigate away to another code without clicking Insert → original code's `description` is unchanged in the database.
+10. **Cache delete on project delete.** Pin some snapshots, run summaries, delete the project → `fieldnote_ai_calls` rows for that project are gone.
+11. **Predeploy script.** Change `src/ai/prompts.ts`, run the deploy script, verify `supabase/functions/ai-call/prompts.ts` is regenerated identically.
 
 ## Out of scope (named for clarity)
 
