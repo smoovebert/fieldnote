@@ -2442,12 +2442,6 @@ function App() {
                 <input value={searchTerm} placeholder="Find coded work" aria-label="Search coded work" onChange={(event) => setSearchTerm(event.target.value)} />
               </div>
             )}
-            {activeView === 'code' && (
-              <button type="button" className="primary-button toolbar-code-action" onClick={() => codeSelection()}>
-                <Highlighter size={18} aria-hidden="true" />
-                Code selection
-              </button>
-            )}
             {activeView === 'report' && (
               <>
                 <button

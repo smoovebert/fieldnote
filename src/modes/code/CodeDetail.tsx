@@ -94,17 +94,27 @@ export function CodeDetail(props: Props) {
           <strong className="active-codes-title">{props.selectedCodeNames}</strong>
           <p className="active-codes-hint">{props.selectionHint} Active codes can be combined.</p>
         </div>
-        <label className="quick-toggle">
-          <input
-            type="checkbox"
-            checked={quickCodingEnabled}
-            onChange={(event) => {
-              setQuickCodingEnabled(event.target.checked)
-              setQuickCodeMenu(null)
-            }}
-          />
-          Quick menu
-        </label>
+        <div className="active-codes-bar-actions">
+          <label className="quick-toggle">
+            <input
+              type="checkbox"
+              checked={quickCodingEnabled}
+              onChange={(event) => {
+                setQuickCodingEnabled(event.target.checked)
+                setQuickCodeMenu(null)
+              }}
+            />
+            Quick menu
+          </label>
+          <button
+            type="button"
+            className="primary-button toolbar-code-action"
+            onClick={() => props.codeSelection()}
+          >
+            <Highlighter size={18} aria-hidden="true" />
+            Code selection
+          </button>
+        </div>
       </div>
 
       <div
