@@ -21,6 +21,12 @@ export function AiSettingsPanel({ userId, onClose }: Props) {
     loadAiSettings(userId).then((settings) => {
       if (!settings) return
       setProvider(settings.aiProvider)
+      // Initialize byokProvider from the saved provider so the dropdown
+      // reflects what's actually saved (otherwise switching to BYOK shows
+      // Gemini even if the user previously saved OpenAI/Anthropic).
+      if (settings.aiProvider === 'openai-byok') setByokProvider('openai')
+      else if (settings.aiProvider === 'anthropic-byok') setByokProvider('anthropic')
+      else if (settings.aiProvider === 'gemini-byok') setByokProvider('gemini')
       setHostedConsentAt(settings.hostedAiConsentAt)
       if (settings.hostedAiConsentAt) setConsent(true)
     })

@@ -118,14 +118,24 @@ Deno.serve(async (req) => {
     return jsonResponse(429, { ok: false, reason: 'rate-limit', message: `Slow down — ${rpmLimit} requests/minute max.` })
   }
 
-  // Cache lookup (cacheable kinds only)
-  const cacheHash = await sha256Hex(`${userId}\n${tpl.model}\n${tpl.id}\n${inputText}`)
+  // Resolve the effective model up front so cache scoping matches what we
+  // actually call. tpl.model is only correct for Gemini paths; OpenAI and
+  // Anthropic paths use their own models below, and a cache hit across
+  // providers would return the wrong shape/output.
+  let effectiveModel = tpl.model
+  if (provider === 'openai-byok') effectiveModel = 'gpt-4o-mini'
+  else if (provider === 'anthropic-byok') effectiveModel = 'claude-3-5-haiku-latest'
+
+  // Cache lookup (cacheable kinds only). Hash + audit filters both include
+  // provider and effective model so cache is per (user, provider, model, kind, input).
+  const cacheHash = await sha256Hex(`${userId}\n${provider}\n${effectiveModel}\n${tpl.id}\n${inputText}`)
   if (tpl.cacheable) {
     const { data: cached } = await supabase
       .from('fieldnote_ai_calls')
       .select('response, prompt_tokens, completion_tokens, estimated_cost_usd')
       .eq('user_id', userId)
       .eq('kind', kind)
+      .eq('provider', provider)
       .eq('content_hash', cacheHash)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -167,11 +177,11 @@ Deno.serve(async (req) => {
   let providerResp
   try {
     if (isHosted || provider === 'gemini-byok') {
-      providerResp = await callGemini({ apiKey: providerKey, model: tpl.model, systemPrompt: tpl.systemPrompt, userPrompt: tpl.buildUserPrompt(inputText) })
+      providerResp = await callGemini({ apiKey: providerKey, model: effectiveModel, systemPrompt: tpl.systemPrompt, userPrompt: tpl.buildUserPrompt(inputText) })
     } else if (provider === 'openai-byok') {
-      providerResp = await callOpenAI({ apiKey: providerKey, model: 'gpt-4o-mini', systemPrompt: tpl.systemPrompt, userPrompt: tpl.buildUserPrompt(inputText) })
+      providerResp = await callOpenAI({ apiKey: providerKey, model: effectiveModel, systemPrompt: tpl.systemPrompt, userPrompt: tpl.buildUserPrompt(inputText) })
     } else if (provider === 'anthropic-byok') {
-      providerResp = await callAnthropic({ apiKey: providerKey, model: 'claude-3-5-haiku-latest', systemPrompt: tpl.systemPrompt, userPrompt: tpl.buildUserPrompt(inputText) })
+      providerResp = await callAnthropic({ apiKey: providerKey, model: effectiveModel, systemPrompt: tpl.systemPrompt, userPrompt: tpl.buildUserPrompt(inputText) })
     } else {
       return jsonResponse(400, { ok: false, reason: 'provider', message: `Unknown provider: ${provider}` })
     }
