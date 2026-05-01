@@ -79,6 +79,7 @@ import type {
   Memo,
   ProjectData,
   ProjectRow,
+  QueryResultSnapshot,
   SavedQuery,
   Source,
 } from './lib/types'
@@ -394,6 +395,7 @@ function App() {
   const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv')
   const [reportIncludes, setReportIncludes] = useState<ReportIncludes>(DEFAULT_REPORT_INCLUDES)
+  const [querySnapshots, setQuerySnapshots] = useState<QueryResultSnapshot[]>([])
   const [activeView, setActiveView] = useState<WorkspaceView>('overview')
   const [activeSourceId, setActiveSourceId] = useState(defaultProject.activeSourceId)
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
@@ -539,6 +541,28 @@ function App() {
     setAnalyzePanel('query')
     hasLoadedRemoteProject.current = true
     setSaveStatus('Project open.')
+
+    // Snapshots are independent of the JSON-on-project model: live in their own table.
+    const { data: snaps, error: snapsError } = await supabase
+      .from('fieldnote_query_results')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('captured_at', { ascending: false })
+    if (snapsError) {
+      console.warn('Could not load query snapshots:', snapsError)
+      setQuerySnapshots([])
+    } else {
+      setQuerySnapshots((snaps ?? []).map((row: Record<string, unknown>) => ({
+        id: row.id as string,
+        projectId: row.project_id as string,
+        queryId: row.query_id as string,
+        capturedAt: row.captured_at as string,
+        label: (row.label as string) ?? '',
+        resultKind: 'coded_excerpt',
+        definition: row.definition as QueryResultSnapshot['definition'],
+        results: row.results as QueryResultSnapshot['results'],
+      })))
+    }
   }
 
   async function createProjectFromSeed(title: string, seed: ProjectData) {
@@ -1499,6 +1523,97 @@ function App() {
     }
   }
 
+  async function captureQuerySnapshot() {
+    if (!projectId || !activeSavedQueryId || !activeSavedQuery) {
+      setSelectionHint('Save the query first, then pin a snapshot.')
+      return
+    }
+    if (analyzePanel !== 'query') {
+      setSelectionHint('Snapshots can only be pinned from the Query results panel right now.')
+      return
+    }
+    const label = window.prompt(`Optional label for this snapshot (e.g., "Before recoding pass 2"):`, '') ?? ''
+    const payload = {
+      project_id: projectId,
+      query_id: activeSavedQueryId,
+      label: label.trim(),
+      result_kind: 'coded_excerpt' as const,
+      definition: currentQueryDefinition,
+      results: {
+        excerpts: analyzeResults.map((excerpt) => ({
+          id: excerpt.id,
+          sourceId: excerpt.sourceId,
+          sourceTitle: excerpt.sourceTitle,
+          codeIds: excerpt.codeIds,
+          text: excerpt.text,
+          note: excerpt.note,
+        })),
+      },
+    }
+    setSaveStatus('Capturing snapshot...')
+    const { data, error } = await supabase
+      .from('fieldnote_query_results')
+      .insert(payload)
+      .select('*')
+      .single()
+    if (error) {
+      setSaveStatus(errorMessage(error, 'Could not capture snapshot.'))
+      return
+    }
+    const row = data as Record<string, unknown>
+    const snapshot: QueryResultSnapshot = {
+      id: row.id as string,
+      projectId: row.project_id as string,
+      queryId: row.query_id as string,
+      capturedAt: row.captured_at as string,
+      label: (row.label as string) ?? '',
+      resultKind: 'coded_excerpt',
+      definition: row.definition as QueryResultSnapshot['definition'],
+      results: row.results as QueryResultSnapshot['results'],
+    }
+    setQuerySnapshots((current) => [snapshot, ...current])
+    setSaveStatus(`Snapshot captured (${payload.results.excerpts.length} excerpts).`)
+  }
+
+  async function deleteQuerySnapshot(snapshotId: string) {
+    const snap = querySnapshots.find((s) => s.id === snapshotId)
+    const label = snap?.label || (snap ? new Date(snap.capturedAt).toLocaleString() : 'this snapshot')
+    if (!window.confirm(`Delete snapshot "${label}"? This cannot be undone.`)) return
+    const { error } = await supabase
+      .from('fieldnote_query_results')
+      .delete()
+      .eq('id', snapshotId)
+    if (error) {
+      setSaveStatus(errorMessage(error, 'Could not delete snapshot.'))
+      return
+    }
+    setQuerySnapshots((current) => current.filter((s) => s.id !== snapshotId))
+  }
+
+  function downloadSnapshotCsv(snapshotId: string) {
+    const snap = querySnapshots.find((s) => s.id === snapshotId)
+    if (!snap) return
+    const queryName = savedQueries.find((q) => q.id === snap.queryId)?.name ?? 'Saved query'
+    const dateLabel = new Date(snap.capturedAt).toISOString().slice(0, 10)
+    const rows: string[][] = [
+      ['Project', 'Saved query', 'Snapshot label', 'Captured at', 'Source', 'Codes', 'Excerpt', 'Note'],
+      ...snap.results.excerpts.map((excerpt) => {
+        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
+        return [
+          projectTitle,
+          queryName,
+          snap.label,
+          snap.capturedAt,
+          excerpt.sourceTitle,
+          excerptCodes.map((code) => code.name).join('; '),
+          excerpt.text,
+          excerpt.note,
+        ]
+      }),
+    ]
+    downloadInFormat(rows, `fieldnote-snapshot-${slugId(queryName)}-${dateLabel}`, 'Snapshot')
+  }
+
   function clearQueryFilters() {
     applyQueryDefinition(normalizeQueryDefinition())
     setActiveSavedQueryId('')
@@ -2378,6 +2493,16 @@ function App() {
                 <Plus size={16} aria-hidden="true" />
                 {activeSavedQuery ? 'Update query' : 'Save query'}
               </button>
+              {activeSavedQuery && analyzePanel === 'query' && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void captureQuerySnapshot()}
+                  title="Pin the current results as a point-in-time snapshot"
+                >
+                  Pin result
+                </button>
+              )}
             </div>
 
             {analyzePanel === 'query' && (
@@ -2641,6 +2766,36 @@ function App() {
                 <Trash2 size={17} aria-hidden="true" />
                 Delete saved query
               </button>
+            )}
+            {activeSavedQuery && (
+              <section className="snapshots-panel">
+                <header className="snapshots-heading">
+                  <h3>Pinned snapshots</h3>
+                  <span>{querySnapshots.filter((s) => s.queryId === activeSavedQuery.id).length}</span>
+                </header>
+                {querySnapshots.filter((s) => s.queryId === activeSavedQuery.id).length === 0 && (
+                  <p className="snapshots-empty">No snapshots yet. Pin a result to capture this query's excerpts at a point in time.</p>
+                )}
+                <ul className="snapshots-list">
+                  {querySnapshots.filter((s) => s.queryId === activeSavedQuery.id).map((snap) => (
+                    <li key={snap.id}>
+                      <div className="snapshots-row-meta">
+                        <strong>{new Date(snap.capturedAt).toLocaleString()}</strong>
+                        <span>{snap.results.excerpts.length} excerpt{snap.results.excerpts.length === 1 ? '' : 's'}</span>
+                        {snap.label && <em>{snap.label}</em>}
+                      </div>
+                      <div className="snapshots-row-actions">
+                        <button type="button" onClick={() => downloadSnapshotCsv(snap.id)} title={`Download as ${exportFormat.toUpperCase()}`}>
+                          <Download size={13} aria-hidden="true" />
+                        </button>
+                        <button type="button" onClick={() => void deleteQuerySnapshot(snap.id)} title="Delete snapshot">
+                          <Trash2 size={13} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
             <button className="secondary-button" type="button" onClick={exportActiveAnalysisCsv}>
               <Download size={17} aria-hidden="true" />

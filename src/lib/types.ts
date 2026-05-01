@@ -67,6 +67,22 @@ export type SavedQuery = {
   definition: QueryDefinition
 }
 
+/**
+ * A point-in-time capture of a saved query's coded-excerpt result list.
+ * `results` payload shape (v1, result_kind = 'coded_excerpt'):
+ *   { excerpts: Array<{ id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }> }
+ */
+export type QueryResultSnapshot = {
+  id: string
+  projectId: string
+  queryId: string
+  capturedAt: string
+  label: string
+  resultKind: 'coded_excerpt'
+  definition: QueryDefinition
+  results: { excerpts: Array<{ id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }> }
+}
+
 export type ProjectData = {
   activeSourceId: string
   description: string
