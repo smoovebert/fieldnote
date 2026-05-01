@@ -53,6 +53,8 @@ import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportInspector } from './modes/report/ReportInspector'
 import { ReportSidebar } from './modes/report/ReportSidebar'
 import { RefineDetail } from './modes/refine/RefineDetail'
+import { RefineSidebar } from './modes/refine/RefineSidebar'
+import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
@@ -342,32 +344,7 @@ function parseCsv(text: string): string[][] {
 
 
 
-function buildCodeTree(codes: Code[]) {
-  const byParent = new Map<string, Code[]>()
-  codes.forEach((code) => {
-    const parentId = code.parentCodeId && codes.some((item) => item.id === code.parentCodeId) ? code.parentCodeId : 'root'
-    byParent.set(parentId, [...(byParent.get(parentId) ?? []), code])
-  })
-
-  const ordered: Array<Code & { depth: number }> = []
-  const visit = (parentId: string, depth: number, seen: Set<string>) => {
-    const children = [...(byParent.get(parentId) ?? [])].sort((a, b) => a.name.localeCompare(b.name))
-    children.forEach((code) => {
-      if (seen.has(code.id)) return
-      const nextSeen = new Set(seen).add(code.id)
-      ordered.push({ ...code, depth })
-      visit(code.id, depth + 1, nextSeen)
-    })
-  }
-
-  visit('root', 0, new Set())
-  codes.forEach((code) => {
-    if (!ordered.some((item) => item.id === code.id)) ordered.push({ ...code, depth: 0 })
-  })
-
-  return ordered
-}
-
+// buildCodeTree moved to src/lib/codeTree.ts
 // descendantCodeIds moved to src/lib/codeOperations.ts
 
 function errorMessage(error: unknown, fallback: string) {
@@ -3258,33 +3235,6 @@ function ListView({
   onOpenCrosstab: () => void
   onReparentCode: (codeId: string, parentCodeId: string) => void
 }) {
-  const orderedCodes = buildCodeTree(codes)
-  const [draggingCodeId, setDraggingCodeId] = useState<string | null>(null)
-  const [dropTargetCodeId, setDropTargetCodeId] = useState<string | null>(null)
-  const [rootDropActive, setRootDropActive] = useState(false)
-
-  // Build descendant set for the dragged code so we can reject drops onto self/descendants
-  const draggingDescendants = useMemo(() => {
-    if (!draggingCodeId) return new Set<string>()
-    const descendants = new Set<string>([draggingCodeId])
-    let frontier = [draggingCodeId]
-    while (frontier.length) {
-      const next: string[] = []
-      for (const parentId of frontier) {
-        for (const c of codes) {
-          if (c.parentCodeId === parentId && !descendants.has(c.id)) {
-            descendants.add(c.id)
-            next.push(c.id)
-          }
-        }
-      }
-      frontier = next
-    }
-    return descendants
-  }, [draggingCodeId, codes])
-
-  const isValidDrop = (targetId: string) => Boolean(draggingCodeId) && !draggingDescendants.has(targetId)
-
   return (
     <>
       <div className="pane-title">
@@ -3299,81 +3249,13 @@ function ListView({
         />
       )}
       {activeView === 'refine' && (
-        <>
-          <p className="code-tree-hint">Drag a code onto another to nest it. Drop above to unparent.</p>
-          <div
-            className={`code-tree-root-drop${rootDropActive ? ' is-drop-target' : ''}`}
-            onDragOver={(event) => {
-              if (!draggingCodeId) return
-              event.preventDefault()
-              event.dataTransfer.dropEffect = 'move'
-              setRootDropActive(true)
-            }}
-            onDragLeave={() => setRootDropActive(false)}
-            onDrop={(event) => {
-              event.preventDefault()
-              if (draggingCodeId) onReparentCode(draggingCodeId, '')
-              setRootDropActive(false)
-              setDraggingCodeId(null)
-              setDropTargetCodeId(null)
-            }}
-          >
-            ↑ Drop here to make top-level
-          </div>
-          {orderedCodes.map((code) => {
-            const isActive = code.id === activeCodeId
-            const isDragging = draggingCodeId === code.id
-            const isDropTarget = dropTargetCodeId === code.id && isValidDrop(code.id)
-            const classes = ['list-item']
-            if (isActive) classes.push('active')
-            if (isDragging) classes.push('is-dragging')
-            if (isDropTarget) classes.push('is-drop-target')
-            return (
-              <button
-                className={classes.join(' ')}
-                key={code.id}
-                type="button"
-                style={{ paddingLeft: 14 + code.depth * 16 }}
-                draggable
-                onClick={() => onSelectCode(code.id)}
-                onDragStart={(event) => {
-                  setDraggingCodeId(code.id)
-                  event.dataTransfer.effectAllowed = 'move'
-                  event.dataTransfer.setData('text/plain', code.id)
-                }}
-                onDragEnd={() => {
-                  setDraggingCodeId(null)
-                  setDropTargetCodeId(null)
-                  setRootDropActive(false)
-                }}
-                onDragOver={(event) => {
-                  if (!isValidDrop(code.id)) return
-                  event.preventDefault()
-                  event.dataTransfer.dropEffect = 'move'
-                  setDropTargetCodeId(code.id)
-                }}
-                onDragLeave={() => {
-                  if (dropTargetCodeId === code.id) setDropTargetCodeId(null)
-                }}
-                onDrop={(event) => {
-                  event.preventDefault()
-                  if (draggingCodeId && isValidDrop(code.id)) {
-                    onReparentCode(draggingCodeId, code.id)
-                  }
-                  setDraggingCodeId(null)
-                  setDropTargetCodeId(null)
-                  setRootDropActive(false)
-                }}
-              >
-                <span className="code-dot" style={{ background: code.color }} />
-                <div>
-                  <strong>{code.name}</strong>
-                  <span>{excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id)).length} direct references</span>
-                </div>
-              </button>
-            )
-          })}
-        </>
+        <RefineSidebar
+          codes={codes}
+          excerpts={excerpts}
+          activeCodeId={activeCodeId}
+          onSelectCode={onSelectCode}
+          onReparentCode={onReparentCode}
+        />
       )}
       {activeView === 'classify' && (
         cases.length ? cases.map((item) => {
