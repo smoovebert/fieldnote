@@ -69,6 +69,7 @@ import {
 } from './lib/excerptOperations'
 import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
+import { SourcesView } from './components/SourcesView'
 import type {
   Attribute,
   AttributeValue,
@@ -1090,17 +1091,6 @@ function App() {
     setActiveSourceId(sourceId)
   }
 
-  function selectSourceFolder(folder: SourceFolderFilter) {
-    setSourceFolderFilter(folder)
-    const firstVisibleSource =
-      folder === 'Archived'
-        ? archivedSources[0]
-        : folder === 'All'
-          ? activeSources[0]
-          : activeSources.find((source) => source.folder === folder)
-    if (firstVisibleSource) selectActiveSource(firstVisibleSource.id)
-  }
-
   function applyCodesToText(selectedText: string, codeIds = selectedCodeIds, label = selectedCodeNames) {
     let mergedExistingReference = false
 
@@ -1154,14 +1144,6 @@ function App() {
 
   function updateProjectTitle(title: string) {
     setProjectTitle(title)
-  }
-
-  function moveActiveSourceToNewFolder(folderName: string) {
-    const trimmed = folderName.trim()
-    if (!trimmed) return
-
-    updateSource(activeSource.id, { folder: trimmed, archived: false })
-    setSourceFolderFilter(trimmed)
   }
 
   function createCaseFromSource() {
@@ -1794,13 +1776,13 @@ function App() {
       >
         {activeView === 'organize' && (
           <OrganizeSidebar
-            sourceFolderFilter={sourceFolderFilter}
-            sourceFolders={sourceFolders}
             activeSources={activeSources}
             archivedSources={archivedSources}
-            selectSourceFolder={selectSourceFolder}
+            activeSourceId={activeSourceId}
+            onSelectSource={(id) => {
+              selectActiveSource(id)
+            }}
             importTranscript={importTranscript}
-            moveActiveSourceToNewFolder={moveActiveSourceToNewFolder}
           />
         )}
 
@@ -2653,8 +2635,8 @@ function ListView({
         <FileText size={16} aria-hidden="true" />
         <span>{activeView === 'organize' || activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Queries' : 'Exports'}</span>
       </div>
-      {(activeView === 'organize' || activeView === 'code') &&
-        (activeView === 'organize' ? visibleSources : sources).map((source) => (
+      {activeView === 'organize' &&
+        visibleSources.map((source) => (
           <button className={source.id === activeSourceId ? 'list-item active' : 'list-item'} key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
             <FileText size={17} aria-hidden="true" />
             <div>
@@ -2665,6 +2647,13 @@ function ListView({
             </div>
           </button>
         ))}
+      {activeView === 'code' && (
+        <SourcesView
+          sources={sources}
+          activeSourceId={activeSourceId}
+          onSelectSource={onSelectSource}
+        />
+      )}
       {activeView === 'refine' &&
         orderedCodes.map((code) => (
           <button className={code.id === activeCodeId ? 'list-item active' : 'list-item'} key={code.id} type="button" style={{ paddingLeft: 14 + code.depth * 16 }} onClick={() => onSelectCode(code.id)}>
