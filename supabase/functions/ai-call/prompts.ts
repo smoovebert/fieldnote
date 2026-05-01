@@ -12,7 +12,7 @@ export type PromptTemplate = {
 export const PROMPT_TEMPLATES: Record<PromptKind, PromptTemplate> = {
   suggest_codes: {
     id: 'SUGGEST_CODES_V1',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     cacheable: false,
     systemPrompt:
       'You are an assistant for a qualitative-research coding tool. ' +
@@ -27,7 +27,7 @@ export const PROMPT_TEMPLATES: Record<PromptKind, PromptTemplate> = {
   },
   draft_description: {
     id: 'DRAFT_DESCRIPTION_V1',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     cacheable: true,
     systemPrompt:
       'You are an assistant for a qualitative-research coding tool. ' +
@@ -40,7 +40,7 @@ export const PROMPT_TEMPLATES: Record<PromptKind, PromptTemplate> = {
   },
   summarize_source: {
     id: 'SUMMARIZE_SOURCE_V1',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     cacheable: true,
     systemPrompt:
       'You are an assistant for a qualitative-research coding tool. ' +
@@ -53,7 +53,7 @@ export const PROMPT_TEMPLATES: Record<PromptKind, PromptTemplate> = {
   },
   draft_memo: {
     id: 'DRAFT_MEMO_V1',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     cacheable: true,
     systemPrompt:
       'You are an assistant for a qualitative-research coding tool. ' +
