@@ -1120,6 +1120,39 @@ function App() {
     setAnalyzePanel('query')
   }
 
+  // Drill-down handlers — every number opens evidence. Each one merges
+  // the clicked dimension into the query state, clears conflicting
+  // filters in that dimension only, and jumps to the Find-excerpts view
+  // so the user lands on the actual excerpts behind the number.
+  function handleMatrixCellSelect(codeId: string, colId: string) {
+    setQueryCodeId(codeId)
+    if (matrixColumnMode === 'case') {
+      setQueryCaseId(colId)
+    } else if (matrixAttributeId) {
+      const value = colId.includes(':') ? colId.split(':').slice(1).join(':') : colId
+      setQueryAttributes((prev) => {
+        const filtered = prev.filter((f) => f.attributeId !== matrixAttributeId)
+        return [...filtered, { attributeId: matrixAttributeId, value }]
+      })
+    }
+    setAnalyzePanel('query')
+  }
+
+  function handleWordSelect(word: string) {
+    setQueryText(word)
+    setAnalyzePanel('query')
+  }
+
+  // Pair drill-down: the query model carries a single "with this code"
+  // filter, so we land on excerpts coded with the first code in the
+  // pair. The user can refine to the intersection from the result list.
+  // True multi-code AND filtering is a follow-up that needs a query-
+  // schema change; tracked in the Analyze workbench plan.
+  function handlePairSelect(codeId: string) {
+    setQueryCodeId(codeId)
+    setAnalyzePanel('query')
+  }
+
   const analyzePanelCount =
     analyzePanel === 'matrix'
       ? `${matrixTotalReferences} matrix references`
@@ -2835,14 +2868,7 @@ function App() {
                   onViewChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, view: next } }))}
                   onTopNRowsChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, topNRows: next } }))}
                   onTopNColsChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, topNCols: next } }))}
-                  onCellSelect={(rowId, colId) => {
-                    setQueryCodeId(rowId)
-                    if (matrixColumnMode === 'case') setQueryCaseId(colId)
-                    else {
-                      const value = colId.includes(':') ? colId.split(':').slice(1).join(':') : colId
-                      setQueryAttributes([{ attributeId: matrixAttributeId, value }])
-                    }
-                  }}
+                  onCellSelect={handleMatrixCellSelect}
                   onExportCsv={() => exportMatrixCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
                   classifyEmptyMessage={
                     cases.length === 0 && attributes.length === 0
@@ -2861,7 +2887,7 @@ function App() {
                 topN={analyzeView.wordFreq.topN}
                 onViewChange={(next) => setAnalyzeView((s) => ({ ...s, wordFreq: { ...s.wordFreq, view: next } }))}
                 onTopNChange={(next) => setAnalyzeView((s) => ({ ...s, wordFreq: { ...s.wordFreq, topN: next } }))}
-                onWordSelect={(word) => setQueryText(word)}
+                onWordSelect={handleWordSelect}
                 onExportCsv={() => exportWordFrequencyCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
               />
             )}
@@ -2873,8 +2899,8 @@ function App() {
                 topN={analyzeView.cooccur.topN}
                 onViewChange={(next) => setAnalyzeView((s) => ({ ...s, cooccur: { ...s.cooccur, view: next } }))}
                 onTopNChange={(next) => setAnalyzeView((s) => ({ ...s, cooccur: { ...s.cooccur, topN: next } }))}
-                onPairSelect={(a) => setQueryCodeId(a)}
-                onCodeSelect={(id) => setQueryCodeId(id)}
+                onPairSelect={handlePairSelect}
+                onCodeSelect={handlePairSelect}
                 onExportCsv={() => exportCoOccurrenceCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
               />
             )}
