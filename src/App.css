@@ -806,6 +806,18 @@ button {
   color: #ffffff;
 }
 
+.analyze-sidebar-group {
+  font: var(--t-ui-xs, 11px/1.4 system-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3, #6b7280);
+  font-weight: 600;
+  padding: 12px 10px 4px 10px;
+}
+.analyze-sidebar-group:first-child {
+  padding-top: 4px;
+}
+
 .list-item {
   width: 100%;
   display: flex;
@@ -1515,6 +1527,17 @@ button {
   text-align: left;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.analyze-question-sentence {
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  background: var(--paper-2, rgba(0, 0, 0, 0.025));
+  border-left: 2px solid var(--accent, #0f766e);
+  border-radius: 4px;
+  font: var(--t-body-sm, 13px/1.45 system-ui);
+  color: var(--ink, #1f2937);
+  font-style: italic;
 }
 
 .query-filter-list {

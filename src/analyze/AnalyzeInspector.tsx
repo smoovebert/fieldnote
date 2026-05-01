@@ -42,18 +42,50 @@ function exportLabelFor(panel: AnalyzePanel): string {
   }
 }
 
+function panelVerb(panel: AnalyzePanel): string {
+  switch (panel) {
+    case 'matrix':       return 'Code counts by group'
+    case 'frequency':    return 'Word frequencies'
+    case 'cooccurrence': return 'Code co-occurrence pairs'
+    case 'crosstab':     return 'Code counts across two attributes'
+    default:             return 'Excerpts'
+  }
+}
+
+// Build a natural-language sentence from the active filters and the
+// current panel, e.g. "Excerpts coded with Access barriers, mentioning
+// 'financial aid', from the Maria case." Filter labels arrive in their
+// pre-formatted display form (see App.tsx activeQueryFilters), so we
+// just normalize the prefixes and stitch them into a sentence.
+function buildQuestionSentence(panel: AnalyzePanel, filters: string[]): string {
+  const verb = panelVerb(panel)
+  if (filters.length === 0) {
+    return `${verb} across all coded excerpts.`
+  }
+  const phrases = filters.map((f) => {
+    if (f.startsWith('Code: '))           return `coded with ${f.slice('Code: '.length)}`
+    if (f.startsWith('Case: '))           return `from the ${f.slice('Case: '.length)} case`
+    if (f.startsWith('Text contains '))   return `mentioning ${f.slice('Text contains '.length)}`
+    return `where ${f}` // attribute filters arrive as "Attr = value"
+  })
+  return `${verb} ${phrases.join(', ')}.`
+}
+
 export function AnalyzeInspector(props: Props) {
   const codeCount = new Set(props.analyzeResults.flatMap((excerpt) => excerpt.codeIds)).size
   const snapshotsForActive = props.activeSavedQuery
     ? props.querySnapshots.filter((s) => s.queryId === props.activeSavedQuery!.id)
     : []
 
+  const questionSentence = buildQuestionSentence(props.analyzePanel, props.activeQueryFilters)
+
   return (
     <section className="panel">
       <div className="panel-heading">
         <Search size={18} aria-hidden="true" />
-        <h2>Query Summary</h2>
+        <h2>Current question</h2>
       </div>
+      <p className="analyze-question-sentence">{questionSentence}</p>
       <dl className="properties-list">
         <div>
           <dt>Results</dt>

@@ -3163,7 +3163,7 @@ function ListView({
     <>
       <div className="pane-title">
         <FileText size={16} aria-hidden="true" />
-        <span>{activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Queries' : 'Exports'}</span>
+        <span>{activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Questions' : 'Exports'}</span>
       </div>
       {activeView === 'code' && (
         <SourcesView
