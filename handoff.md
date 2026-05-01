@@ -465,6 +465,8 @@ Implemented:
 - Import extraction: PDF files now use `pdfjs-dist` for real page text extraction; DOCX imports preserve more block/list structure via Mammoth HTML -> sanitized structured text.
 - Classify case grouping: the case sheet can group cases by any attribute value.
 - Refine orphan review: references whose codes were deleted or missing can be reviewed, re-tagged, or deleted.
+- AI assist v1 hardening: lockdown migrations (190400-190800), service-role + JWT-auth client split inside both Edge Functions, definer-mode safe view, BYOK save flow now upserts the key before flipping the provider, settings RPC validates against the provider allow-list, BYOK panel reuses already-saved keys via `has_*_key` flags.
+- Phase 3 per-mode extraction (in progress): each mode's sidebar/inspector lifted out of `App.tsx` into `src/modes/<mode>/` (or `src/analyze/`). Latest: `RefineSidebar` (drag-to-nest tree), `ClassifySidebar`, `AnalyzeSidebar`, `AnalyzeInspector`, `ReportInspector`, plus the shared `CodePickerPanel` used by Code and Refine. `buildCodeTree` moved to `src/lib/codeTree.ts`. App.tsx is down ~250 lines this round; remaining inline material is mostly cross-cutting App-shell glue.
 
 Still needed:
 
@@ -684,8 +686,9 @@ SUPABASE_ACCESS_TOKEN=<token> supabase functions deploy save-key \
   5 suggestions, ✓/✗ subset, Apply creates new codes (case-insensitive
   match against existing) and applies all checked to the active selection.
 - **✨ Draft from references** — Refine code description, when active
-  code has ≥3 references and a short/empty description. AI text lands
-  in a separate preview panel with Insert/Discard buttons.
+  code has ≥1 reference. AI text lands in a separate preview panel with
+  Insert/Discard buttons; the description-length guard was removed
+  because the preview panel already gates the write.
 - **✨ Summary** — Organize source inspector. 3-sentence summary cached
   forever (until source content hash changes). Refresh button forces a
   re-call.
@@ -706,10 +709,17 @@ SUPABASE_ACCESS_TOKEN=<token> supabase functions deploy save-key \
 
 1. User opens Settings (gear icon in header) → picks "Bring your own
    key" → chooses provider → pastes key → Save.
-2. Key sent to `/save-key` over HTTPS once. Edge Function encrypts
-   with `AI_KEY_ENCRYPTION_SECRET`, stores in
-   `fieldnote_user_settings.encrypted_keys[provider]`.
-3. On every AI call, `/ai-call` decrypts the user's key in memory only,
+2. **Save sequence (key first, provider second).** `/save-key` encrypts
+   and stores the key. Only after that succeeds does the panel call the
+   `update_ai_settings_safe` RPC to set `ai_provider = *-byok`. If the
+   key upload fails, the provider stays where it was, so the account
+   never lands at `*-byok` with no usable key.
+3. **Reusing a saved key.** The safe view exposes per-provider
+   `has_*_key` booleans (ciphertext stays hidden). When the user
+   switches BYOK provider, the panel allows leaving the key field blank
+   if a key for that provider is already on file; otherwise the switch
+   is blocked with a status message.
+4. On every AI call, `/ai-call` decrypts the user's key in memory only,
    uses it, discards. Browser never receives the plaintext key.
 
 ### Cost monitoring
@@ -754,8 +764,23 @@ Both switches flip at next request — no redeploy needed.
 - `supabase/functions/ai-call/providers/{gemini,openai,anthropic}.ts` — provider adapters
 - `supabase/functions/save-key/index.ts` — encrypted key write
 
-**Database:**
-- 4 migrations: `20260501190000` (tables) → `190100` (safe view) → `190200` (quota RPCs) → `190300` (encrypt/decrypt helpers)
+**Database (9 migrations on the AI stack):**
+- `20260501190000` — tables (`fieldnote_user_settings`, `fieldnote_ai_calls`, `fieldnote_ai_usage`, `fieldnote_ai_cost_log`)
+- `190100` — initial safe view exposing non-secret columns
+- `190200` — `reserve_ai_call` / `record_ai_call_actuals` RPCs
+- `190300` — `ai_key_encrypt` / `ai_key_decrypt` helpers (search_path = extensions, public)
+- `190400` — quota RPC grants reduced to `service_role` only
+- `190500` — base table revoked from clients; non-secret writes go through `update_ai_settings_safe` RPC
+- `190600` — safe view switched to definer mode (security_invoker = false) with `auth.uid()` filter as access control
+- `190700` — safe view exposes `has_gemini_key` / `has_openai_key` / `has_anthropic_key` booleans
+- `190800` — `update_ai_settings_safe` validates provider against the allow-list; CHECK constraint on the column as defense in depth
+
+### Security posture
+
+- **Two clients in each Edge Function.** A `service_role` client (no Authorization override) handles all DB/RPC; a separate `auth.getUser(token)` call verifies the user JWT. PostgREST sees `service_role`, so reads of `encrypted_keys` and the quota RPCs go through under the lockdown grants.
+- **Clients cannot read or write `fieldnote_user_settings` directly.** The safe view is the only read path; `update_ai_settings_safe` is the only non-secret write path; `/save-key` is the only `encrypted_keys` write path (service-role).
+- **Cache scoping.** Cache hash is keyed by `(user_id, provider, effectiveModel, kind, input)`, with the same fields filtering the lookup, so a cross-provider hit can't return the wrong shape.
+- **Provider validation.** `update_ai_settings_safe` rejects unknown provider strings; the column carries a CHECK constraint as a backstop.
 
 ## Recent Commits
 
