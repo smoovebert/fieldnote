@@ -74,4 +74,17 @@ describe('normalizeQueryDefinition', () => {
     } as unknown as Parameters<typeof normalizeQueryDefinition>[0])
     expect(result.attributes).toEqual([])
   })
+
+  it('reads additionalCodeIds and filters out non-string entries', () => {
+    const result = normalizeQueryDefinition({
+      codeId: 'c1',
+      additionalCodeIds: ['c2', 'c3', '', 42 as unknown as string],
+    } as unknown as Parameters<typeof normalizeQueryDefinition>[0])
+    expect(result.additionalCodeIds).toEqual(['c2', 'c3'])
+  })
+
+  it('defaults additionalCodeIds to [] when omitted (legacy saved queries)', () => {
+    const result = normalizeQueryDefinition({ codeId: 'c1' })
+    expect(result.additionalCodeIds).toEqual([])
+  })
 })

@@ -466,6 +466,11 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('')
   const [queryText, setQueryText] = useState('')
   const [queryCodeId, setQueryCodeId] = useState('')
+  // Additional codes ANDed onto queryCodeId. Empty for ordinary single-code
+  // queries; set by co-occurrence pair drill-down so the result is excerpts
+  // coded with both codes. Editable from the Find-excerpts query builder
+  // via "Also coded with" chips.
+  const [queryAdditionalCodeIds, setQueryAdditionalCodeIds] = useState<string[]>([])
   const [queryCaseId, setQueryCaseId] = useState('')
   const [queryAttributes, setQueryAttributes] = useState<AttributeFilter[]>([])
   const [queryName, setQueryName] = useState('')
@@ -517,6 +522,7 @@ function App() {
   const currentQueryDefinition: QueryDefinition = {
     text: queryText,
     codeId: queryCodeId,
+    additionalCodeIds: queryAdditionalCodeIds,
     caseId: queryCaseId,
     attributes: queryAttributes,
     analyzeView: serializeAnalyzeView(analyzeView),
@@ -577,6 +583,7 @@ function App() {
     setSelectedCodeIds(nextProject.codes[0]?.id ? [nextProject.codes[0].id] : [initialCodes[0].id])
     setQueryText('')
     setQueryCodeId('')
+    setQueryAdditionalCodeIds([])
     setQueryCaseId('')
     setQueryAttributes([])
     setQueryName('')
@@ -952,13 +959,19 @@ function App() {
 
       if (term && !haystack.includes(term)) return false
       if (queryCodeId && !excerpt.codeIds.includes(queryCodeId)) return false
+      // Additional codes are AND-combined with the primary code so the
+      // user can ask "excerpts coded with A AND B AND C" — used by the
+      // co-occurrence pair drill-down to land on the actual intersection.
+      for (const extra of queryAdditionalCodeIds) {
+        if (!excerpt.codeIds.includes(extra)) return false
+      }
       if (queryCaseId && linkedCase?.id !== queryCaseId) return false
 
       if (!excerptMatchesAttributeFilters(queryAttributes, linkedCase?.id, attributeValues)) return false
 
       return true
     })
-  }, [attributeValues, caseBySourceId, codes, excerpts, queryAttributes, queryCaseId, queryCodeId, queryText, sourceById])
+  }, [attributeValues, caseBySourceId, codes, excerpts, queryAdditionalCodeIds, queryAttributes, queryCaseId, queryCodeId, queryText, sourceById])
 
   const analyzeMatchingCases = useMemo(() => {
     const matchingCases = analyzeResults.flatMap((excerpt) => {
@@ -1174,13 +1187,17 @@ function App() {
     setAnalyzePanel('query')
   }
 
-  // Pair drill-down: the query model carries a single "with this code"
-  // filter, so we land on excerpts coded with the first code in the
-  // pair. The user can refine to the intersection from the result list.
-  // True multi-code AND filtering is a follow-up that needs a query-
-  // schema change; tracked in the Analyze workbench plan.
-  function handlePairSelect(codeId: string) {
+  // Pair drill-down: lands on excerpts coded with both codes via the
+  // additionalCodeIds AND filter. Single-code drill-down (from the
+  // co-occurrence per-code list) clears any leftover additional codes
+  // so the result is just "excerpts coded with X".
+  function handlePairSelect(codeId: string, alsoCodedWith?: string) {
     setQueryCodeId(codeId)
+    if (alsoCodedWith && alsoCodedWith !== codeId) {
+      setQueryAdditionalCodeIds([alsoCodedWith])
+    } else {
+      setQueryAdditionalCodeIds([])
+    }
     setAnalyzePanel('query')
   }
 
@@ -1196,6 +1213,7 @@ function App() {
   const activeQueryFilters = [
     queryText.trim() ? `Text contains "${queryText.trim()}"` : '',
     queryCodeId ? `Code: ${codes.find((code) => code.id === queryCodeId)?.name ?? 'Unknown code'}` : '',
+    ...queryAdditionalCodeIds.map((id) => `Also coded with: ${codes.find((c) => c.id === id)?.name ?? 'Unknown code'}`),
     queryCaseId ? `Case: ${cases.find((item) => item.id === queryCaseId)?.name ?? 'Unknown case'}` : '',
     ...queryAttributes
       .filter((f) => f.attributeId && f.value)
@@ -1704,6 +1722,7 @@ function App() {
   function applyQueryDefinition(definition: QueryDefinition) {
     setQueryText(definition.text)
     setQueryCodeId(definition.codeId)
+    setQueryAdditionalCodeIds(definition.additionalCodeIds ?? [])
     setQueryCaseId(definition.caseId)
     setQueryAttributes(definition.attributes)
     setAnalyzeView(definition.analyzeView ?? DEFAULT_ANALYZE_VIEW)
@@ -2961,6 +2980,42 @@ function App() {
                   ))}
                 </select>
               </label>
+              <div className="property-field also-coded-with">
+                <span>Also coded with</span>
+                <div className="also-coded-with-chips">
+                  {queryAdditionalCodeIds.length === 0 && (
+                    <small className="also-coded-with-empty">None — add codes to require excerpts coded with all of them.</small>
+                  )}
+                  {queryAdditionalCodeIds.map((id) => {
+                    const code = codes.find((c) => c.id === id)
+                    return (
+                      <span key={id} className="also-coded-with-chip">
+                        {code?.name ?? 'Unknown code'}
+                        <button
+                          type="button"
+                          aria-label={`Remove ${code?.name ?? 'code'} from filter`}
+                          onClick={() => setQueryAdditionalCodeIds((current) => current.filter((c) => c !== id))}
+                        >×</button>
+                      </span>
+                    )
+                  })}
+                </div>
+                <select
+                  value=""
+                  onChange={(event) => {
+                    const next = event.target.value
+                    if (!next) return
+                    setQueryAdditionalCodeIds((current) => current.includes(next) || next === queryCodeId ? current : [...current, next])
+                  }}
+                >
+                  <option value="">+ Add code (AND)</option>
+                  {sortedCodes
+                    .filter((c) => c.id !== queryCodeId && !queryAdditionalCodeIds.includes(c.id))
+                    .map((code) => (
+                      <option key={code.id} value={code.id}>{'-'.repeat(code.depth)} {code.name}</option>
+                    ))}
+                </select>
+              </div>
               <label className="property-field">
                 <span>Case</span>
                 <select value={queryCaseId} onChange={(event) => setQueryCaseId(event.target.value)}>
