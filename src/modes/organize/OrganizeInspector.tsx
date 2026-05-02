@@ -21,6 +21,7 @@ type Props = {
   restoreActiveSource: () => void
   deleteActiveSource: () => void
   onSummarizeSource: (source: { title: string; content: string }) => Promise<{ ok: true; summary: string } | { ok: false; message: string }>
+  isHostedAi: boolean
 }
 
 export function OrganizeInspector(props: Props) {
@@ -164,6 +165,7 @@ export function OrganizeInspector(props: Props) {
             estimatedTokens={inputTokens}
             estimatedCostUsd={inputCost}
             errorMessage={aiError}
+            showHostedQuota={props.isHostedAi}
             onCancel={() => { setAiPhase('idle'); setAiError(undefined) }}
             onSend={async () => {
               setAiPhase('loading')

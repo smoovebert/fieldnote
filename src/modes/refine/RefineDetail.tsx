@@ -27,6 +27,7 @@ type Props = {
   onSelectCode: (codeId: string) => void
   retagOrphan: (excerptId: string, codeId: string) => void
   onDraftDescription: (codeName: string, references: Array<{ sourceTitle: string; text: string }>) => Promise<{ ok: true; description: string } | { ok: false; message: string }>
+  isHostedAi: boolean
 }
 
 function normalizeName(name: string): string {
@@ -186,6 +187,7 @@ export function RefineDetail(props: Props) {
           estimatedTokens={inputTokens}
           estimatedCostUsd={inputCost}
           errorMessage={aiError}
+          showHostedQuota={props.isHostedAi}
           onCancel={() => { setAiPhase('idle'); setAiDraft(''); setAiError(undefined) }}
           onSend={async () => {
             setAiPhase('loading')

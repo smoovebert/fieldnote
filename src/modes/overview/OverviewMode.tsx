@@ -24,6 +24,7 @@ type Props = {
   onRestoreVersion: (version: ProjectVersion) => void
   onExportBackup: () => void
   onDraftProjectMemo: () => Promise<{ ok: true; memo: string } | { ok: false; message: string }>
+  isHostedAi: boolean
 }
 
 export function OverviewMode(props: Props) {
@@ -124,6 +125,7 @@ export function OverviewMode(props: Props) {
             estimatedTokens={estTokens}
             estimatedCostUsd={estCost}
             errorMessage={aiError}
+            showHostedQuota={props.isHostedAi}
             onCancel={() => { setAiPhase('idle'); setAiDraft(''); setAiError(undefined) }}
             onSend={async () => {
               setAiPhase('loading')

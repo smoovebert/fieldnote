@@ -34,6 +34,7 @@ type Props = {
   applyCodesToText: (selectedText: string, codeIds?: string[], label?: string) => void
   buildNewCode: (name: string, parentCodeId?: string) => Code
   onSuggestCodes: (selectedText: string) => Promise<{ ok: true; suggestions: Array<{ name: string; description: string }> } | { ok: false; message: string }>
+  isHostedAi: boolean
 }
 
 export function CodeDetail(props: Props) {
@@ -190,6 +191,7 @@ export function CodeDetail(props: Props) {
               estimatedTokens={inputTokens}
               estimatedCostUsd={inputCost}
               errorMessage={aiError}
+              showHostedQuota={props.isHostedAi}
               onCancel={() => { setAiPhase('idle'); setAiSuggestions([]); setAiError(undefined) }}
               onSend={async () => {
                 setAiPhase('loading')

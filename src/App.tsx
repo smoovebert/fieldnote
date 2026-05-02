@@ -77,6 +77,7 @@ import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import { SourcesView } from './components/SourcesView'
 import { AiSettingsPanel } from './components/AiSettingsPanel'
 import { callAi } from './ai/client'
+import { loadAiSettings } from './lib/aiSettings'
 import { BACKUP_MIME, backupFilename, buildBackup, validateBackup } from './lib/backup'
 import { deleteRecoverySnapshot, isLocalAheadOfRemote, readRecoverySnapshot } from './lib/localRecovery'
 import type {
@@ -433,6 +434,11 @@ async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kin
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const userId = session?.user?.id ?? null
+  // Tracks whether the signed-in user is on the free Gemini path
+  // (`gemini-free`) vs BYOK. Only used to decide whether to show the
+  // "X/N free calls left today" badge in AI preview panels — the
+  // server is the source of truth for actual quota enforcement.
+  const [isHostedAi, setIsHostedAi] = useState(true)
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projectTitle, setProjectTitle] = useState('Student Access Study')
   const [description, setDescription] = useState('')
@@ -783,6 +789,22 @@ function App() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Pull the user's AI provider once per sign-in so AI preview panels
+  // know whether to show the hosted-quota badge. Default to hosted on
+  // failure or no row — the badge is informational and the server still
+  // enforces the cap.
+  useEffect(() => {
+    let cancelled = false
+    if (!userId) {
+      queueMicrotask(() => { if (!cancelled) setIsHostedAi(true) })
+      return () => { cancelled = true }
+    }
+    loadAiSettings(userId)
+      .then((settings) => { if (!cancelled) setIsHostedAi((settings?.aiProvider ?? 'gemini-free') === 'gemini-free') })
+      .catch(() => { if (!cancelled) setIsHostedAi(true) })
+    return () => { cancelled = true }
+  }, [userId])
 
   useEffect(() => {
     if (!userId) {
@@ -2794,6 +2816,7 @@ function App() {
             onDescriptionChange={setDescription}
             onProjectMemoChange={updateProjectMemo}
             onDraftProjectMemo={handleDraftProjectMemo}
+            isHostedAi={isHostedAi}
             onRestoreVersion={(version) => {
               setActiveSourceId(version.data.activeSourceId)
               setSources(version.data.sources)
@@ -2844,6 +2867,7 @@ function App() {
             applyCodesToText={applyCodesToText}
             buildNewCode={buildNewCode}
             onSuggestCodes={handleSuggestCodes}
+            isHostedAi={isHostedAi}
           />
         )}
 
@@ -2868,6 +2892,7 @@ function App() {
             onSelectCode={(id) => setActiveCodeId(id)}
             retagOrphan={retagOrphan}
             onDraftDescription={handleDraftDescription}
+            isHostedAi={isHostedAi}
           />
         )}
 
@@ -3211,6 +3236,7 @@ function App() {
             restoreActiveSource={restoreActiveSource}
             deleteActiveSource={deleteActiveSource}
             onSummarizeSource={handleSummarizeSource}
+            isHostedAi={isHostedAi}
           />
         )}
 

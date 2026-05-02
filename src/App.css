@@ -5146,6 +5146,23 @@ textarea {
 .ai-preview-close { background: transparent; border: 0; cursor: pointer; color: var(--muted, #6b7280); width: 18px; height: 18px; }
 
 .ai-preview-cost { font-size: 11px; color: var(--muted, #6b7280); }
+
+.ai-preview-quota {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--accent, #0f766e);
+}
+.ai-preview-quota.low {
+  background: rgba(217, 119, 6, 0.10);
+  color: #b45309;
+}
+.ai-preview-quota.out {
+  background: rgba(220, 38, 38, 0.10);
+  color: #b91c1c;
+}
 .ai-preview-input {
   font-size: 12px; line-height: 1.5; color: var(--ink, #1f2937);
   max-height: 120px; overflow-y: auto;

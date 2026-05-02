@@ -3,6 +3,31 @@ import type { AiCallKind, AiCallResult } from './types'
 
 const FUNCTIONS_BASE = (import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/$/, '') + '/functions/v1'
 
+// Hosted Gemini-free quota cap. Mirrors v_daily_cap in
+// 20260501190200_add_ai_quota_rpcs.sql. Kept as a UI constant so the
+// preview panel can render "X of N free calls left today" without a
+// round trip — the source of truth for enforcement is still the RPC.
+export const HOSTED_DAILY_CAP = 50
+
+// Today's hosted-quota usage for the signed-in user. Reads the safe
+// view (filtered to auth.uid() server-side) so this is safe to call
+// from any client component. Returns 0 if no row exists yet (the
+// reserve_ai_call RPC creates the row on first use).
+export async function loadAiUsageToday(): Promise<{ callsToday: number; cap: number; remaining: number }> {
+  const today = new Date().toISOString().slice(0, 10)
+  const { data, error } = await supabase
+    .from('fieldnote_ai_usage_safe')
+    .select('call_count')
+    .eq('date', today)
+    .maybeSingle()
+  const callsToday = error || !data ? 0 : Number(data.call_count ?? 0)
+  return {
+    callsToday,
+    cap: HOSTED_DAILY_CAP,
+    remaining: Math.max(0, HOSTED_DAILY_CAP - callsToday),
+  }
+}
+
 export async function callAi(input: { kind: AiCallKind; inputText: string; projectId: string | null }): Promise<AiCallResult> {
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData.session?.access_token
