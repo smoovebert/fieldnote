@@ -100,7 +100,7 @@ Remaining functionality grouped by LOE:
 - ~~Full-project search~~ ✓ shipped in the header (sources, memos, codes, cases, and excerpts; deeper formal query tools still TBD).
 - Richer PDF/DOCX preview while still coding extracted text (PDF and DOCX text extraction shipped; native page/rich preview still TBD).
 - ~~Codebook cleanup: split code + duplicate detection~~ ✓ shipped (orphan-reference review also shipped; bulk recode multi-select still TBD).
-- First-class analysis objects: saved matrices/crosstabs/charts with stored results — extend the existing `fieldnote_query_results` table to other panel kinds.
+- ~~First-class analysis objects: saved matrices/crosstabs/charts with stored results~~ ✓ shipped via `fieldnote_query_results.result_kind` covering matrix / frequency / cooccurrence / crosstab; embedded rendering in the Report ships per-kind.
 - More visualization surfaces: hierarchy chart, relationship map, concept map v1.
 - ~~Report builder customization (sections/fields)~~ ✓ shipped (embedded chart outputs in the Report still TBD).
 
@@ -392,7 +392,7 @@ Typing in a missing context memo creates it automatically.
 - Right rail still contains too many unrelated concepts.
 - Relationships view is only a placeholder.
 - AI draft panel is only a placeholder.
-- Analyze has useful filters (now multi-attribute), saved queries, matrix coding, word frequency, code co-occurrence, crosstabs with cell drill-down, and coded-excerpt query snapshots. Remaining gap: snapshots for non-query analysis panels and first-class saved analysis objects.
+- Analyze is now framed as a research-question workbench: sidebar grouped by Evidence / Compare / Language / Relationships rather than panel types; right rail leads with a natural-language "current question" sentence; every count opens evidence (matrix/crosstab/cooccurrence cells and word-frequency words all jump to Find-excerpts with merged filters); snapshots cover all five panel kinds (coded_excerpt + matrix + frequency + cooccurrence + crosstab) with point-in-time fidelity; Send-to-Report works from every panel with a per-snapshot interpretation memo and explicit include flag. Remaining gap: a true multi-code AND filter on the query schema (today co-occurrence drill-down lands on the first code only).
 - Report mode has a real preview, section toggles, formatted Word/PDF outputs, and CSV/XLSX raw-data exports. Remaining gaps are embedded chart bundles and full archive export.
 - Classify mode has real cases, source assignments, editable text attributes, attribute CSV import, and attribute-based grouping. Remaining gap: persistent case sets.
 - Code hierarchy supports parent assignment, tree display, drag-to-nest, drag-to-root, split code, exact duplicate-name review, and orphan reference review. Remaining gaps are bulk recode multi-select and fuzzy duplicate detection.
@@ -467,6 +467,9 @@ Implemented:
 - Refine orphan review: references whose codes were deleted or missing can be reviewed, re-tagged, or deleted.
 - AI assist v1 hardening: lockdown migrations (190400-190800), service-role + JWT-auth client split inside both Edge Functions, definer-mode safe view, BYOK save flow now upserts the key before flipping the provider, settings RPC validates against the provider allow-list, BYOK panel reuses already-saved keys via `has_*_key` flags.
 - Phase 3 per-mode extraction (in progress): each mode's sidebar/inspector lifted out of `App.tsx` into `src/modes/<mode>/` (or `src/analyze/`). Latest: `RefineSidebar` (drag-to-nest tree), `ClassifySidebar`, `AnalyzeSidebar`, `AnalyzeInspector`, `ReportInspector`, plus the shared `CodePickerPanel` used by Code and Refine. `buildCodeTree` moved to `src/lib/codeTree.ts`. App.tsx is down ~250 lines this round; remaining inline material is mostly cross-cutting App-shell glue.
+- Analyze workbench refresh (2026-05-01): sidebar regrouped by question type (Evidence / Compare / Language / Relationships) with renamed entries ("Find excerpts", "Codes by group", "Codes by two attributes", "Code co-occurrence"); the "Queries" pane title became "Questions". The Analyze right rail leads with a natural-language "current question" sentence built from the active filters and panel verb, e.g. "Code counts by group coded with Access barriers, from the Maria case." Drill-down was made consistent: matrix cells, word-frequency words, and co-occurrence pairs all jump to Find-excerpts with merged filters (matching the existing crosstab cell drill-down).
+- Snapshots-with-memo and Send-to-Report (2026-05-01): each pinned snapshot carries a free-form interpretation note. Snapshots have an explicit `include_in_report` flag (decoupled from "has note") so researchers can keep many working snapshots and promote a few. A Send-to-Report button on every Analyze panel captures a snapshot with `include_in_report = true` and switches to Report mode. Migration `20260501200200_snapshots_multi_panel.sql` added a nullable `query_id`, a `config` jsonb column, and broadened `result_kind` to cover Matrix / Word frequency / Co-occurrence / Crosstab snapshots — each kind stores its own computed numeric payload at capture time so the Report renders accurate point-in-time values even after later code/case/attribute drift. The Report's "Analysis snapshots" section dispatches per-kind: excerpt samples for `coded_excerpt`, counts tables for matrix/crosstab, top-N word lists for frequency, top-N pair lists for co-occurrence — in the React preview, the PDF, the Word doc, and the CSV/XLSX export.
+- Confirm-dialog safety fix (2026-05-01): collapsed `offerBackupBeforeRisky` from a two-confirm chain (offer-backup → proceed-without-backup) to a single confirm with an unconditional best-effort auto-backup. Chromium-based browsers (including Arc) were surfacing a "Prevent this page from creating additional dialogs" checkbox after the back-to-back confirms, which once ticked made every subsequent `window.confirm` return false silently — every destructive action then aborted with no feedback. One confirm + auto-backup keeps the safety net without tripping the browser's anti-spam dialog suppression.
 
 Still needed:
 
@@ -474,7 +477,7 @@ Still needed:
 - Mode-specific right rails outside Organize need another design pass.
 - Organize mode still needs richer source previews.
 - Classify still needs persistent case sets and richer filtering.
-- Snapshots beyond coded-excerpt queries (matrix / wordfreq / co-occurrence / crosstab snapshots) — extension of the existing `fieldnote_query_results` table via the `result_kind` discriminator.
+- Multi-code AND filter on the query schema: today co-occurrence pair drill-down lands on the first code only; honoring "coded with both A and B" needs a new filter shape on `QueryDefinition` and a saved-query upgrade.
 - Codebook cleanup beyond split/dedupe/orphan review: bulk recode UX (multi-select rows in a code's references and re-tag without deleting source), fuzzy-match duplicate detection (currently exact-normalized match only).
 - Non-text source types (PDF as PDF with page anchors, DOCX rich preview, audio/video, image regions) — text extraction/import works today, but native source rendering/coding is not built.
 - Tablet/mobile: blocked behind a 1024px gate, no responsive design.
