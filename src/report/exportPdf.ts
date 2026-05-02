@@ -1,5 +1,6 @@
 import type { ReportModel } from './buildReport'
 import { downloadBlob } from '../analyze/exportImage'
+import { cellRgbForPdf, maxCount, textBar } from './snapshotVisuals'
 
 function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report'
@@ -146,20 +147,54 @@ export async function exportReportPdf(
           writeWrapped(`— ${sample.sourceTitle}`, { size: 9, color: 120, gap: 8 })
         }
       } else if (sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') {
-        writeWrapped(['Code', ...sm.results.colLabels].join(' | '), { size: 9, color: 120, gap: 4 })
+        // Shaded heatmap grid: cell intensity scales with count.
+        // Truncate columns to keep the grid within the page width;
+        // the full data is still available in CSV/XLSX export.
+        const cols = sm.results.colLabels.slice(0, 6)
+        const rowLabelW = 120
+        const cellW = Math.max(40, Math.min(80, (contentWidth - rowLabelW) / Math.max(1, cols.length)))
+        const cellH = 18
+        const gridH = cellH * (sm.results.rows.length + 1)
+        ensureSpace(gridH + 8)
+        // Header row.
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(60)
+        cols.forEach((label, i) => {
+          const x = margin + rowLabelW + i * cellW
+          doc.text(doc.splitTextToSize(label, cellW - 4)[0] ?? label, x + 4, y + 12)
+        })
+        y += cellH
+        const max = maxCount(sm.results.rows)
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(20)
         for (const row of sm.results.rows) {
-          writeWrapped([row.codeName, ...row.counts.map(String)].join(' | '), { size: 11, gap: 2 })
+          ensureSpace(cellH)
+          doc.text(doc.splitTextToSize(row.codeName, rowLabelW - 4)[0] ?? row.codeName, margin, y + 12)
+          for (let i = 0; i < cols.length; i++) {
+            const count = row.counts[i] ?? 0
+            const [r, g, b] = cellRgbForPdf(count, max)
+            const x = margin + rowLabelW + i * cellW
+            doc.setFillColor(r, g, b)
+            doc.rect(x, y, cellW, cellH, 'F')
+            doc.setDrawColor(220); doc.rect(x, y, cellW, cellH, 'S')
+            doc.text(String(count), x + cellW / 2, y + 12, { align: 'center' })
+          }
+          y += cellH
         }
-        // trailing gap between table and next section
-        writeWrapped('', { size: 11, gap: 8 })
+        if (sm.results.colLabels.length > cols.length) {
+          writeWrapped(`(${sm.results.colLabels.length - cols.length} more column${sm.results.colLabels.length - cols.length === 1 ? '' : 's'} in CSV export)`, { size: 9, color: 130, gap: 8 })
+        } else {
+          y += 8
+        }
       } else if (sm.results.kind === 'frequency') {
+        // Bar list: text label + █-block bar + count.
+        const max = sm.results.rows.reduce((m, r) => Math.max(m, r.count), 0)
         for (const r of sm.results.rows) {
-          writeWrapped(`${r.word}: ${r.count} (${r.excerptCount} excerpts)`, { size: 11, gap: 2 })
+          writeWrapped(`${r.word.padEnd(18, ' ')} ${textBar(r.count, max)} ${r.count}`, { size: 10, gap: 2 })
         }
         writeWrapped('', { size: 11, gap: 8 })
       } else if (sm.results.kind === 'cooccurrence') {
+        const max = sm.results.pairs.reduce((m, p) => Math.max(m, p.count), 0)
         for (const p of sm.results.pairs) {
-          writeWrapped(`${p.codeAName} + ${p.codeBName}: ${p.count}`, { size: 11, gap: 2 })
+          writeWrapped(`${p.codeAName} + ${p.codeBName}: ${textBar(p.count, max)} ${p.count}`, { size: 10, gap: 2 })
         }
         writeWrapped('', { size: 11, gap: 8 })
       }

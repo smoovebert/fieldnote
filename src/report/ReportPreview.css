@@ -198,6 +198,31 @@
   text-align: right;
 }
 
+/* Heatmap variant: cells use inline background (intensity proportional
+   to count) and re-center text since shaded cells read as filled. */
+.report-preview .report-snapshot-heatmap td {
+  text-align: center;
+}
+
+/* Bar variant: a count cell renders a horizontal teal fill behind a
+   right-aligned numeric label. The bar width is set inline as a
+   percentage by the renderer. */
+.report-preview .report-snapshot-bars td {
+  position: relative;
+  text-align: right;
+  padding-right: 8px;
+}
+.report-preview .report-snapshot-bar {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  background: rgba(15, 118, 110, 0.18);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.report-preview .report-snapshot-bar-value {
+  position: relative;
+}
+
 @media print {
   .report-preview .report-section {
     page-break-before: always;

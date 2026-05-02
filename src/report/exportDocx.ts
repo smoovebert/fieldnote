@@ -1,5 +1,6 @@
 import type { ReportModel } from './buildReport'
 import { downloadBlob } from '../analyze/exportImage'
+import { cellHexForDocx, maxCount, textBar } from './snapshotVisuals'
 
 function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report'
@@ -115,17 +116,50 @@ export async function exportReportDocx(
           sections.push(para(`— ${sample.sourceTitle}`, { color: '606060' }))
         }
       } else if (sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') {
-        sections.push(para(['Code', ...sm.results.colLabels].join(' | '), { color: '606060' }))
-        for (const row of sm.results.rows) {
-          sections.push(para([row.codeName, ...row.counts.map(String)].join(' | ')))
+        // Heatmap-shaded Word table. Cell shading scales with count
+        // intensity (matches the React preview and the PDF grid).
+        const { Table, TableRow, TableCell, WidthType } = docx
+        const max = maxCount(sm.results.rows)
+        const cols = sm.results.colLabels.slice(0, 8)
+        const headerCells = [
+          new TableCell({
+            children: [para('Code', { bold: true, size: 20 })],
+            shading: { fill: 'F3F4F6' },
+            width: { size: 30, type: WidthType.PERCENTAGE },
+          }),
+          ...cols.map((label) => new TableCell({
+            children: [para(label, { bold: true, size: 20 })],
+            shading: { fill: 'F3F4F6' },
+          })),
+        ]
+        const bodyRows = sm.results.rows.map((row) => new TableRow({
+          children: [
+            new TableCell({ children: [para(row.codeName, { size: 20 })] }),
+            ...cols.map((_, i) => {
+              const count = row.counts[i] ?? 0
+              return new TableCell({
+                children: [para(String(count), { size: 20 })],
+                shading: { fill: cellHexForDocx(count, max) },
+              })
+            }),
+          ],
+        }))
+        sections.push(new Table({
+          rows: [new TableRow({ children: headerCells }), ...bodyRows],
+          width: { size: 100, type: WidthType.PERCENTAGE },
+        }))
+        if (sm.results.colLabels.length > cols.length) {
+          sections.push(para(`(${sm.results.colLabels.length - cols.length} more column${sm.results.colLabels.length - cols.length === 1 ? '' : 's'} in CSV export)`, { color: '606060', size: 18 }))
         }
       } else if (sm.results.kind === 'frequency') {
+        const max = sm.results.rows.reduce((m, r) => Math.max(m, r.count), 0)
         for (const r of sm.results.rows) {
-          sections.push(para(`${r.word}: ${r.count} (${r.excerptCount} excerpts)`))
+          sections.push(para(`${r.word.padEnd(18, ' ')} ${textBar(r.count, max)} ${r.count}`))
         }
       } else if (sm.results.kind === 'cooccurrence') {
+        const max = sm.results.pairs.reduce((m, p) => Math.max(m, p.count), 0)
         for (const p of sm.results.pairs) {
-          sections.push(para(`${p.codeAName} + ${p.codeBName}: ${p.count}`))
+          sections.push(para(`${p.codeAName} + ${p.codeBName}: ${textBar(p.count, max)} ${p.count}`))
         }
       }
     }

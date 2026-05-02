@@ -1,4 +1,5 @@
 import type { ReportModel } from './buildReport'
+import { cellBgCss, maxCount } from './snapshotVisuals'
 import './ReportPreview.css'
 
 type Props = { model: ReportModel }
@@ -129,44 +130,69 @@ export function ReportPreview({ model }: Props) {
                   ))}
                 </ul>
               )}
-              {(sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') && sm.results.rows.length > 0 && (
-                <table className="report-snapshot-table">
-                  <thead>
-                    <tr>
-                      <th>{sm.results.kind === 'matrix' ? 'Code' : 'Code'}</th>
-                      {sm.results.colLabels.map((label, i) => <th key={i}>{label}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sm.results.rows.map((row, i) => (
-                      <tr key={i}>
-                        <th scope="row">{row.codeName}</th>
-                        {row.counts.map((c, j) => <td key={j}>{c}</td>)}
+              {(sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') && sm.results.rows.length > 0 && (() => {
+                const max = maxCount(sm.results.rows)
+                return (
+                  <table className="report-snapshot-table report-snapshot-heatmap">
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        {sm.results.colLabels.map((label, i) => <th key={i}>{label}</th>)}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              {sm.results.kind === 'frequency' && sm.results.rows.length > 0 && (
-                <table className="report-snapshot-table">
-                  <thead><tr><th>Word</th><th>Count</th><th>Excerpts</th></tr></thead>
-                  <tbody>
-                    {sm.results.rows.map((r, i) => (
-                      <tr key={i}><th scope="row">{r.word}</th><td>{r.count}</td><td>{r.excerptCount}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              {sm.results.kind === 'cooccurrence' && sm.results.pairs.length > 0 && (
-                <table className="report-snapshot-table">
-                  <thead><tr><th>Code A</th><th>Code B</th><th>Count</th></tr></thead>
-                  <tbody>
-                    {sm.results.pairs.map((p, i) => (
-                      <tr key={i}><th scope="row">{p.codeAName}</th><td>{p.codeBName}</td><td>{p.count}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </thead>
+                    <tbody>
+                      {sm.results.rows.map((row, i) => (
+                        <tr key={i}>
+                          <th scope="row">{row.codeName}</th>
+                          {row.counts.map((c, j) => (
+                            <td key={j} style={{ background: cellBgCss(c, max) }}>{c}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )
+              })()}
+              {sm.results.kind === 'frequency' && sm.results.rows.length > 0 && (() => {
+                const max = sm.results.rows.reduce((m, r) => Math.max(m, r.count), 0)
+                return (
+                  <table className="report-snapshot-table report-snapshot-bars">
+                    <thead><tr><th>Word</th><th>Count</th><th>Excerpts</th></tr></thead>
+                    <tbody>
+                      {sm.results.rows.map((r, i) => (
+                        <tr key={i}>
+                          <th scope="row">{r.word}</th>
+                          <td>
+                            <span className="report-snapshot-bar" style={{ width: `${(r.count / max) * 100}%` }} />
+                            <span className="report-snapshot-bar-value">{r.count}</span>
+                          </td>
+                          <td>{r.excerptCount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )
+              })()}
+              {sm.results.kind === 'cooccurrence' && sm.results.pairs.length > 0 && (() => {
+                const max = sm.results.pairs.reduce((m, p) => Math.max(m, p.count), 0)
+                return (
+                  <table className="report-snapshot-table report-snapshot-bars">
+                    <thead><tr><th>Code A</th><th>Code B</th><th>Count</th></tr></thead>
+                    <tbody>
+                      {sm.results.pairs.map((p, i) => (
+                        <tr key={i}>
+                          <th scope="row">{p.codeAName}</th>
+                          <td>{p.codeBName}</td>
+                          <td>
+                            <span className="report-snapshot-bar" style={{ width: `${(p.count / max) * 100}%` }} />
+                            <span className="report-snapshot-bar-value">{p.count}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )
+              })()}
             </div>
           ))}
         </section>
