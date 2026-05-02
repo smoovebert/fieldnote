@@ -72,10 +72,35 @@ export type SavedQuery = {
  * `results` payload shape (v1, result_kind = 'coded_excerpt'):
  *   { excerpts: Array<{ id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }> }
  */
+// Panel kinds that can be snapshotted. coded_excerpt covers the
+// Find-excerpts panel (the original snapshot path); the rest cover
+// the Compare / Language / Relationships panels.
+export type AnalysisSnapshotKind =
+  | 'coded_excerpt'
+  | 'matrix'
+  | 'frequency'
+  | 'cooccurrence'
+  | 'crosstab'
+
+// Computed numeric result captured at snapshot time. Discriminated by
+// `kind` so the report renderer and the inspector know how to display
+// it without re-deriving from the current project state (which would
+// drift over time and defeat the snapshot).
+export type SnapshotExcerpt = { id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }
+export type SnapshotResults =
+  | { kind: 'coded_excerpt'; excerpts: SnapshotExcerpt[] }
+  | { kind: 'matrix'; columnMode: 'case' | 'attribute'; attributeName: string | null; colLabels: string[]; rows: Array<{ codeName: string; counts: number[] }> }
+  | { kind: 'frequency'; topN: number; rows: Array<{ word: string; count: number; excerptCount: number }> }
+  | { kind: 'cooccurrence'; topN: number; pairs: Array<{ codeAName: string; codeBName: string; count: number }> }
+  | { kind: 'crosstab'; attr1Name: string; attr2Name: string; percentMode: 'count' | 'row' | 'col'; colLabels: string[]; rows: Array<{ codeName: string; counts: number[] }> }
+
 export type QueryResultSnapshot = {
   id: string
   projectId: string
-  queryId: string
+  // Null for non-coded_excerpt panels — those analyses aren't tied to
+  // a saved query. Coded_excerpt snapshots still require a saved query
+  // (otherwise there's nothing to re-derive on view).
+  queryId: string | null
   capturedAt: string
   label: string
   // Free-form interpretation memo attached to the snapshot — the researcher's
@@ -86,9 +111,15 @@ export type QueryResultSnapshot = {
   // snapshots" section regardless of whether it has a note. Set by the
   // "Send to report" action; togglable per-row from the inspector.
   includeInReport: boolean
-  resultKind: 'coded_excerpt'
+  // Filter scope at capture time — used as a contextual sentence in
+  // the inspector and report. We store the human-readable strings
+  // directly so they survive code/case/attribute renames or deletes.
+  activeFilters: string[]
+  resultKind: AnalysisSnapshotKind
+  // Filter definition used by Find-excerpts to re-run; empty object for
+  // non-coded_excerpt panels.
   definition: QueryDefinition
-  results: { excerpts: Array<{ id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }> }
+  results: SnapshotResults
 }
 
 export type ProjectData = {

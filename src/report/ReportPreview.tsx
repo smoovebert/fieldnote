@@ -114,19 +114,58 @@ export function ReportPreview({ model }: Props) {
           <h2>Analysis snapshots</h2>
           {model.snapshotMemos.map((sm) => (
             <div key={sm.snapshotId} className="report-snapshot-block">
-              <h3 className="report-snapshot-title">{sm.queryName}{sm.label ? ` — ${sm.label}` : ''}</h3>
+              <h3 className="report-snapshot-title">{sm.title}</h3>
               <p className="report-snapshot-meta">
-                Captured {new Date(sm.capturedAtIso).toLocaleString()} · {sm.excerptCount} excerpt{sm.excerptCount === 1 ? '' : 's'}
+                Captured {new Date(sm.capturedAtIso).toLocaleString()}
+                {sm.activeFilters.length > 0 ? ` · ${sm.activeFilters.join(' · ')}` : ''}
               </p>
-              <p className="report-snapshot-note">{sm.note}</p>
-              {sm.samples.length > 0 && (
+              {sm.note && <p className="report-snapshot-note">{sm.note}</p>}
+              {sm.results.kind === 'coded_excerpt' && sm.results.excerpts.length > 0 && (
                 <ul className="report-snapshot-samples">
-                  {sm.samples.map((sample, i) => (
+                  {sm.results.excerpts.map((sample, i) => (
                     <li key={i}>
                       <em>{sample.sourceTitle}:</em> &ldquo;{sample.text}&rdquo;
                     </li>
                   ))}
                 </ul>
+              )}
+              {(sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') && sm.results.rows.length > 0 && (
+                <table className="report-snapshot-table">
+                  <thead>
+                    <tr>
+                      <th>{sm.results.kind === 'matrix' ? 'Code' : 'Code'}</th>
+                      {sm.results.colLabels.map((label, i) => <th key={i}>{label}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sm.results.rows.map((row, i) => (
+                      <tr key={i}>
+                        <th scope="row">{row.codeName}</th>
+                        {row.counts.map((c, j) => <td key={j}>{c}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {sm.results.kind === 'frequency' && sm.results.rows.length > 0 && (
+                <table className="report-snapshot-table">
+                  <thead><tr><th>Word</th><th>Count</th><th>Excerpts</th></tr></thead>
+                  <tbody>
+                    {sm.results.rows.map((r, i) => (
+                      <tr key={i}><th scope="row">{r.word}</th><td>{r.count}</td><td>{r.excerptCount}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {sm.results.kind === 'cooccurrence' && sm.results.pairs.length > 0 && (
+                <table className="report-snapshot-table">
+                  <thead><tr><th>Code A</th><th>Code B</th><th>Count</th></tr></thead>
+                  <tbody>
+                    {sm.results.pairs.map((p, i) => (
+                      <tr key={i}><th scope="row">{p.codeAName}</th><td>{p.codeBName}</td><td>{p.count}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           ))}

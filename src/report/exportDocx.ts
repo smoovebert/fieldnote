@@ -101,20 +101,32 @@ export async function exportReportDocx(
     }
   }
 
-  // Analysis snapshots — include only those the researcher annotated.
+  // Analysis snapshots — every kind, dispatched from the result envelope.
   if (model.snapshotMemos.length > 0) {
     sections.push(heading('Analysis snapshots', 2))
     for (const sm of model.snapshotMemos) {
-      const titleSuffix = sm.label ? ` — ${sm.label}` : ''
-      sections.push(heading(`${sm.queryName}${titleSuffix}`, 3))
-      sections.push(para(
-        `Captured ${new Date(sm.capturedAtIso).toLocaleString()} · ${sm.excerptCount} excerpt${sm.excerptCount === 1 ? '' : 's'}`,
-        { color: '606060' },
-      ))
-      sections.push(para(sm.note))
-      for (const sample of sm.samples) {
-        sections.push(para(`"${sample.text}"`))
-        sections.push(para(`— ${sample.sourceTitle}`, { color: '606060' }))
+      sections.push(heading(sm.title, 3))
+      const metaParts = [`Captured ${new Date(sm.capturedAtIso).toLocaleString()}`, ...sm.activeFilters]
+      sections.push(para(metaParts.join(' · '), { color: '606060' }))
+      if (sm.note) sections.push(para(sm.note))
+      if (sm.results.kind === 'coded_excerpt') {
+        for (const sample of sm.results.excerpts) {
+          sections.push(para(`"${sample.text}"`))
+          sections.push(para(`— ${sample.sourceTitle}`, { color: '606060' }))
+        }
+      } else if (sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') {
+        sections.push(para(['Code', ...sm.results.colLabels].join(' | '), { color: '606060' }))
+        for (const row of sm.results.rows) {
+          sections.push(para([row.codeName, ...row.counts.map(String)].join(' | ')))
+        }
+      } else if (sm.results.kind === 'frequency') {
+        for (const r of sm.results.rows) {
+          sections.push(para(`${r.word}: ${r.count} (${r.excerptCount} excerpts)`))
+        }
+      } else if (sm.results.kind === 'cooccurrence') {
+        for (const p of sm.results.pairs) {
+          sections.push(para(`${p.codeAName} + ${p.codeBName}: ${p.count}`))
+        }
       }
     }
   }

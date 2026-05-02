@@ -90,6 +90,7 @@ import type {
   ProjectRow,
   QueryResultSnapshot,
   SavedQuery,
+  SnapshotResults,
   Source,
 } from './lib/types'
 import './App.css'
@@ -623,12 +624,16 @@ function App() {
       setQuerySnapshots((snaps ?? []).map((row: Record<string, unknown>) => ({
         id: row.id as string,
         projectId: row.project_id as string,
-        queryId: row.query_id as string,
+        queryId: (row.query_id as string | null) ?? null,
         capturedAt: row.captured_at as string,
         label: (row.label as string) ?? '',
         note: (row.note as string) ?? '',
         includeInReport: Boolean(row.include_in_report),
-        resultKind: 'coded_excerpt',
+        // result_kind defaults to 'coded_excerpt' so older rows that
+        // pre-date the multi-panel snapshot column come through with
+        // the right discriminant.
+        resultKind: ((row.result_kind as string) ?? 'coded_excerpt') as QueryResultSnapshot['resultKind'],
+        activeFilters: ((row.config as Record<string, unknown> | null)?.activeFilters as string[] | undefined) ?? [],
         definition: row.definition as QueryResultSnapshot['definition'],
         results: row.results as QueryResultSnapshot['results'],
       })))
@@ -1422,7 +1427,13 @@ function App() {
   async function handleDraftProjectMemo() {
     const lines: string[] = []
     for (const snap of querySnapshots) {
-      const queryName = savedQueries.find((q) => q.id === snap.queryId)?.name ?? 'Saved query'
+      // The AI memo prompt expects excerpts; non-excerpt panel snapshots
+      // (matrix / frequency / etc.) don't carry excerpts to summarize,
+      // so we skip them here. They're still surfaced in the Report.
+      if (snap.results.kind !== 'coded_excerpt') continue
+      const queryName = snap.queryId
+        ? (savedQueries.find((q) => q.id === snap.queryId)?.name ?? 'Saved query')
+        : 'Saved query'
       lines.push(`Snapshot: "${snap.label || queryName}" (${snap.results.excerpts.length} excerpts)`)
       for (const e of snap.results.excerpts.slice(0, 5)) {
         lines.push(`- ${e.sourceTitle}: ${e.text.slice(0, 200)}`)
@@ -1712,36 +1723,33 @@ function App() {
     }
   }
 
-  // Shared persistence path for both "Pin snapshot" and "Send to report".
-  // Returns the persisted snapshot (or null on failure) so callers can act
-  // on it — e.g. sendActiveQueryToReport switches to Report mode after a
-  // successful capture.
-  async function persistSnapshot(label: string, includeInReport: boolean): Promise<QueryResultSnapshot | null> {
-    if (!projectId || !activeSavedQueryId || !activeSavedQuery) {
-      setSelectionHint('Save the query first, then pin a snapshot.')
-      return null
-    }
-    if (analyzePanel !== 'query') {
-      setSelectionHint('Snapshots can only be pinned from the Find-excerpts panel right now.')
+  // Shared persistence path. Each panel has its own builder that produces
+  // the right `results` payload + `activeFilters` for the audit trail;
+  // this helper just inserts the row, threads the response back into
+  // local state, and returns the persisted snapshot (or null on failure).
+  type PersistInput = {
+    queryId: string | null
+    label: string
+    includeInReport: boolean
+    kind: QueryResultSnapshot['resultKind']
+    definition: QueryDefinition
+    results: SnapshotResults
+    activeFilters: string[]
+  }
+  async function persistSnapshot(input: PersistInput): Promise<QueryResultSnapshot | null> {
+    if (!projectId) {
+      setSelectionHint('Open a project before capturing a snapshot.')
       return null
     }
     const payload = {
       project_id: projectId,
-      query_id: activeSavedQueryId,
-      label: label.trim(),
-      include_in_report: includeInReport,
-      result_kind: 'coded_excerpt' as const,
-      definition: currentQueryDefinition,
-      results: {
-        excerpts: analyzeResults.map((excerpt) => ({
-          id: excerpt.id,
-          sourceId: excerpt.sourceId,
-          sourceTitle: excerpt.sourceTitle,
-          codeIds: excerpt.codeIds,
-          text: excerpt.text,
-          note: excerpt.note,
-        })),
-      },
+      query_id: input.queryId,
+      label: input.label.trim(),
+      include_in_report: input.includeInReport,
+      result_kind: input.kind,
+      config: { activeFilters: input.activeFilters },
+      definition: input.definition,
+      results: input.results,
     }
     setSaveStatus('Capturing snapshot...')
     const { data, error } = await supabase
@@ -1757,34 +1765,178 @@ function App() {
     const snapshot: QueryResultSnapshot = {
       id: row.id as string,
       projectId: row.project_id as string,
-      queryId: row.query_id as string,
+      queryId: (row.query_id as string | null) ?? null,
       capturedAt: row.captured_at as string,
       label: (row.label as string) ?? '',
       note: (row.note as string) ?? '',
       includeInReport: Boolean(row.include_in_report),
-      resultKind: 'coded_excerpt',
+      resultKind: ((row.result_kind as string) ?? 'coded_excerpt') as QueryResultSnapshot['resultKind'],
+      activeFilters: input.activeFilters,
       definition: row.definition as QueryResultSnapshot['definition'],
       results: row.results as QueryResultSnapshot['results'],
     }
     setQuerySnapshots((current) => [snapshot, ...current])
-    setSaveStatus(`Snapshot captured (${payload.results.excerpts.length} excerpts).`)
+    setSaveStatus('Snapshot captured.')
     return snapshot
   }
 
+  // Per-panel snapshot builders — each maps the live, computed analysis
+  // state into the immutable shape stored in the snapshot. Captured
+  // values are point-in-time; later code/case/attribute renames or
+  // deletes won't drift the snapshot.
+  function buildCodedExcerptResults(): SnapshotResults {
+    return {
+      kind: 'coded_excerpt',
+      excerpts: analyzeResults.map((excerpt) => ({
+        id: excerpt.id,
+        sourceId: excerpt.sourceId,
+        sourceTitle: excerpt.sourceTitle,
+        codeIds: excerpt.codeIds,
+        text: excerpt.text,
+        note: excerpt.note,
+      })),
+    }
+  }
+  function buildMatrixResults(): SnapshotResults {
+    return {
+      kind: 'matrix',
+      columnMode: matrixColumnMode,
+      attributeName: matrixColumnMode === 'attribute' ? activeMatrixAttribute?.name ?? null : null,
+      colLabels: matrixColumns.map((c) => c.label),
+      rows: matrixResults.map((row) => ({
+        codeName: row.code.name,
+        counts: row.cells.map((cell) => cell.excerpts.length),
+      })),
+    }
+  }
+  function buildFrequencyResults(): SnapshotResults {
+    return {
+      kind: 'frequency',
+      topN: analyzeView.wordFreq.topN,
+      rows: wordFrequencyRows.slice(0, analyzeView.wordFreq.topN).map((r) => ({ word: r.word, count: r.count, excerptCount: r.excerptCount })),
+    }
+  }
+  function buildCooccurrenceResults(): SnapshotResults {
+    return {
+      kind: 'cooccurrence',
+      topN: analyzeView.cooccur.topN,
+      pairs: cooccurrencePairs.slice(0, analyzeView.cooccur.topN).map((p) => ({
+        codeAName: p.codeAName,
+        codeBName: p.codeBName,
+        count: p.count,
+      })),
+    }
+  }
+  function buildCrosstabResults(): SnapshotResults | null {
+    if (!crosstabResult) return null
+    const attr1Name = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
+    const attr2Name = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
+    // Cells live in a dense flat array keyed by (rowId, col1, col2).
+    // Pre-bucket by rowId so the per-row mapping below is O(cols).
+    const cellsByRow = new Map<string, Map<string, number>>()
+    for (const cell of crosstabResult.cells) {
+      let rowMap = cellsByRow.get(cell.rowId)
+      if (!rowMap) {
+        rowMap = new Map<string, number>()
+        cellsByRow.set(cell.rowId, rowMap)
+      }
+      rowMap.set(`${cell.col1Value}${cell.col2Value}`, cell.count)
+    }
+    return {
+      kind: 'crosstab',
+      attr1Name,
+      attr2Name,
+      percentMode: analyzeView.crosstab.percentMode,
+      colLabels: crosstabResult.cols.map((col) => `${col.col1} × ${col.col2}`),
+      rows: crosstabResult.rows.map((row) => {
+        const rowMap = cellsByRow.get(row.id) ?? new Map<string, number>()
+        return {
+          codeName: row.label,
+          counts: crosstabResult.cols.map((col) => rowMap.get(`${col.col1}${col.col2}`) ?? 0),
+        }
+      }),
+    }
+  }
+
   async function captureQuerySnapshot() {
+    if (analyzePanel !== 'query') {
+      setSelectionHint('The pin button is only for Find-excerpts. Use Send to Report on other panels.')
+      return
+    }
+    if (!activeSavedQueryId || !activeSavedQuery) {
+      setSelectionHint('Save the query first, then pin a snapshot.')
+      return
+    }
     const label = window.prompt(`Optional label for this snapshot (e.g., "Before recoding pass 2"):`, '') ?? ''
-    await persistSnapshot(label, false)
+    await persistSnapshot({
+      queryId: activeSavedQueryId,
+      label,
+      includeInReport: false,
+      kind: 'coded_excerpt',
+      definition: currentQueryDefinition,
+      results: buildCodedExcerptResults(),
+      activeFilters: activeQueryFilters,
+    })
   }
 
   // "Send to report" — pin a snapshot with include_in_report = true, then
   // jump to Report mode so the researcher sees the section they just
-  // promoted. We auto-label with the current question sentence so the
-  // snapshot has a recognizable title in the report without making the
-  // user type one.
-  async function sendActiveQueryToReport() {
-    const queryName = savedQueries.find((q) => q.id === activeSavedQueryId)?.name ?? 'Saved query'
-    const defaultLabel = `${queryName} on ${new Date().toLocaleDateString()}`
-    const snapshot = await persistSnapshot(defaultLabel, true)
+  // promoted. The label is auto-derived so they don't have to type one.
+  async function sendActiveAnalysisToReport() {
+    if (!projectId) {
+      setSelectionHint('Open a project before sending an analysis to the Report.')
+      return
+    }
+    const today = new Date().toLocaleDateString()
+    let kind: QueryResultSnapshot['resultKind'] = 'coded_excerpt'
+    let queryId: string | null = null
+    let label = ''
+    let results: SnapshotResults | null = null
+    let definition: QueryDefinition = currentQueryDefinition
+    if (analyzePanel === 'query') {
+      if (!activeSavedQueryId || !activeSavedQuery) {
+        setSelectionHint('Save the Find-excerpts query first, then send to Report.')
+        return
+      }
+      kind = 'coded_excerpt'
+      queryId = activeSavedQueryId
+      label = `${activeSavedQuery.name} on ${today}`
+      results = buildCodedExcerptResults()
+    } else if (analyzePanel === 'matrix') {
+      kind = 'matrix'
+      label = `Matrix (${matrixColumnMode === 'case' ? 'by case' : `by ${activeMatrixAttribute?.name ?? 'attribute'}`}) on ${today}`
+      results = buildMatrixResults()
+      definition = { codeId: '', caseId: '', text: '', attributes: [] }
+    } else if (analyzePanel === 'frequency') {
+      kind = 'frequency'
+      label = `Word frequency (top ${analyzeView.wordFreq.topN}) on ${today}`
+      results = buildFrequencyResults()
+      definition = { codeId: '', caseId: '', text: '', attributes: [] }
+    } else if (analyzePanel === 'cooccurrence') {
+      kind = 'cooccurrence'
+      label = `Code co-occurrence (top ${analyzeView.cooccur.topN}) on ${today}`
+      results = buildCooccurrenceResults()
+      definition = { codeId: '', caseId: '', text: '', attributes: [] }
+    } else if (analyzePanel === 'crosstab') {
+      results = buildCrosstabResults()
+      if (!results) {
+        setSelectionHint('Pick both attributes for the crosstab before sending to Report.')
+        return
+      }
+      kind = 'crosstab'
+      label = `Crosstab on ${today}`
+      definition = { codeId: '', caseId: '', text: '', attributes: [] }
+    }
+    if (!results) return
+    const snapshot = await persistSnapshot({
+      queryId,
+      label,
+      includeInReport: true,
+      kind,
+      definition,
+      results,
+      activeFilters: activeQueryFilters,
+    })
     if (snapshot) {
       setActiveView('report')
       setSaveStatus('Snapshot sent to Report.')
@@ -1839,24 +1991,45 @@ function App() {
   function downloadSnapshotCsv(snapshotId: string) {
     const snap = querySnapshots.find((s) => s.id === snapshotId)
     if (!snap) return
-    const queryName = savedQueries.find((q) => q.id === snap.queryId)?.name ?? 'Saved query'
+    const queryName = snap.queryId
+      ? (savedQueries.find((q) => q.id === snap.queryId)?.name ?? 'Saved query')
+      : 'Analysis'
     const dateLabel = new Date(snap.capturedAt).toISOString().slice(0, 10)
-    const rows: string[][] = [
-      ['Project', 'Saved query', 'Snapshot label', 'Captured at', 'Source', 'Codes', 'Excerpt', 'Note'],
-      ...snap.results.excerpts.map((excerpt) => {
-        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
-        return [
-          projectTitle,
-          queryName,
-          snap.label,
-          snap.capturedAt,
-          excerpt.sourceTitle,
-          excerptCodes.map((code) => code.name).join('; '),
-          excerpt.text,
-          excerpt.note,
-        ]
-      }),
-    ]
+    let rows: string[][] = []
+    if (snap.results.kind === 'coded_excerpt') {
+      rows = [
+        ['Project', 'Saved query', 'Snapshot label', 'Captured at', 'Source', 'Codes', 'Excerpt', 'Note'],
+        ...snap.results.excerpts.map((excerpt) => {
+          const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
+          return [
+            projectTitle,
+            queryName,
+            snap.label,
+            snap.capturedAt,
+            excerpt.sourceTitle,
+            excerptCodes.map((code) => code.name).join('; '),
+            excerpt.text,
+            excerpt.note,
+          ]
+        }),
+      ]
+    } else if (snap.results.kind === 'matrix' || snap.results.kind === 'crosstab') {
+      const r = snap.results
+      rows = [
+        ['Code', ...r.colLabels],
+        ...r.rows.map((row) => [row.codeName, ...row.counts.map(String)]),
+      ]
+    } else if (snap.results.kind === 'frequency') {
+      rows = [
+        ['Word', 'Count', 'Excerpts'],
+        ...snap.results.rows.map((r) => [r.word, String(r.count), String(r.excerptCount)]),
+      ]
+    } else if (snap.results.kind === 'cooccurrence') {
+      rows = [
+        ['Code A', 'Code B', 'Count'],
+        ...snap.results.pairs.map((p) => [p.codeAName, p.codeBName, String(p.count)]),
+      ]
+    }
     downloadInFormat(rows, `fieldnote-snapshot-${slugId(queryName)}-${dateLabel}`, 'Snapshot')
   }
 
@@ -3081,7 +3254,7 @@ function App() {
             onDeleteSnapshot={(id) => void deleteQuerySnapshot(id)}
             onUpdateSnapshotNote={(id, note) => void updateSnapshotNote(id, note)}
             onUpdateSnapshotInclude={(id, include) => void updateSnapshotInclude(id, include)}
-            onSendActiveQueryToReport={() => void sendActiveQueryToReport()}
+            onSendActiveAnalysisToReport={() => void sendActiveAnalysisToReport()}
             onExportActiveAnalysisCsv={exportActiveAnalysisCsv}
           />
         )}

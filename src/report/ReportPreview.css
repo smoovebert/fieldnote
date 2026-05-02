@@ -173,6 +173,31 @@
   color: var(--ink-2, #374151);
 }
 
+.report-preview .report-snapshot-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--s-2);
+  font-size: 0.9em;
+}
+.report-preview .report-snapshot-table th,
+.report-preview .report-snapshot-table td {
+  padding: 4px 8px;
+  border: 1px solid var(--line, #e5e7eb);
+  text-align: left;
+}
+.report-preview .report-snapshot-table thead th {
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+}
+.report-preview .report-snapshot-table tbody th {
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.02);
+}
+.report-preview .report-snapshot-table td {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 @media print {
   .report-preview .report-section {
     page-break-before: always;

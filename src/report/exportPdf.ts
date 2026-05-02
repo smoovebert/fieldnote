@@ -131,22 +131,37 @@ export async function exportReportPdf(
     }
   }
 
-  // Analysis snapshots — only annotated ones, surfacing the
-  // researcher's interpretation alongside the captured evidence.
+  // Analysis snapshots — every kind, dispatched from the result envelope.
   if (model.snapshotMemos.length > 0) {
     sectionBreak()
     writeWrapped('ANALYSIS SNAPSHOTS', { size: 14, bold: true, gap: 16 })
     for (const sm of model.snapshotMemos) {
-      const titleSuffix = sm.label ? ` — ${sm.label}` : ''
-      writeWrapped(`${sm.queryName}${titleSuffix}`, { size: 12, bold: true, gap: 4 })
-      writeWrapped(
-        `Captured ${new Date(sm.capturedAtIso).toLocaleString()} · ${sm.excerptCount} excerpt${sm.excerptCount === 1 ? '' : 's'}`,
-        { size: 9, color: 120, gap: 6 },
-      )
-      writeWrapped(sm.note, { size: 11, gap: 8 })
-      for (const sample of sm.samples) {
-        writeWrapped(`"${sample.text}"`, { size: 11, gap: 2 })
-        writeWrapped(`— ${sample.sourceTitle}`, { size: 9, color: 120, gap: 8 })
+      writeWrapped(sm.title, { size: 12, bold: true, gap: 4 })
+      const metaLine = [`Captured ${new Date(sm.capturedAtIso).toLocaleString()}`, ...sm.activeFilters].join(' · ')
+      writeWrapped(metaLine, { size: 9, color: 120, gap: 6 })
+      if (sm.note) writeWrapped(sm.note, { size: 11, gap: 8 })
+      if (sm.results.kind === 'coded_excerpt') {
+        for (const sample of sm.results.excerpts) {
+          writeWrapped(`"${sample.text}"`, { size: 11, gap: 2 })
+          writeWrapped(`— ${sample.sourceTitle}`, { size: 9, color: 120, gap: 8 })
+        }
+      } else if (sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') {
+        writeWrapped(['Code', ...sm.results.colLabels].join(' | '), { size: 9, color: 120, gap: 4 })
+        for (const row of sm.results.rows) {
+          writeWrapped([row.codeName, ...row.counts.map(String)].join(' | '), { size: 11, gap: 2 })
+        }
+        // trailing gap between table and next section
+        writeWrapped('', { size: 11, gap: 8 })
+      } else if (sm.results.kind === 'frequency') {
+        for (const r of sm.results.rows) {
+          writeWrapped(`${r.word}: ${r.count} (${r.excerptCount} excerpts)`, { size: 11, gap: 2 })
+        }
+        writeWrapped('', { size: 11, gap: 8 })
+      } else if (sm.results.kind === 'cooccurrence') {
+        for (const p of sm.results.pairs) {
+          writeWrapped(`${p.codeAName} + ${p.codeBName}: ${p.count}`, { size: 11, gap: 2 })
+        }
+        writeWrapped('', { size: 11, gap: 8 })
       }
     }
   }

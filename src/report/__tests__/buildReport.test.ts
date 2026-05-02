@@ -257,32 +257,32 @@ describe('buildReport', () => {
           id: 's-old', projectId: 'p', queryId: 'q-access',
           capturedAt: '2026-04-25T10:00:00Z', label: 'pre-merge',
           note: 'Theme reads as financial first.', includeInReport: false,
-          resultKind: 'coded_excerpt',
+          resultKind: 'coded_excerpt', activeFilters: [],
           definition: { codeId: 'c1', caseId: '', text: '', attributes: [] },
-          results: { excerpts: [{ id: 'e1', sourceTitle: 'Interview 01', codeIds: ['c1'], text: 'tuition was tight', note: '', sourceId: 'src-01' }] },
+          results: { kind: 'coded_excerpt', excerpts: [{ id: 'e1', sourceTitle: 'Interview 01', codeIds: ['c1'], text: 'tuition was tight', note: '', sourceId: 'src-01' }] },
         },
         // No note but flagged for inclusion — should appear.
         {
           id: 's-include-no-note', projectId: 'p', queryId: 'q-access',
           capturedAt: '2026-05-01T10:00:00Z', label: 'baseline',
-          note: '', includeInReport: true, resultKind: 'coded_excerpt',
+          note: '', includeInReport: true, resultKind: 'coded_excerpt', activeFilters: [],
           definition: { codeId: 'c1', caseId: '', text: '', attributes: [] },
-          results: { excerpts: [] },
+          results: { kind: 'coded_excerpt', excerpts: [] },
         },
         // Annotated AND flagged — should appear and be sorted first.
         {
           id: 's-newest', projectId: 'p', queryId: 'q-access',
           capturedAt: '2026-05-02T10:00:00Z', label: 'post-merge',
           note: 'Splits into financial vs. cultural.', includeInReport: true,
-          resultKind: 'coded_excerpt',
+          resultKind: 'coded_excerpt', activeFilters: [],
           definition: { codeId: 'c1', caseId: '', text: '', attributes: [] },
-          results: { excerpts: [] },
+          results: { kind: 'coded_excerpt', excerpts: [] },
         },
       ],
       now: FIXED_DATE,
     })
     expect(m.snapshotMemos.map((s) => s.snapshotId)).toEqual(['s-newest', 's-include-no-note'])
-    expect(m.snapshotMemos[0].queryName).toBe('Access barriers')
-    expect(m.snapshotMemos[0].label).toBe('post-merge')
+    expect(m.snapshotMemos[0].title).toContain('Access barriers')
+    expect(m.snapshotMemos[0].title).toContain('post-merge')
   })
 })

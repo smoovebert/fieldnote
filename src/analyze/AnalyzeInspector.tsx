@@ -9,12 +9,16 @@ import type { AnalyzePanel } from './analyzeViewState'
 
 type Snapshot = {
   id: string
-  queryId: string
+  queryId: string | null
   capturedAt: string
   label?: string | null
   note?: string | null
   includeInReport?: boolean
-  results: { excerpts: Excerpt[] }
+  resultKind?: 'coded_excerpt' | 'matrix' | 'frequency' | 'cooccurrence' | 'crosstab'
+  // Generic result envelope — the structure differs by kind, but the
+  // inspector only needs a count for display, which it derives from
+  // the kind-specific shape below.
+  results: unknown
 }
 
 type Props = {
@@ -31,13 +35,44 @@ type Props = {
   onUpdateSnapshotNote: (snapshotId: string, note: string) => void
   onUpdateSnapshotInclude: (snapshotId: string, includeInReport: boolean) => void
   // Pin a snapshot of the live result with include_in_report = true and
-  // jump to Report mode. Only meaningful on the Find-excerpts panel
-  // backed by a saved query.
-  onSendActiveQueryToReport: () => void
+  // jump to Report mode. Works on every Analyze panel.
+  onSendActiveAnalysisToReport: () => void
   // exportActiveAnalysisCsv reads the click target to detect modifiers
   // (e.g. shift-click for a different format), so the event is forwarded
   // through unchanged rather than being swallowed by an arrow wrapper.
   onExportActiveAnalysisCsv: (event: MouseEvent<HTMLButtonElement>) => void
+}
+
+function snapshotKindLabel(kind: Snapshot['resultKind'] | undefined): string {
+  switch (kind) {
+    case 'matrix':       return 'Matrix'
+    case 'frequency':    return 'Word frequency'
+    case 'cooccurrence': return 'Co-occurrence'
+    case 'crosstab':     return 'Crosstab'
+    default:             return 'Excerpts'
+  }
+}
+
+function snapshotItemCount(snap: Snapshot): number {
+  const r = snap.results as Record<string, unknown> | null | undefined
+  if (!r) return 0
+  switch (snap.resultKind) {
+    case 'matrix':       return ((r.rows as unknown[] | undefined)?.length ?? 0)
+    case 'frequency':    return ((r.rows as unknown[] | undefined)?.length ?? 0)
+    case 'cooccurrence': return ((r.pairs as unknown[] | undefined)?.length ?? 0)
+    case 'crosstab':     return ((r.rows as unknown[] | undefined)?.length ?? 0)
+    default:             return ((r.excerpts as unknown[] | undefined)?.length ?? 0)
+  }
+}
+
+function snapshotItemNoun(snap: Snapshot): string {
+  switch (snap.resultKind) {
+    case 'matrix':       return 'codes'
+    case 'frequency':    return 'words'
+    case 'cooccurrence': return 'pairs'
+    case 'crosstab':     return 'codes'
+    default:             return 'excerpt'
+  }
 }
 
 function exportLabelFor(panel: AnalyzePanel): string {
@@ -81,9 +116,14 @@ function buildQuestionSentence(panel: AnalyzePanel, filters: string[]): string {
 
 export function AnalyzeInspector(props: Props) {
   const codeCount = new Set(props.analyzeResults.flatMap((excerpt) => excerpt.codeIds)).size
-  const snapshotsForActive = props.activeSavedQuery
-    ? props.querySnapshots.filter((s) => s.queryId === props.activeSavedQuery!.id)
-    : []
+  // The snapshot list is now project-wide so multi-panel snapshots
+  // (Matrix / Frequency / Co-occurrence / Crosstab) appear regardless
+  // of which Find-excerpts saved query is active. We still surface
+  // saved-query-bound snapshots when one is selected; otherwise we show
+  // every snapshot so the loose ones don't disappear.
+  const snapshotsToShow = props.activeSavedQuery
+    ? props.querySnapshots.filter((s) => s.queryId === props.activeSavedQuery!.id || s.queryId === null)
+    : props.querySnapshots
 
   const questionSentence = buildQuestionSentence(props.analyzePanel, props.activeQueryFilters)
 
@@ -116,12 +156,15 @@ export function AnalyzeInspector(props: Props) {
           <span>None. Showing all coded excerpts.</span>
         )}
       </div>
-      {props.activeSavedQuery && props.analyzePanel === 'query' && (
+      {/* Send to Report is available on every panel. Find-excerpts still
+          requires a saved query (so we have something to re-derive from);
+          the other panels use a definition-less snapshot keyed by kind. */}
+      {(props.analyzePanel !== 'query' || props.activeSavedQuery) && (
         <button
           type="button"
           className="primary-button analyze-send-to-report"
-          onClick={props.onSendActiveQueryToReport}
-          title="Pin a snapshot of these results and include it in the Report"
+          onClick={props.onSendActiveAnalysisToReport}
+          title="Capture this analysis as a snapshot and include it in the Report"
         >
           <FileText size={15} aria-hidden="true" />
           Send to Report
@@ -137,21 +180,23 @@ export function AnalyzeInspector(props: Props) {
           Delete saved query
         </button>
       )}
-      {props.activeSavedQuery && (
-        <section className="snapshots-panel">
-          <header className="snapshots-heading">
-            <h3>Pinned snapshots</h3>
-            <span>{snapshotsForActive.length}</span>
-          </header>
-          {snapshotsForActive.length === 0 && (
-            <p className="snapshots-empty">No snapshots yet. Pin a result to capture this query's excerpts at a point in time.</p>
-          )}
-          <ul className="snapshots-list">
-            {snapshotsForActive.map((snap) => (
+      <section className="snapshots-panel">
+        <header className="snapshots-heading">
+          <h3>Pinned snapshots</h3>
+          <span>{snapshotsToShow.length}</span>
+        </header>
+        {snapshotsToShow.length === 0 && (
+          <p className="snapshots-empty">No snapshots yet. Pin a result, or click Send to Report to capture this analysis at a point in time.</p>
+        )}
+        <ul className="snapshots-list">
+          {snapshotsToShow.map((snap) => {
+            const count = snapshotItemCount(snap)
+            const noun = snapshotItemNoun(snap)
+            return (
               <li key={snap.id}>
                 <div className="snapshots-row-meta">
                   <strong>{new Date(snap.capturedAt).toLocaleString()}</strong>
-                  <span>{snap.results.excerpts.length} excerpt{snap.results.excerpts.length === 1 ? '' : 's'}</span>
+                  <span>{snapshotKindLabel(snap.resultKind)} · {count} {noun}{count === 1 ? '' : (snap.resultKind === 'coded_excerpt' || snap.resultKind === undefined ? 's' : '')}</span>
                   {snap.label && <em>{snap.label}</em>}
                 </div>
                 <textarea
@@ -186,10 +231,10 @@ export function AnalyzeInspector(props: Props) {
                   </button>
                 </div>
               </li>
-            ))}
-          </ul>
-        </section>
-      )}
+            )
+          })}
+        </ul>
+      </section>
       <button type="button" className="secondary-button" onClick={props.onExportActiveAnalysisCsv}>
         <Download size={17} aria-hidden="true" />
         {exportLabelFor(props.analyzePanel)}

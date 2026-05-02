@@ -1,5 +1,5 @@
 import type {
-  Attribute, AttributeValue, Case, Code, Excerpt, Memo, QueryResultSnapshot, SavedQuery, Source,
+  Attribute, AttributeValue, Case, Code, Excerpt, Memo, QueryResultSnapshot, SavedQuery, SnapshotResults, Source,
 } from '../lib/types'
 
 export type ReportModel = {
@@ -29,18 +29,19 @@ export type ReportModel = {
     sources: Array<{ id: string; title: string }>
   }>
   sourceMemos: Array<{ sourceId: string; sourceTitle: string; body: string }>
-  // Annotated saved-query snapshots: only those with a non-empty note
-  // appear, since the value of this section is the researcher's
-  // interpretation, not the raw excerpt list (which is exportable
-  // separately as CSV/XLSX from the snapshot row).
+  // Snapshots promoted to the Report. The full computed result is
+  // included so the report renderer can show the right shape per kind:
+  // - coded_excerpt: a small set of sample excerpts as evidence
+  // - matrix / crosstab: a counts table with labelled rows + columns
+  // - frequency: a top-N word list
+  // - cooccurrence: a top-N code-pair list
   snapshotMemos: Array<{
     snapshotId: string
-    queryName: string
-    label: string
+    title: string
     capturedAtIso: string
     note: string
-    excerptCount: number
-    samples: Array<{ sourceTitle: string; text: string }>
+    activeFilters: string[]
+    results: SnapshotResults
   }>
 }
 
@@ -204,27 +205,39 @@ export function buildReport(input: BuildReportInput): ReportModel {
       body: sourceMemoBySourceId.get(s.id)!,
     }))
 
-  // Snapshots flagged for inclusion appear in the Report. The
-  // interpretation note is surfaced when present but is no longer the
-  // gating signal — researchers can promote a raw snapshot too. Order
-  // by capture time descending so the most recent appears first.
+  // Snapshots flagged for inclusion appear in the Report. Title is
+  // composed from the saved-query name (for coded_excerpt snapshots) or
+  // the snapshot label (for non-query panels). Order by capture time
+  // descending so the most recent appears first.
   const queryNameById = new Map(savedQueries.map((q) => [q.id, q.name]))
   const snapshotMemos: ReportModel['snapshotMemos'] = snapshots
     .filter((s) => s.includeInReport)
     .slice()
     .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
-    .map((s) => ({
-      snapshotId: s.id,
-      queryName: queryNameById.get(s.queryId) ?? 'Saved query',
-      label: s.label,
-      capturedAtIso: s.capturedAt,
-      note: s.note.trim(),
-      excerptCount: s.results.excerpts.length,
-      samples: s.results.excerpts.slice(0, SAMPLE_CAP).map((e) => ({
-        sourceTitle: e.sourceTitle,
-        text: e.text,
-      })),
-    }))
+    .map((s) => {
+      const queryName = s.queryId ? queryNameById.get(s.queryId) : null
+      const titlePieces = [queryName, s.label].filter((piece): piece is string => Boolean(piece && piece.length > 0))
+      const title = titlePieces.length > 0 ? titlePieces.join(' — ') : 'Analysis snapshot'
+      // Cap each kind's payload to keep printed reports tidy. Excerpt
+      // samples honor the existing SAMPLE_CAP; counts tables and lists
+      // get their own modest caps below.
+      let results: SnapshotResults = s.results
+      if (results.kind === 'coded_excerpt') {
+        results = { ...results, excerpts: results.excerpts.slice(0, SAMPLE_CAP) }
+      } else if (results.kind === 'frequency') {
+        results = { ...results, rows: results.rows.slice(0, 25) }
+      } else if (results.kind === 'cooccurrence') {
+        results = { ...results, pairs: results.pairs.slice(0, 25) }
+      }
+      return {
+        snapshotId: s.id,
+        title,
+        capturedAtIso: s.capturedAt,
+        note: s.note.trim(),
+        activeFilters: s.activeFilters,
+        results,
+      }
+    })
 
   return {
     cover: {
