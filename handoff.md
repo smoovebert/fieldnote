@@ -509,20 +509,39 @@ Project sharing is parked (most QDA usage is solo; building it before
 the demand exists is unjustified). Top of the remaining list, in
 recommended order:
 
-1. **RAG / "ask your data"** — extends AI assist v1 with vector search
-   over excerpts + chat-with-corpus. Real differentiator and the only
-   remaining piece of the AI thread. Needs its own brainstorm
-   (embedding storage, chunk strategy, citation UX, cost gating).
-2. **Native PDF canvas render** — the bigger PDF wedge that follows
-   page-anchored coding. pdfjs canvas + selectable text layer; coding
-   becomes bounding rects. Worth scoping when researchers tell us
-   the page-anchored extracted-text reader isn't enough for their
-   close-reading needs.
-3. **Audio with transcript-linked playback** — the next non-text
+1. **Research templates** (Dovetail-borrowed pattern) — pre-seeded
+   project starters for common research types (interview study, focus
+   group, ethnography, dissertation chapter). Extends the existing
+   sample-project affordance into pickable templates at project
+   creation. ~1 session. High signup-friction value for every new
+   tester; low cost.
+2. **RAG / "ask your data"** — extends AI assist v1 with vector
+   search over excerpts + chat-with-corpus. The big AI differentiator
+   and the only remaining piece of the AI thread. Needs its own
+   brainstorm (embedding storage, chunk strategy, citation UX, cost
+   gating).
+3. **Cross-project repository search** (Dovetail-borrowed pattern) —
+   lifts the existing per-project Cmd+K header search to span all
+   the user's projects. ~2 sessions. Compounding value once a
+   researcher has 3+ projects; pairs naturally with RAG since the
+   cross-project query path is shared.
+4. **Native PDF canvas render** — the bigger PDF wedge that follows
+   page-anchored coding. pdfjs canvas + selectable text layer;
+   coding becomes bounding rects. Worth scoping when researchers
+   tell us the page-anchored extracted-text reader isn't enough for
+   their close-reading needs.
+5. **Audio with transcript-linked playback** — the next non-text
    source format that fits the free tier (image regions are simpler
    but lower-impact). Storage gets tight at hours of audio; paid
    transcription is the cost line. Needs a brainstorm.
-4. Lower-priority polish: bulk recode multi-select in Refine,
+6. **Insights board / highlights gallery** (Dovetail-borrowed
+   pattern) — new surface (probably a 7th mode or a major Overview
+   expansion) where pinned snapshots arrange visually like a research
+   pinboard. ~4-5 sessions, its own brainstorm. Right level of
+   investment to do *after* the credibility items above land — at
+   that point it's "make the strong product feel even more like a
+   product" rather than a wedge.
+7. Lower-priority polish: bulk recode multi-select in Refine,
    fuzzy duplicate code detection, persistent case sets, richer
    source previews in Organize.
 
