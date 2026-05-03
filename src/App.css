@@ -280,10 +280,14 @@ h1 {
   color: #ffffff;
 }
 
+/* Card-head h2 — T3 (16/1.35 sans 500). Right-rail panel heads
+   override this with T7 via .properties-view .panel-heading h2
+   (Phase 3 of the type-hierarchy pass) since the panel-head is an
+   eyebrow, not an in-card section head. */
 h2 {
-  font-size: 14px;
-  line-height: 1.2;
-  font-weight: 760;
+  font: var(--t-t3);
+  letter-spacing: -0.005em;
+  color: var(--ink);
 }
 
 button,
@@ -2590,8 +2594,32 @@ textarea {
 .analyze-view { display: flex; flex-direction: column; gap: 12px; }
 .analyze-view-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .analyze-view-surface { min-height: 280px; }
-.analyze-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.analyze-table th, .analyze-table td { padding: 6px 8px; border-bottom: 1px solid #ececec; text-align: left; }
+/* Analyze tables (matrix, frequency) — spec: T7 column headers,
+   T6 cells. Numeric cells inherit T6 but pick up tabular figures
+   from var(--font-mono) overrides where present. */
+.analyze-table { width: 100%; border-collapse: collapse; }
+.analyze-table th {
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.analyze-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--rule-soft);
+  text-align: left;
+  font: var(--t-t6);
+  color: var(--ink-2);
+}
+.analyze-table tbody th {
+  font: var(--t-t4);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink);
+}
 .soft-cap-banner {
   background: #fff8e1;
   border: 1px solid #f0d471;
@@ -2726,20 +2754,41 @@ textarea {
   border-radius: 4px;
   background: #ffffff;
 }
+/* Crosstab table — same recipe as .analyze-table: T7 column heads,
+   T6 cells. Total cells get the muted ink color so they read as
+   summary, not data. */
+.crosstab-table th {
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 8px 8px 6px;
+  text-align: left;
+}
+.crosstab-table td {
+  font: var(--t-t6);
+  color: var(--ink-2);
+  padding: 6px 8px;
+}
 .crosstab-table th .crosstab-col-total,
 .crosstab-table th.crosstab-col-total {
-  font-weight: 500;
-  color: #5b6366;
+  font: var(--t-t7);
+  color: var(--ink-3);
 }
 .crosstab-table .crosstab-total {
-  font-weight: 600;
-  background: #f4f5f7;
+  font: var(--t-t4);
+  color: var(--ink);
+  background: var(--pane);
 }
 .crosstab-table .crosstab-total-row td {
-  border-top: 2px solid #d6d8da;
+  border-top: 2px solid var(--rule);
 }
 .crosstab-table th.crosstab-row-header {
-  background: #fafbfc;
+  font: var(--t-t4);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink);
+  background: var(--paper-tint);
 }
 
 /* Multi-attribute filter rows in the analyze query builder */
@@ -3266,8 +3315,15 @@ textarea {
 }
 
 /* ----- Transcript -------------------------------------------------- */
+/* Transcript reader — spec recipe:
+   line text = Newsreader 16.5 / 1.75 in --ink;
+   line number = T8 mono in --ink-4 (lighter than the body); 32px
+   gutter; 1.7 line-height on the gutter so each number sits on
+   the same baseline as its line. */
 .app-shell[data-shell="new"] .reader-column .transcript {
-  font: var(--t-reader);
+  font-family: var(--font-reader);
+  font-size: 16.5px;
+  line-height: 1.75;
   color: var(--ink);
 }
 
@@ -3280,10 +3336,10 @@ textarea {
 }
 
 .app-shell[data-shell="new"] .reader-column .transcript-line .line-number {
-  font: var(--t-meta);
-  color: var(--ink-3);
+  font: var(--t-t8);
+  line-height: 1.7;
+  color: var(--ink-4);
   text-align: right;
-  font-feature-settings: "tnum", "zero";
   user-select: none;
 }
 
