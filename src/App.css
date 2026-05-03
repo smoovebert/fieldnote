@@ -134,6 +134,39 @@
   background: #fbfaf7;
 }
 
+.auth-terms,
+.auth-terms-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.auth-terms {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.auth-terms input {
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  accent-color: var(--accent, #2f80ed);
+}
+
+.auth-terms a,
+.auth-terms-note a {
+  color: var(--accent, #2f80ed);
+  font-weight: 720;
+  text-decoration: none;
+}
+
+.auth-terms a:hover,
+.auth-terms-note a:hover {
+  text-decoration: underline;
+}
+
 .auth-submit,
 .auth-switch {
   height: 40px;
