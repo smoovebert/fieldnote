@@ -199,7 +199,5 @@ Venue for disputes will be in the state or federal courts located in California,
 
 ## 20. Contact
 
-Questions about these Terms can be sent to:
-
-TODO: Add Fieldnote support/contact email before inviting testers.
+Questions about these Terms: **[studio.ops@behemothagency.com](mailto:studio.ops@behemothagency.com)**.
 
