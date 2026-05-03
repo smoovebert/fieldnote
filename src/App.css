@@ -5326,6 +5326,35 @@ textarea {
 .hps-backup-action:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ----- Save status colors ------------------------------------------- */
+/* Three-state dot beside the status text. Idle/settled = green,
+   in-progress = amber (with a subtle pulse so the eye reads it as
+   active), error = red. The dot is decorative — the text carries the
+   same information for screen readers. */
+.sync-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  flex: 0 0 8px;
+}
+.sync-dot--ok {
+  background: #10b981; /* emerald-500 */
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
+}
+.sync-dot--saving {
+  background: #f59e0b; /* amber-500 */
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
+  animation: sync-dot-pulse 1.6s ease-in-out infinite;
+}
+.sync-dot--error {
+  background: #ef4444; /* red-500 */
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.22);
+}
+@keyframes sync-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
 .app-shell[data-shell="new"] .sync-box.is-saving {
   color: rgba(255, 255, 255, 0.85);
 }
@@ -5333,10 +5362,6 @@ textarea {
 .app-shell[data-shell="new"] .sync-box.is-error {
   background: rgba(239, 68, 68, 0.18);
   border: 1px solid rgba(239, 68, 68, 0.6);
-  color: #fca5a5;
-}
-
-.app-shell[data-shell="new"] .sync-box.is-error svg {
   color: #fca5a5;
 }
 

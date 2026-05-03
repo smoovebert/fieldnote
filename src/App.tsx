@@ -3,7 +3,6 @@ import type { ChangeEvent, MouseEvent } from 'react'
 import {
   BarChart3,
   BookOpenText,
-  Cloud,
   Download,
   FileText,
   Folders,
@@ -2715,13 +2714,26 @@ function App() {
         )}
 
         <div className="header-tools">
-          <div
-            className={`sync-box toolbar-status${/save failed|could not|error|invalid/i.test(saveStatus) ? ' is-error' : ''}${saveStatus === 'Saving...' ? ' is-saving' : ''}`}
-            aria-live="polite"
-          >
-            <Cloud size={14} aria-hidden="true" />
-            <span>{saveStatus}</span>
-          </div>
+          {(() => {
+            // Three-state status pill — red / yellow / green dot
+            // alongside the human-readable text. Red on any error
+            // string, yellow on any in-progress message (the worker
+            // statuses all end in '...'), green when idle / settled.
+            // The dot is purely decorative (color-only); the text
+            // beside it carries the same information for AT users.
+            const isError = /save failed|could not|error|invalid/i.test(saveStatus)
+            const isWorking = !isError && saveStatus.endsWith('...')
+            const tone = isError ? 'error' : isWorking ? 'saving' : 'ok'
+            return (
+              <div
+                className={`sync-box toolbar-status is-${tone}`}
+                aria-live="polite"
+              >
+                <span className={`sync-dot sync-dot--${tone}`} aria-hidden="true" />
+                <span>{saveStatus}</span>
+              </div>
+            )
+          })()}
           {projectId && (
             <button
               type="button"
