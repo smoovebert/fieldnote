@@ -159,7 +159,13 @@
 }
 .landing-root .landing-btn-ghost:hover { background: rgba(255,255,255,0.04); }
 
-/* ---------- product mock (right column of hero) ---------- */
+/* ---------- product mock (right column of hero) ----------
+   Faithful slice of the actual app shell: dark top nav with brand
+   block + horizontal mode tabs (modes live in the top nav, not in a
+   left sidebar), then a detail-toolbar with the source title in
+   T1 serif, then the active-codes-bar (where the Code-selection
+   button lives in the live app), then the line-numbered transcript
+   reader. Decorative — no left rail or right rail. */
 .landing-root .landing-product-frame {
   display: flex;
   align-items: stretch;
@@ -170,98 +176,189 @@
   color: var(--ink);
   border-radius: 8px;
   border: 1px solid var(--shell-rule);
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  min-height: 420px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
 }
-.landing-root .landing-product-rail {
+
+/* Top nav — dark band, brand on the left, tabs in the center,
+   mini status pill on the right. Mirrors the live shell's recipe. */
+.landing-root .landing-mock-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
   background: var(--shell);
   color: var(--shell-ink);
-  padding: 16px 12px;
+  padding: 0 16px;
+  height: 48px;
+  border-bottom: 1px solid var(--shell-deep);
+}
+.landing-root .landing-mock-brand {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font: 500 12.5px/1.2 var(--font-ui);
+  gap: 1px;
 }
-.landing-root .landing-product-rail strong {
-  font: 500 13px/1.1 var(--font-ui);
+.landing-root .landing-mock-brand-eyebrow {
+  font: 600 8.5px/1.1 var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-ink-3);
+}
+.landing-root .landing-mock-brand-name {
+  font: 500 14px/1.1 var(--font-ui);
+  letter-spacing: -0.01em;
   color: var(--shell-ink);
-  margin-bottom: 14px;
-  display: block;
 }
-.landing-root .landing-product-rail span {
+.landing-root .landing-mock-tabs {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 2px;
+  justify-self: center;
+}
+.landing-root .landing-mock-tab {
+  padding: 0 10px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
   border-radius: 5px;
+  font: 500 12px/1 var(--font-ui);
   color: var(--shell-ink-2);
 }
-.landing-root .landing-product-rail span.is-active {
-  background: rgba(255,255,255,0.08);
+.landing-root .landing-mock-tab.is-active {
+  background: rgba(255, 255, 255, 0.08);
   color: var(--shell-ink);
 }
-.landing-root .landing-product-rail svg { color: var(--shell-ink-3); stroke-width: 1.4; }
-.landing-root .landing-product-rail span.is-active svg { color: var(--shell-ink); }
-
-.landing-root .landing-product-work {
-  display: flex;
-  flex-direction: column;
-  background: var(--paper);
+.landing-root .landing-mock-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 11px/1 var(--font-ui);
+  color: var(--shell-ink-3);
+  background: var(--shell-deep);
+  padding: 4px 10px;
+  border-radius: 99px;
 }
-.landing-root .mock-toolbar {
+.landing-root .landing-mock-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);
+}
+
+/* Detail toolbar — T7 eyebrow + T1 serif title (mirrors the live
+   app's Detail View / source-title pattern). */
+.landing-root .landing-mock-toolbar {
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.landing-root .landing-mock-eyebrow {
+  display: block;
+  font: 600 9px/1.2 var(--font-ui);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+.landing-root .landing-mock-title {
+  font-family: var(--font-reader);
+  font-optical-sizing: auto;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Active-codes bar — second row of the document panel in the live
+   app. Carries the active code, the Quick menu toggle, and the
+   primary 'Code selection' button. */
+.landing-root .landing-mock-active-codes {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  gap: 12px;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--rule-soft);
+  background: var(--paper);
 }
-.landing-root .mock-toolbar span {
-  font-family: var(--font-reader);
-  font-optical-sizing: auto;
-  font-size: 19px;
-  font-weight: 500;
-  letter-spacing: -0.012em;
+.landing-root .landing-mock-active-codes-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.landing-root .landing-mock-active-codes-text strong {
+  font: 500 14px/1.2 var(--font-ui);
   color: var(--ink);
 }
-.landing-root .mock-toolbar button {
-  background: var(--ink);
-  color: var(--paper);
-  border: 0;
+.landing-root .landing-mock-active-codes-text span {
+  font: var(--t-t6);
+  color: var(--ink-3);
+}
+.landing-root .landing-mock-active-codes-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.landing-root .landing-mock-quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--t-t6);
+  color: var(--ink-2);
+}
+.landing-root .landing-mock-checkbox {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+}
+.landing-root .landing-mock-checkbox.is-on {
+  background: var(--action);
+  border-color: var(--action);
+}
+.landing-root .landing-mock-code-button {
+  background: var(--action);
+  color: var(--action-ink);
+  font: 500 12px/1 var(--font-ui);
   padding: 0 12px;
   height: 28px;
+  display: inline-flex;
+  align-items: center;
   border-radius: 5px;
-  font: 500 12px/1 var(--font-ui);
 }
-.landing-root .mock-reader {
-  padding: 18px 20px 6px;
+
+/* Transcript reader — same line gutter + font as the live app. */
+.landing-root .landing-mock-reader {
+  padding: 18px 20px 24px;
   font-family: var(--font-reader);
   font-size: 14.5px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--ink);
 }
-.landing-root .mock-reader p { margin: 0 0 8px; display: grid; grid-template-columns: 24px 1fr; gap: 10px; }
-.landing-root .mock-reader .mock-line { font: 400 11px/1.6 var(--font-mono); color: var(--ink-4); text-align: right; }
-.landing-root .mock-reader mark {
+.landing-root .landing-mock-reader p {
+  margin: 0 0 10px;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+}
+.landing-root .landing-mock-line {
+  font: 400 11px/1.7 var(--font-mono);
+  color: var(--ink-4);
+  text-align: right;
+  user-select: none;
+}
+.landing-root .landing-mock-reader mark {
   background: color-mix(in srgb, #4f8aa6 22%, transparent);
   padding: 1px 2px;
   border-radius: 1px;
   color: inherit;
-}
-.landing-root .mock-analysis {
-  border-top: 1px solid var(--rule-soft);
-  padding: 14px 20px 18px;
-  display: grid;
-  gap: 8px;
-}
-.landing-root .mock-analysis div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; align-items: center; }
-.landing-root .mock-analysis span { font: var(--t-t6); color: var(--ink-2); }
-.landing-root .mock-analysis i {
-  display: block;
-  height: 6px;
-  background: var(--ink);
-  border-radius: 3px;
 }
 
 /* ---------- research loop (white band) ---------- */
@@ -502,6 +599,48 @@
   display: flex;
   gap: 12px;
   flex-shrink: 0;
+}
+
+/* ---------- AuthModal overlay (landing flow) ---------- */
+/* Sign-in / sign-up modal opens on top of the landing. The overlay
+   is a fixed-position scrim; the .auth-card inside renders centered.
+   Restored after being dropped during the 2026-05-03 landing rewrite —
+   without these rules the modal mounted invisibly below the footer
+   and clicking 'Sign in' / 'Start a project' did nothing visible. */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  padding: var(--s-5);
+  background: rgba(0, 0, 0, 0.5);
+}
+.auth-overlay .auth-card {
+  position: relative;
+  width: min(380px, 100%);
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-6);
+  border-radius: var(--r-3);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.35);
+}
+.auth-overlay .auth-close {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  border: 0;
+  border-radius: var(--r-1);
+  padding: var(--s-1);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.auth-overlay .auth-close:hover {
+  color: var(--ink);
+  background: var(--pane-deep);
 }
 
 /* ---------- footer ---------- */

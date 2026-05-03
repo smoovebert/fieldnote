@@ -12,7 +12,7 @@
 // When a real self-host story exists, those claims can come back.
 
 import { useState } from 'react'
-import { ArrowRight, BarChart3, FileText, Highlighter, Rows3, Tags } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { AuthModal } from './AuthModal'
 import './Landing.css'
 
@@ -114,30 +114,72 @@ export function Landing() {
 
           <div className="landing-product-frame" aria-label="Fieldnote product preview">
             <div className="landing-product-shell">
-              <aside className="landing-product-rail">
-                <strong>Fieldnote</strong>
-                <span className="is-active"><Highlighter size={15} aria-hidden="true" /> Code</span>
-                <span><Tags size={15} aria-hidden="true" /> Refine</span>
-                <span><Rows3 size={15} aria-hidden="true" /> Classify</span>
-                <span><BarChart3 size={15} aria-hidden="true" /> Analyze</span>
-                <span><FileText size={15} aria-hidden="true" /> Report</span>
-              </aside>
-              <section className="landing-product-work">
-                <div className="mock-toolbar">
-                  <span>Interview 03</span>
-                  <button type="button">Code selection</button>
+              {/* Top nav — dark band, two-line wordmark + horizontal
+                  mode tabs + status pill. Mirrors the live app shell
+                  (the modes live up here, not in a left rail). */}
+              <header className="landing-mock-nav">
+                <div className="landing-mock-brand">
+                  <span className="landing-mock-brand-eyebrow">Qualitative Workspace</span>
+                  <span className="landing-mock-brand-name">Fieldnote</span>
                 </div>
-                <div className="mock-reader">
-                  <p><span className="mock-line">12</span>It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else.</p>
-                  <p><span className="mock-line">13</span>After a while it felt like the system was testing whether I would give up.</p>
-                  <p><span className="mock-line">14</span><mark>She explained the steps in plain language and wrote down what to bring next time.</mark></p>
+                <nav className="landing-mock-tabs" aria-hidden="true">
+                  <span className="landing-mock-tab">Overview</span>
+                  <span className="landing-mock-tab">Organize</span>
+                  <span className="landing-mock-tab is-active">Code</span>
+                  <span className="landing-mock-tab">Refine</span>
+                  <span className="landing-mock-tab">Classify</span>
+                  <span className="landing-mock-tab">Analyze</span>
+                  <span className="landing-mock-tab">Report</span>
+                </nav>
+                <div className="landing-mock-status" aria-hidden="true">
+                  <span className="landing-mock-dot" />
+                  Saved
                 </div>
-                <div className="mock-analysis">
-                  <div><span>Access barriers</span><i style={{ width: '76%' }} /></div>
-                  <div><span>Institutional trust</span><i style={{ width: '54%' }} /></div>
-                  <div><span>Guidance</span><i style={{ width: '42%' }} /></div>
+              </header>
+
+              {/* Detail toolbar — eyebrow + source title (Newsreader
+                  T1) on the left; the live app puts the search box
+                  on the right but we omit it here for visual quiet. */}
+              <div className="landing-mock-toolbar">
+                <span className="landing-mock-eyebrow">Detail View</span>
+                <h3 className="landing-mock-title">Interview 03</h3>
+              </div>
+
+              {/* Active-codes bar — second row of the document panel.
+                  T3 active-code title + Quick menu toggle + the
+                  Code selection primary button. This is where the
+                  Code-selection button moved to in the live app. */}
+              <div className="landing-mock-active-codes">
+                <div className="landing-mock-active-codes-text">
+                  <strong>Access barriers</strong>
+                  <span>Drag across a phrase to apply.</span>
                 </div>
-              </section>
+                <span className="landing-mock-active-codes-actions">
+                  <span className="landing-mock-quick-toggle">
+                    <span className="landing-mock-checkbox is-on" />
+                    Quick menu
+                  </span>
+                  <span className="landing-mock-code-button">Code selection</span>
+                </span>
+              </div>
+
+              {/* Line-numbered transcript reader — same 32px gutter,
+                  Newsreader 16.5/1.75 body, --ink-4 mono line numbers,
+                  one teal mark to show how a coded passage renders. */}
+              <div className="landing-mock-reader">
+                <p>
+                  <span className="landing-mock-line">12</span>
+                  <span>It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else.</span>
+                </p>
+                <p>
+                  <span className="landing-mock-line">13</span>
+                  <span>After a while it felt like the system was testing whether I would give up.</span>
+                </p>
+                <p>
+                  <span className="landing-mock-line">14</span>
+                  <span><mark>She explained the steps in plain language and wrote down what to bring next time.</mark></span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
