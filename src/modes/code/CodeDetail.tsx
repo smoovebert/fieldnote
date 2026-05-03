@@ -10,6 +10,8 @@ import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
 type SortedCode = Code & { depth: number }
 type QuickCodeMenu = { text: string; x: number; y: number }
 type HighlightedLine = Array<{ text: string; codes?: { id: string; color: string; name: string }[] }>
+type HighlightedPiece = { text: string; codes?: { id: string; color: string; name: string }[] }
+type HighlightedPage = { pageNumber: number; body: HighlightedPiece[] }
 
 type Props = {
   // shared data
@@ -19,6 +21,10 @@ type Props = {
   selectedCodeIds: string[]
   sortedCodes: SortedCode[]
   highlightedTranscriptLines: HighlightedLine[]
+  // For PDF sources only — array of page-card render data. When set,
+  // the reader renders a vertical card stack and the line-numbered
+  // path is bypassed.
+  highlightedPages: HighlightedPage[] | null
   readerWordCount: number
   readerRefCount: number
   lineNumberingMode: LineNumberingMode
@@ -134,35 +140,94 @@ export function CodeDetail(props: Props) {
           <span>{props.readerRefCount} codes applied</span>
         </div>
 
-        <div className="transcript" ref={transcriptRef} aria-label="Source text with line numbers" onMouseUp={captureQuickCodeSelection} onKeyUp={captureQuickCodeSelection}>
-          {props.highlightedTranscriptLines.map((line, lineIndex) => (
-            <div className="transcript-line" key={`${props.activeSource.id}-line-${lineIndex}`}>
-              <span className="line-number" aria-hidden="true">
-                {lineIndex + 1}
-              </span>
-              <span className="line-text">
-                {line.length ? (
-                  line.map((piece, pieceIndex) =>
-                    piece.codes ? (
-                      <mark
-                        key={`${piece.text}-${lineIndex}-${pieceIndex}`}
-                        className="multi-code-mark"
-                        style={markBackground(piece.codes)}
-                        title={piece.codes.map((code) => code.name).join(', ')}
-                      >
-                        {piece.text}
-                      </mark>
+        {props.highlightedPages ? (
+          // PDF source: render a vertical stack of page cards.
+          // Pages have no reader-line numbers (PDFs don't carry them);
+          // page is the only anchor. Selection capture stays at the
+          // article level so the existing handler runs unchanged; the
+          // page lookup happens at coding time by walking up from the
+          // selection's anchor to the [data-page] section.
+          <div
+            className="transcript pdf-pages"
+            ref={transcriptRef}
+            aria-label="Source text by page"
+            onMouseUp={captureQuickCodeSelection}
+            onKeyUp={captureQuickCodeSelection}
+          >
+            {props.highlightedPages.map((page) => {
+              const totalPages = props.highlightedPages?.length ?? 0
+              return (
+                <section
+                  key={`${props.activeSource.id}-page-${page.pageNumber}`}
+                  className="pdf-page"
+                  data-page={page.pageNumber}
+                >
+                  <header className="pdf-page-header">Page {page.pageNumber} of {totalPages}</header>
+                  <div className="pdf-page-body">
+                    {page.body.length === 0 ? (
+                      <p className="pdf-page-empty">(empty page)</p>
                     ) : (
-                      <span key={`${piece.text}-${lineIndex}-${pieceIndex}`}>{piece.text}</span>
+                      // Split each piece on \n so paragraph breaks
+                      // render as separate <p> blocks within the card,
+                      // matching the visual rhythm of the line-numbered
+                      // reader without surfacing line numbers.
+                      page.body.flatMap((piece, pieceIndex) => {
+                        const paragraphs = piece.text.split('\n')
+                        return paragraphs.map((para, paraIndex) => {
+                          const key = `${page.pageNumber}-${pieceIndex}-${paraIndex}`
+                          if (!para) return <br key={key} />
+                          if (piece.codes) {
+                            return (
+                              <mark
+                                key={key}
+                                className="multi-code-mark"
+                                style={markBackground(piece.codes)}
+                                title={piece.codes.map((c) => c.name).join(', ')}
+                              >
+                                {para}
+                              </mark>
+                            )
+                          }
+                          return <span key={key}>{para}</span>
+                        })
+                      })
+                    )}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="transcript" ref={transcriptRef} aria-label="Source text with line numbers" onMouseUp={captureQuickCodeSelection} onKeyUp={captureQuickCodeSelection}>
+            {props.highlightedTranscriptLines.map((line, lineIndex) => (
+              <div className="transcript-line" key={`${props.activeSource.id}-line-${lineIndex}`}>
+                <span className="line-number" aria-hidden="true">
+                  {lineIndex + 1}
+                </span>
+                <span className="line-text">
+                  {line.length ? (
+                    line.map((piece, pieceIndex) =>
+                      piece.codes ? (
+                        <mark
+                          key={`${piece.text}-${lineIndex}-${pieceIndex}`}
+                          className="multi-code-mark"
+                          style={markBackground(piece.codes)}
+                          title={piece.codes.map((code) => code.name).join(', ')}
+                        >
+                          {piece.text}
+                        </mark>
+                      ) : (
+                        <span key={`${piece.text}-${lineIndex}-${pieceIndex}`}>{piece.text}</span>
+                      )
                     )
-                  )
-                ) : (
-                  <br />
-                )}
-              </span>
-            </div>
-          ))}
-        </div>
+                  ) : (
+                    <br />
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {quickCodingEnabled && quickCodeMenu && (

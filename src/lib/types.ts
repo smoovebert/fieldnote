@@ -58,6 +58,15 @@ export type Excerpt = {
   sourceTitle: string
   text: string
   note: string
+  // 1-based page number for PDF sources; undefined for TXT/MD/DOCX and
+  // for excerpts coded before the page-anchored wedge shipped. The
+  // citation formatter (formatExcerptCitation) falls through to the
+  // source title when this is undefined, so legacy data renders cleanly.
+  pageNumber?: number
+  // 0-based character offset into that page's text. Used by the reader
+  // to scroll-and-highlight the exact passage on click; not surfaced in
+  // any citation.
+  charOffset?: number
 }
 
 export type SavedQuery = {

@@ -61,7 +61,8 @@ import { AnalyzeInspector } from './analyze/AnalyzeInspector'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
-import { wrapHighlightedTranscript } from './modes/code/transcript'
+import { buildPageHighlights, wrapHighlightedTranscript } from './modes/code/transcript'
+import { isPdfSource, parseSourcePages } from './lib/sourcePages'
 import { CodeDetail } from './modes/code/CodeDetail'
 import { CodePickerPanel } from './components/CodePickerPanel'
 import { ReferenceList } from './ReferenceList'
@@ -1258,6 +1259,20 @@ function App() {
   const highlightedTranscriptLines = useMemo(() => {
     return wrapHighlightedTranscript(highlightedTranscript, lineNumberingMode, lineNumberingWidth)
   }, [highlightedTranscript, lineNumberingMode, lineNumberingWidth])
+
+  // For PDF sources, recompute the highlight overlay per page using the
+  // page parser. Returns null for non-PDF sources so the reader keeps
+  // its existing line-numbered render path. We rebuild excerpts and
+  // codes are dependencies so the highlight stays current as either
+  // changes, mirroring the whole-doc highlightedTranscript memo above.
+  const highlightedPages = useMemo(() => {
+    if (!isPdfSource(activeSource.content)) return null
+    const pages = parseSourcePages(activeSource.content)
+    return pages.map((p) => ({
+      pageNumber: p.pageNumber,
+      body: buildPageHighlights(p.body, sourceExcerpts, codes),
+    }))
+  }, [activeSource.content, sourceExcerpts, codes])
 
   function addCode() {
     const name = newCodeName.trim()
@@ -2872,6 +2887,7 @@ function App() {
             selectedCodeIds={selectedCodeIds}
             sortedCodes={sortedCodes}
             highlightedTranscriptLines={highlightedTranscriptLines}
+            highlightedPages={highlightedPages}
             readerWordCount={readerWordCount}
             readerRefCount={readerRefCount}
             lineNumberingMode={lineNumberingMode}
