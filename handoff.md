@@ -517,9 +517,20 @@ recommended order:
    tester; low cost.
 2. **RAG / "ask your data"** — extends AI assist v1 with vector
    search over excerpts + chat-with-corpus. The big AI differentiator
-   and the only remaining piece of the AI thread. Needs its own
-   brainstorm (embedding storage, chunk strategy, citation UX, cost
-   gating).
+   and the only remaining piece of the AI thread. **Will be BYOK-only
+   on launch** (no free-tier path). Decided 2026-05-03: model quality
+   matters more for RAG than for the existing one-shot AI tools
+   because hallucinated quotes from a free-tier model could end up in
+   a researcher's manuscript — and "Defend it" doesn't survive a
+   fabricated quote. Free Gemini Flash works for suggest-codes (cost
+   of a bad suggestion is "user fixes it"), but RAG ships behind a
+   stronger-model BYOK gate (Claude Sonnet, GPT-4 class, Gemini Pro)
+   from day one. Spec will work out the rest of the design space:
+   embedding storage, chunk strategy, citation UX (the page-anchored
+   coding work paved this path — `pageNumber` + `charOffset` make
+   click-to-source jumps straightforward), source-quote-verification
+   affordance baked into the answer view. ~10-13 sessions, comfortably
+   Large.
 3. **Cross-project repository search** (Dovetail-borrowed pattern) —
    lifts the existing per-project Cmd+K header search to span all
    the user's projects. ~2 sessions. Compounding value once a
