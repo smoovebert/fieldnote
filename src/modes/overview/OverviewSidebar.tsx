@@ -1,23 +1,20 @@
 // Overview-mode left rail: full project picker with rich rows
-// (title + description + last-updated + source/code counts) plus
-// create-blank, sample-project, and backup import controls.
+// (title + description + last-updated + source/code counts) plus a
+// New-project... button (opens the research-template picker modal)
+// and the backup-import affordance.
 //
 // On non-Overview modes the project picker is gone from the header
 // entirely; researchers go to Overview to switch projects.
 
-import type { ChangeEvent } from 'react'
-import { Database, FileText, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
+import { Database, FileText, Plus, Trash2, Upload } from 'lucide-react'
 import type { ProjectRow } from '../../lib/types'
 
 type Props = {
   activeProjectId: string | null
   projects: ProjectRow[]
-  newProjectTitle: string
   isCreatingProject: boolean
   onSelectProject: (project: ProjectRow) => void
-  onNewProjectTitleChange: (next: string) => void
-  onCreateProject: () => void
-  onCreateSampleProject: () => void
+  onOpenNewProject: () => void
   onDeleteProject: (projectId: string) => void
   onImportBackup: (file: File) => void
 }
@@ -81,33 +78,14 @@ export function OverviewSidebar(props: Props) {
 
       <div className="overview-sidebar-create">
         <p className="overview-sidebar-section-title">Add a project</p>
-        <input
-          value={props.newProjectTitle}
-          placeholder="New project title"
-          aria-label="New project title"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => props.onNewProjectTitleChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') props.onCreateProject()
-          }}
-        />
         <button
           type="button"
           className="overview-sidebar-create-btn"
-          disabled={props.isCreatingProject || !props.newProjectTitle.trim()}
-          onClick={props.onCreateProject}
+          disabled={props.isCreatingProject}
+          onClick={props.onOpenNewProject}
         >
           <Plus size={13} aria-hidden="true" />
-          Create blank project
-        </button>
-        <button
-          type="button"
-          className="overview-sidebar-sample-btn"
-          disabled={props.isCreatingProject}
-          onClick={props.onCreateSampleProject}
-          title="Create a sample project preloaded with interviews, codes, cases, and saved analyses"
-        >
-          <Sparkles size={13} aria-hidden="true" />
-          Try a sample project
+          New project…
         </button>
         <label className="overview-sidebar-import" title="Restore from a .fieldnote.json file as a new project">
           <Upload size={12} aria-hidden="true" />

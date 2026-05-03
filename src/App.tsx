@@ -46,6 +46,8 @@ import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
 import { OverviewMode } from './modes/overview/OverviewMode'
 import { OverviewSidebar } from './modes/overview/OverviewSidebar'
+import { ResearchTemplatePicker } from './components/ResearchTemplatePicker'
+import type { ResearchTemplate } from './lib/researchTemplates'
 import { OverviewInspector } from './modes/overview/OverviewInspector'
 import { AccountDeletePanel } from './components/AccountDeletePanel'
 import { HeaderSearch } from './components/HeaderSearch'
@@ -446,7 +448,6 @@ function App() {
   const [projectTitle, setProjectTitle] = useState('Student Access Study')
   const [description, setDescription] = useState('')
   const [projectRows, setProjectRows] = useState<ProjectRow[]>([])
-  const [newProjectTitle, setNewProjectTitle] = useState('')
   const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv')
   const [reportIncludes, setReportIncludes] = useState<ReportIncludes>(DEFAULT_REPORT_INCLUDES)
@@ -488,6 +489,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
   const [accountDeleteOpen, setAccountDeleteOpen] = useState(false)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const [hasLoadedRemoteProject, setHasLoadedRemoteProject] = useState(false)
@@ -721,7 +723,6 @@ function App() {
         projectData: { ...seed, description: desc },
       }, supabase)
       setProjectRows((current) => [nextProject, ...current])
-      setNewProjectTitle('')
       await applyProject(nextProject)
     } catch (error) {
       setSaveStatus(errorMessage(error, 'Could not create project.'))
@@ -730,25 +731,20 @@ function App() {
     }
   }
 
-  async function createProject() {
-    const title = newProjectTitle.trim() || 'Untitled research project'
-    const blankSeed: ProjectData = {
-      description: '',
-      activeSourceId: '',
-      sources: [],
-      cases: [],
-      attributes: [],
-      attributeValues: [],
-      savedQueries: [],
-      codes: [],
-      memos: [],
-      excerpts: [],
-    }
-    await createProjectFromSeed(title, blankSeed)
-  }
+  // createProject / createSampleProject removed — both flows now go
+  // through the research-template picker (createProjectFromTemplate
+  // below), which builds the blank and sample seeds from
+  // RESEARCH_TEMPLATES same as the methodology templates.
 
-  async function createSampleProject() {
-    await createProjectFromSeed('Sample project', defaultProject)
+  // Picker callback — runs the template's seed builder fresh per call so
+  // two new projects from the same template don't collide on code ids
+  // (mkSeed uses Date.now() at call time). The picker closes after the
+  // call returns regardless of success; if the create failed, the
+  // saveStatus banner shows the error and the user can re-open and
+  // retry from a clean modal state.
+  async function createProjectFromTemplate(template: ResearchTemplate, title: string) {
+    setTemplatePickerOpen(false)
+    await createProjectFromSeed(title, template.buildSeed())
   }
 
   async function deleteProject(projectIdToDelete: string) {
@@ -2698,12 +2694,9 @@ function App() {
           <OverviewSidebar
             activeProjectId={projectId}
             projects={projectRows}
-            newProjectTitle={newProjectTitle}
             isCreatingProject={isCreatingProject}
             onSelectProject={(project) => void applyProject(project)}
-            onNewProjectTitleChange={setNewProjectTitle}
-            onCreateProject={() => void createProject()}
-            onCreateSampleProject={() => void createSampleProject()}
+            onOpenNewProject={() => setTemplatePickerOpen(true)}
             onDeleteProject={(id) => void deleteProject(id)}
             onImportBackup={(file) => void importProjectBackup(file)}
           />
@@ -2825,34 +2818,17 @@ function App() {
         {!projectId && projectRows.length === 0 && (
           <article className="overview-empty-state">
             <h2>Welcome to Fieldnote</h2>
-            <p>Explore the sample, or start fresh.</p>
+            <p>Pick a methodology-shaped starter codebook, open the sample to explore the app, or start from a blank canvas.</p>
             <div className="overview-empty-options">
-              <section className="overview-empty-option">
-                <h3>Try a sample project</h3>
-                <p>A small set of seeded interviews, codes, and a memo so you can poke around.</p>
-                <button type="button" onClick={() => void createSampleProject()} disabled={isCreatingProject}>
-                  Open sample project
-                </button>
-              </section>
-              <section className="overview-empty-option">
-                <h3>Create a blank project</h3>
-                <p>An empty project. Import your own sources to begin.</p>
-                <div className="overview-empty-create">
-                  <input
-                    value={newProjectTitle}
-                    placeholder="Project title"
-                    aria-label="Project title"
-                    onChange={(event) => setNewProjectTitle(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') void createProject()
-                    }}
-                  />
-                  <button type="button" onClick={() => void createProject()} disabled={isCreatingProject}>
-                    <Plus size={16} aria-hidden="true" />
-                    Create blank project
-                  </button>
-                </div>
-              </section>
+              <button
+                type="button"
+                className="primary-button overview-empty-cta"
+                onClick={() => setTemplatePickerOpen(true)}
+                disabled={isCreatingProject}
+              >
+                <Plus size={16} aria-hidden="true" />
+                New project…
+              </button>
             </div>
           </article>
         )}
@@ -3430,6 +3406,13 @@ function App() {
           setHasLoadedRemoteProject(false)
           setSession(null)
         }}
+      />
+    )}
+    {templatePickerOpen && (
+      <ResearchTemplatePicker
+        busy={isCreatingProject}
+        onCreate={(template, title) => void createProjectFromTemplate(template, title)}
+        onClose={() => setTemplatePickerOpen(false)}
       />
     )}
     </>

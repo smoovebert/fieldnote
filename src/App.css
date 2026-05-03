@@ -2776,6 +2776,112 @@ textarea {
 .account-delete-trigger {
   color: #b91c1c;
 }
+
+/* ----- Research-template picker (Start a new project modal) ------- */
+.research-template-picker {
+  width: min(820px, 92vw);
+  max-height: min(720px, 92vh);
+  display: flex;
+  flex-direction: column;
+}
+.research-template-picker .modal-section {
+  overflow-y: auto;
+}
+.research-template-name-field {
+  margin-bottom: var(--s-4);
+}
+.research-template-name-field input {
+  height: 36px;
+  font: var(--t-t5);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.research-template-grid-label {
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s-2);
+}
+.research-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+.research-template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--s-3) var(--s-3) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  background: var(--paper);
+  text-align: left;
+  cursor: pointer;
+  min-height: 110px;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+.research-template-card:hover {
+  background: var(--pane);
+}
+.research-template-card.is-selected {
+  border-color: var(--action);
+  box-shadow: 0 0 0 1px var(--action) inset;
+  background: var(--paper);
+}
+.research-template-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.research-template-card-title {
+  font: var(--t-t3);
+  color: var(--ink);
+}
+.research-template-card-tagline {
+  font: var(--t-t6);
+  color: var(--ink-2);
+  flex: 1 1 auto;
+}
+.research-template-card-meta {
+  font: var(--t-t8);
+  color: var(--ink-3);
+}
+.research-template-error {
+  font: var(--t-t6);
+  color: #b91c1c;
+  margin: 0 0 var(--s-3);
+}
+.research-template-actions {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: flex-end;
+  align-items: center;
+}
+.research-template-actions button {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--r-2);
+  font: var(--t-t5);
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.research-template-actions .primary-button {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--action-ink);
+}
+.research-template-actions .primary-button:disabled {
+  background: var(--pane);
+  border-color: var(--rule);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
 .modal-field {
   display: flex;
   flex-direction: column;
