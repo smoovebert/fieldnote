@@ -72,7 +72,7 @@ projects -> text import -> text coding -> codebook refinement -> memos -> basic 
 
 Major parity gaps:
 
-- non-text source types
+- non-text source types (first wedge shipped 2026-05-02: PDF page-anchored coding — page-card reader + "Source, p. N" citations across inspector, search, Refine, Report, CSV/XLSX. Native PDF canvas render, DOCX rich preview, audio with transcript-linked playback, video, image regions still TBD)
 - media/image region coding
 - annotations, sentiment codes, and relationships
 - deeper formal query system beyond the shipped header search
@@ -301,6 +301,7 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 
 - Multiple text sources are supported.
 - Importing `.txt`, `.md`, `.csv`, or `.docx` creates a new source. DOCX import extracts plain transcript text and does not preserve Word formatting.
+- PDF import (`.pdf`) extracts text via `pdfjs-dist` and inserts `--- Page N ---` markers between pages. The Code-mode reader parses those markers at load time and renders the PDF as a vertical stack of page cards (`Page N of M` header per card; no reader-line numbers because PDFs don't carry them).
 - Clicking a source opens it.
 - Organize mode has folder filters for all sources, Internals, and Externals.
 - Organize mode has a source register with title, type, folder, references, and memo status.
@@ -314,7 +315,8 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 ### Coding
 
 - Users can select source text and code it.
-- Code mode displays source text with line numbers; line numbers are not part of the source text.
+- Code mode displays text-source bodies with line numbers (line numbers are not part of the source text). PDF sources skip line numbers and use the page card as the only anchor; coding writes `pageNumber` and `charOffset` onto the new excerpt and citations across the app read as `"Source, p. N"`.
+- Cross-page selections on PDFs are rejected at coding time with a clear hint — every coded excerpt belongs to exactly one page.
 - Code mode has a toggleable quick coding menu: when enabled, selecting transcript text opens a contextual menu near the selection with code chips, an instant new-code field, and apply actions.
 - One excerpt can have multiple codes.
 - Coding the same exact source passage again now merges new codes into the existing reference instead of creating a duplicate.
@@ -363,7 +365,7 @@ Typing in a missing context memo creates it automatically.
 - Analyze mode can export the current matrix coding table as CSV.
 - Analyze mode can export current word frequency and code co-occurrence results as CSV.
 - Report raw-data exports can be downloaded as CSV or XLSX.
-- Report mode has a live report preview plus formatted Word (`.docx`) and PDF exports.
+- Report mode has a live report preview plus formatted Word (`.docx`) and PDF exports. Excerpt citations everywhere (sample-excerpt sections + `coded_excerpt` snapshot sections + CSV/XLSX exports) include the page number for PDF excerpts via `formatExcerptCitation()`; CSV/XLSX excerpt exports gain a `Page` column adjacent to `Source`.
 
 ### Analyze
 
@@ -473,6 +475,7 @@ Implemented:
 - AI quota telemetry (2026-05-01): the AI preview panel surfaces "X of N free calls left today" in the preview phase before the user clicks Send (green / amber under 5 / red + disabled at 0). Migration `20260501200300_ai_usage_safe_view` exposes a definer-mode safe view of `fieldnote_ai_usage` filtered to `auth.uid()`; the client never sees other users' usage rows. `loadAiUsageToday()` reads the view; `HOSTED_DAILY_CAP = 50` mirrors the `v_daily_cap` constant in the `reserve_ai_call` RPC. App.tsx loads the user's `aiProvider` once per sign-in and threads `isHostedAi` to the four AI consumers so BYOK users don't see the misleading free-Gemini badge.
 - Multi-code AND filter (2026-05-01): `QueryDefinition` gains an optional `additionalCodeIds: string[]` ANDed onto the primary `codeId`, persisted in the same JSON column as the rest of the definition (legacy saved queries deserialize to undefined and execute as []). Co-occurrence pair drill-down now lands on the actual intersection ("excerpts coded with A AND B"). The Find-excerpts query builder gets an "Also coded with" row (chips per additional code with × buttons + a "+ Add code (AND)" select). `activeQueryFilters` chips include "Also coded with: <name>" entries, which flow through to the right-rail natural-language sentence and CSV-export filter context.
 - Embedded chart visuals in the Report (2026-05-01): snapshot Report sections now render visualizations rather than count tables. Matrix and Crosstab snapshots become heatmap grids with teal cell shading proportional to count (sqrt-scaled so small values stay visible) — same intensity formula across the React preview (`cellBgCss`), PDF (`cellRgbForPdf` + `setFillColor`/`rect`), and Word (`cellHexForDocx` + docx Table cell shading). Frequency and Co-occurrence snapshots gain inline bars: HTML uses an absolutely-positioned teal fill behind the count; PDF/DOCX use unicode block characters (`textBar()`). Wide grids capped at 6-8 columns in the Report; full data still in CSV/XLSX. Helpers live in `src/report/snapshotVisuals.ts` with their own unit tests.
+- PDF page-anchored coding (2026-05-02, the first wedge in the non-text-source-types thread): PDF sources render in Code mode as a vertical stack of page cards (`Page N of M` header per card; no reader-line numbers on PDF cards because PDFs don't carry them). New excerpts coded on a PDF carry `pageNumber: number` (1-based) and `charOffset: number` (0-based, into that page's body) — both optional fields on `Excerpt`, undefined for non-PDF sources and for excerpts coded before this wedge shipped. Cross-page selections are rejected at coding time with a clear hint; selections that span two `[data-page]` cards never create a partial excerpt. Citations across every surface (right-rail Coded excerpts, Refine references list, Cmd+K header search, Analyze query result rows, Report React preview / PDF / Word, CSV/XLSX exports) read as `"Source, p. N"` for new PDF excerpts and fall through to `"Source"` for everything else via the single `formatExcerptCitation()` helper. CSV / XLSX excerpt exports gain a `Page` column adjacent to `Source`. AI prompt builders intentionally keep using bare `sourceTitle` — page metadata isn't useful to the model and would just inflate token use. Schema impact: zero (additive optional fields on the `Excerpt` JSON shape; the `--- Page N ---` markers the PDF importer already writes are the source of truth, parsed at load time by `parseSourcePages()` in `src/lib/sourcePages.ts`). Spec at `docs/superpowers/specs/2026-05-02-pdf-page-anchored-coding-design.md`. Out of scope and queued as follow-ups: native PDF canvas render, backfill of page numbers onto pre-existing excerpts, page-range citations.
 
 Still needed:
 
@@ -480,9 +483,11 @@ Still needed:
 - Mode-specific right rails outside Organize need another design pass.
 - Organize mode still needs richer source previews.
 - Classify still needs persistent case sets and richer filtering.
-- Audio/video sources with transcript-linked playback (the larger non-text-source thread; PDF page anchors and DOCX rich preview are the immediate prerequisites).
 - Codebook cleanup beyond split/dedupe/orphan review: bulk recode UX (multi-select rows in a code's references and re-tag without deleting source), fuzzy-match duplicate detection (currently exact-normalized match only).
-- Non-text source types (PDF as PDF with page anchors, DOCX rich preview, audio/video, image regions) — text extraction/import works today, but native source rendering/coding is not built.
+- Native PDF canvas render (option C from the page-anchored brainstorm — pdfjs canvas + selectable text layer; coding becomes bounding rects). Page-anchored coding is shipped; native render is the next PDF wedge if researchers want pixel-perfect highlights.
+- Image regions, audio with transcript-linked playback, video — the rest of the non-text-source thread. Audio transcription is paid (Whisper or Gemini audio), video storage outgrows the Supabase free tier; both warrant their own brainstorms before scoping.
+- DOCX rich preview (preserve formatting and block layout in the reader rather than flattening to text).
+- PDF page-anchored coding follow-ups: backfill page numbers onto pre-existing excerpts (the `parseSourcePages` helper makes this a small one-off pass) and page-range citations.
 - Tablet/mobile: blocked behind a 1024px gate, no responsive design.
 - Persistence-layer integration tests (mocked Supabase) — deferred during Phase 4.
 
@@ -495,15 +500,22 @@ Project sharing is parked (most QDA usage is solo; building it before
 the demand exists is unjustified). Top of the remaining list, in
 recommended order:
 
-1. **Non-text source types** — coding PDF as PDF (with page anchors),
-   richer DOCX, eventually audio/video with transcript-linked playback.
-2. **AI-assist** — suggested codes / summaries / "find more like this".
-   Real differentiator; needs its own brainstorm before scoping.
-3. **Saved analysis objects beyond coded-query snapshots** — matrices,
-   crosstabs, word frequency, and co-occurrence snapshots.
-4. Lower-priority polish: richer source previews; persistent case sets,
-   multi-select bulk recode in Refine, fuzzy duplicate detection, and
-   embedded chart outputs in the formatted Report.
+1. **RAG / "ask your data"** — extends AI assist v1 with vector search
+   over excerpts + chat-with-corpus. Real differentiator and the only
+   remaining piece of the AI thread. Needs its own brainstorm
+   (embedding storage, chunk strategy, citation UX, cost gating).
+2. **Native PDF canvas render** — the bigger PDF wedge that follows
+   page-anchored coding. pdfjs canvas + selectable text layer; coding
+   becomes bounding rects. Worth scoping when researchers tell us
+   the page-anchored extracted-text reader isn't enough for their
+   close-reading needs.
+3. **Audio with transcript-linked playback** — the next non-text
+   source format that fits the free tier (image regions are simpler
+   but lower-impact). Storage gets tight at hours of audio; paid
+   transcription is the cost line. Needs a brainstorm.
+4. Lower-priority polish: bulk recode multi-select in Refine,
+   fuzzy duplicate code detection, persistent case sets, richer
+   source previews in Organize.
 
 ## Design Direction
 
