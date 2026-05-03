@@ -182,67 +182,66 @@
   min-height: 420px;
 }
 
-/* Top nav — dark band, brand on the left, tabs in the center,
-   mini status pill on the right. Mirrors the live shell's recipe. */
+/* Top nav — dark band, brand left + tabs center + status right.
+   Mirrors the live shell's recipe but every measurement is tighter
+   because the hero column is only ~50% of the page width and 7 tabs
+   + brand + pill have to share that space without overflowing. */
 .landing-root .landing-mock-nav {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
+  gap: 8px;
   background: var(--shell);
   color: var(--shell-ink);
-  padding: 0 16px;
-  height: 48px;
+  padding: 0 12px;
+  height: 40px;
   border-bottom: 1px solid var(--shell-deep);
 }
 .landing-root .landing-mock-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.landing-root .landing-mock-brand-eyebrow {
-  font: 600 8.5px/1.1 var(--font-ui);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--shell-ink-3);
-}
-.landing-root .landing-mock-brand-name {
-  font: 500 14px/1.1 var(--font-ui);
+  font: 500 13px/1 var(--font-ui);
   letter-spacing: -0.01em;
   color: var(--shell-ink);
+  white-space: nowrap;
 }
+/* Tabs — tighter padding and a smaller font so all 7 fit inside the
+   middle track on a ~600px-wide hero column. The dot indicator on
+   .is-active still reads, but the tabs no longer fight the brand or
+   the status pill for horizontal room. */
 .landing-root .landing-mock-tabs {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   justify-self: center;
+  min-width: 0;
 }
 .landing-root .landing-mock-tab {
-  padding: 0 10px;
-  height: 26px;
+  padding: 0 6px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
-  border-radius: 5px;
-  font: 500 12px/1 var(--font-ui);
+  border-radius: 4px;
+  font: 500 10.5px/1 var(--font-ui);
   color: var(--shell-ink-2);
+  white-space: nowrap;
 }
 .landing-root .landing-mock-tab.is-active {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.10);
   color: var(--shell-ink);
 }
+/* Status: just the dot — text wasted horizontal room and overlapped
+   the last tab. The single colored dot reads unambiguously and frees
+   the tabs to breathe. */
 .landing-root .landing-mock-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font: 400 11px/1 var(--font-ui);
-  color: var(--shell-ink-3);
-  background: var(--shell-deep);
-  padding: 4px 10px;
-  border-radius: 99px;
+  justify-self: end;
+  width: 16px;
+  height: 16px;
 }
 .landing-root .landing-mock-dot {
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 99px;
   background: #10b981;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18);

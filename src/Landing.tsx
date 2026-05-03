@@ -114,14 +114,12 @@ export function Landing() {
 
           <div className="landing-product-frame" aria-label="Fieldnote product preview">
             <div className="landing-product-shell">
-              {/* Top nav — dark band, two-line wordmark + horizontal
-                  mode tabs + status pill. Mirrors the live app shell
-                  (the modes live up here, not in a left rail). */}
+              {/* Top nav — dark band, single-line wordmark + the seven
+                  horizontal mode tabs + a single status dot. Tighter
+                  than the live shell because the hero column gives
+                  the mock about half the room a real top nav has. */}
               <header className="landing-mock-nav">
-                <div className="landing-mock-brand">
-                  <span className="landing-mock-brand-eyebrow">Qualitative Workspace</span>
-                  <span className="landing-mock-brand-name">Fieldnote</span>
-                </div>
+                <span className="landing-mock-brand">Fieldnote</span>
                 <nav className="landing-mock-tabs" aria-hidden="true">
                   <span className="landing-mock-tab">Overview</span>
                   <span className="landing-mock-tab">Organize</span>
@@ -131,9 +129,8 @@ export function Landing() {
                   <span className="landing-mock-tab">Analyze</span>
                   <span className="landing-mock-tab">Report</span>
                 </nav>
-                <div className="landing-mock-status" aria-hidden="true">
+                <div className="landing-mock-status" aria-hidden="true" title="Saved">
                   <span className="landing-mock-dot" />
-                  Saved
                 </div>
               </header>
 
