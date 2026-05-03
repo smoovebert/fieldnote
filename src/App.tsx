@@ -64,7 +64,7 @@ import { AnalyzeInspector } from './analyze/AnalyzeInspector'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
-import { buildPageHighlights, wrapHighlightedTranscript } from './modes/code/transcript'
+import { buildPageHighlights, findExcerptInBody, wrapHighlightedTranscript } from './modes/code/transcript'
 import { isPdfSource, parseSourcePages } from './lib/sourcePages'
 import { formatExcerptCitation } from './lib/excerptCitation'
 import { CodeDetail } from './modes/code/CodeDetail'
@@ -498,7 +498,14 @@ function App() {
   const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
   const activeMemo = memos.find((memo) => memo.id === activeMemoId) ?? memos[0]
   const selectedCodes = codes.filter((code) => selectedCodeIds.includes(code.id))
-  const selectedCodeNames = selectedCodes.map((code) => code.name).join(', ')
+  // Empty active set is now allowed (was forced to >=1). Surface a
+  // human-readable placeholder so the active-codes bar reads cleanly
+  // when no codes are toggled on; the Code-selection action no-ops in
+  // that state with a hint, so the user can still use the quick-code
+  // menu (which carries its own per-selection chips).
+  const selectedCodeNames = selectedCodes.length === 0
+    ? 'No active codes'
+    : selectedCodes.map((code) => code.name).join(', ')
   const sourceExcerpts = excerpts.filter((excerpt) => excerpt.sourceId === activeSource.id)
   const activeCodeTreeIds = [activeCode.id, ...descendantCodeIds(codes, activeCode.id)]
   const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.some((codeId) => activeCodeTreeIds.includes(codeId)))
@@ -886,18 +893,42 @@ function App() {
     }
   }, [projectId, projectTitle, description, activeSourceId, activeSource, projectMemo, sources, codes, memos, excerpts, cases, attributes, attributeValues, savedQueries, lineNumberingMode, lineNumberingWidth, projectData])
 
+  // Memoize the projectRow snapshot the autosave hook needs.
+  //
+  // Why this exists: useAutosave includes projectRow in its effect's
+  // dep array (the IDB local-recovery snapshot uses it). The previous
+  // inline IIFE here returned a fresh object literal every render, so
+  // every save's onSaved -> setProjectRows -> re-render created a new
+  // projectRow reference, re-fired the autosave effect, scheduled
+  // another 700ms timeout, ran another (no-op-content) save against
+  // the same payload, succeeded, called onSaved again — infinite loop
+  // visible to the user as a 'Saving...' status that never settles.
+  // Memoizing on the actual fields (id/title/updated_at) breaks the
+  // loop: when nothing real changed, the same reference comes back and
+  // the autosave effect stays quiet.
+  const activeProjectRow = projectId ? projectRows.find((p) => p.id === projectId) : null
+  // Deps are the individual fields, not the row object itself, so the
+  // memo doesn't re-fire when the rest of the row (sources / codes /
+  // memos / etc.) changes on save — those don't affect the recovery
+  // snapshot's title/updated_at fields and were the source of the
+  // 'always saving' loop.
+  const autosaveProjectRow = useMemo(() => {
+    if (!activeProjectRow) return null
+    return {
+      id: activeProjectRow.id,
+      title: activeProjectRow.title,
+      updated_at: activeProjectRow.updated_at ?? null,
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProjectRow?.id, activeProjectRow?.title, activeProjectRow?.updated_at])
+
   useAutosave({
     enabled: Boolean(session?.user && projectId && hasLoadedRemoteProject),
     projectId,
     payload: persistencePayload,
     supabase,
     userId: session?.user?.id ?? null,
-    projectRow: projectId
-      ? (() => {
-          const row = projectRows.find((p) => p.id === projectId)
-          return row ? { id: row.id, title: row.title, updated_at: row.updated_at ?? null } : null
-        })()
-      : null,
+    projectRow: autosaveProjectRow,
     setSaveStatus,
     onSaved: (savedPayload) => {
       setProjectRows((current) =>
@@ -1232,14 +1263,19 @@ function App() {
 
       pieces = pieces.flatMap((piece) => {
         if (piece.codes) return [piece]
-
-        const index = piece.text.indexOf(excerpt.text)
-        if (index === -1) return [piece]
+        // Whitespace-flexible match: a multi-line selection brings DOM
+        // line-wrap '\n' characters along that the source body doesn't
+        // have, so a strict indexOf misses. The shared helper does an
+        // exact-first / regex-fallback match and returns the slice
+        // bounds in the actual body so the displayed mark covers
+        // exactly what's in the source.
+        const span = findExcerptInBody(piece.text, excerpt.text)
+        if (!span) return [piece]
 
         return [
-          { text: piece.text.slice(0, index) },
-          { text: excerpt.text, codes: excerptCodes },
-          { text: piece.text.slice(index + excerpt.text.length) },
+          { text: piece.text.slice(0, span.start) },
+          { text: piece.text.slice(span.start, span.end), codes: excerptCodes },
+          { text: piece.text.slice(span.end) },
         ].filter((item) => item.text)
       })
     })
@@ -1354,11 +1390,17 @@ function App() {
     setSelectionHint(`Merged "${activeCode.name}" into "${targetCode.name}".`)
   }
 
+  // Toggle a code in/out of the active-coding set. Empty is allowed —
+  // when zero codes are selected, the Code-selection action no-ops with
+  // a hint so the user can clear the active set without losing the
+  // ability to use the quick-code menu (which carries its own per-
+  // selection code chips and isn't bound by selectedCodeIds).
   function toggleSelectedCode(codeId: string) {
-    setSelectedCodeIds((current) => {
-      if (current.includes(codeId)) return current.length === 1 ? current : current.filter((id) => id !== codeId)
-      return [...current, codeId]
-    })
+    setSelectedCodeIds((current) =>
+      current.includes(codeId)
+        ? current.filter((id) => id !== codeId)
+        : [...current, codeId],
+    )
   }
 
   function splitCodeInto(sourceCodeId: string, excerptIds: string[], newCodeName: string, parentCodeId?: string) {
@@ -1463,6 +1505,14 @@ function App() {
 
     if (!selectedText || activeView !== 'code') {
       setSelectionHint(activeView === 'code' ? 'No text is selected yet. Drag across a phrase or paragraph first.' : 'Switch to Code mode before coding text.')
+      return
+    }
+
+    // Active set may now legitimately be empty; the toolbar Code-
+    // selection button still routes here, so guard the no-op case
+    // with a hint instead of creating a code-less excerpt.
+    if (selectedCodeIds.length === 0) {
+      setSelectionHint('No active codes — pick at least one code to apply, or use the quick-code menu.')
       return
     }
 

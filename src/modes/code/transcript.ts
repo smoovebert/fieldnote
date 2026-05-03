@@ -25,6 +25,33 @@ export function markBackground(codes: { color: string }[]): CSSProperties {
   return { background: `linear-gradient(${stops})` }
 }
 
+// Locate an excerpt's text inside a body string, tolerating whitespace
+// differences. The selection's `\n` characters can be inserted by DOM
+// line-wrap (e.g., the line-numbered reader breaks paragraphs across
+// transcript-line divs); the source body's whitespace pattern won't
+// always match. Build a regex from the excerpt where every run of
+// whitespace matches any run of whitespace in the source, then slice
+// using the regex match position so the displayed mark covers the
+// real source text exactly.
+//
+// Returns { start, end } where start..end is the slice in `body` to
+// surface as the coded span, or null if no match. Pure helper.
+const ESCAPE_RE = /[.*+?^${}()|[\]\\]/g
+export function findExcerptInBody(body: string, excerptText: string): { start: number; end: number } | null {
+  const trimmed = excerptText.trim()
+  if (!trimmed) return null
+  // Fast path: exact substring match. Covers the overwhelming majority
+  // of in-paragraph selections and avoids regex overhead.
+  const exact = body.indexOf(trimmed)
+  if (exact !== -1) return { start: exact, end: exact + trimmed.length }
+  // Fallback: whitespace-flexible regex. Any \s+ in the excerpt
+  // matches any \s+ in the body.
+  const escaped = trimmed.replace(ESCAPE_RE, '\\$&').replace(/\s+/g, '\\s+')
+  const match = body.match(new RegExp(escaped))
+  if (!match || match.index === undefined) return null
+  return { start: match.index, end: match.index + match[0].length }
+}
+
 // Per-page highlight builder for PDF sources. Same overlay logic the
 // whole-doc `highlightedTranscript` memo uses (overlaps an excerpt's
 // text into the page body and surfaces matching codes), but scoped to
@@ -109,12 +136,12 @@ export function buildPageHighlights(
     if (!excerptCodes.length || !excerpt.text.trim()) continue
     pieces = pieces.flatMap((piece) => {
       if (piece.codes) return [piece]
-      const idx = piece.text.indexOf(excerpt.text)
-      if (idx === -1) return [piece]
+      const span = findExcerptInBody(piece.text, excerpt.text)
+      if (!span) return [piece]
       return [
-        { text: piece.text.slice(0, idx) },
-        { text: excerpt.text, codes: excerptCodes },
-        { text: piece.text.slice(idx + excerpt.text.length) },
+        { text: piece.text.slice(0, span.start) },
+        { text: piece.text.slice(span.start, span.end), codes: excerptCodes },
+        { text: piece.text.slice(span.end) },
       ].filter((p) => p.text)
     })
   }

@@ -143,6 +143,11 @@ export function CodeDetail(props: Props) {
           <button
             type="button"
             className="primary-button toolbar-code-action"
+            // Empty active set is now allowed; disable the button so
+            // the user gets a visual cue rather than only a hint after
+            // click. Quick-code menu still works (its own chips).
+            disabled={props.selectedCodeIds.length === 0}
+            title={props.selectedCodeIds.length === 0 ? 'Pick at least one active code from the right rail, or use the quick-code menu.' : undefined}
             onClick={() => {
               // For PDF sources, resolve the live selection to a single
               // page card before invoking codeSelection so cross-page

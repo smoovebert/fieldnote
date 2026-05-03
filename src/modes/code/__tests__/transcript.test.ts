@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  findExcerptInBody,
   markBackground,
   wrapHighlightedTranscript,
   type TranscriptPiece,
@@ -97,5 +98,32 @@ describe('markBackground', () => {
     expect(result.background).toContain('linear-gradient')
     expect(result.background).toContain('#ff0000')
     expect(result.background).toContain('#00ff00')
+  })
+})
+
+describe('findExcerptInBody', () => {
+  it('returns the exact-match span for a single-line excerpt', () => {
+    expect(findExcerptInBody('hello there world', 'there')).toEqual({ start: 6, end: 11 })
+  })
+
+  it('matches across whitespace differences (DOM line-wrap vs source paragraph)', () => {
+    // Selection captured 'foo bar' from the DOM (single space, line-wrapped),
+    // source actually stores 'foo\n\nbar' (paragraph break).
+    const span = findExcerptInBody('intro foo\n\nbar end', 'foo bar')
+    // Match covers 'foo\n\nbar' — 8 chars from index 6 to 14.
+    expect(span).toEqual({ start: 6, end: 14 })
+  })
+
+  it('returns null when the excerpt does not appear in the body at all', () => {
+    expect(findExcerptInBody('hello world', 'goodbye')).toBe(null)
+  })
+
+  it('returns null for an empty / whitespace-only excerpt', () => {
+    expect(findExcerptInBody('hello world', '')).toBe(null)
+    expect(findExcerptInBody('hello world', '   ')).toBe(null)
+  })
+
+  it('does not regex-explode on excerpt text containing special characters', () => {
+    expect(findExcerptInBody('a (b) c', '(b)')).toEqual({ start: 2, end: 5 })
   })
 })
