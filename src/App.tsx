@@ -10,7 +10,6 @@ import {
   Highlighter,
   LayoutDashboard,
   ListTree,
-  LogOut,
   MessageSquareText,
   Plus,
   Rows3,
@@ -49,6 +48,7 @@ import { ResearchTemplatePicker } from './components/ResearchTemplatePicker'
 import type { ResearchTemplate } from './lib/researchTemplates'
 import { OverviewInspector } from './modes/overview/OverviewInspector'
 import { AccountDeletePanel } from './components/AccountDeletePanel'
+import { ProfileMenu } from './components/ProfileMenu'
 import { HeaderSearch } from './components/HeaderSearch'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportInspector } from './modes/report/ReportInspector'
@@ -2735,16 +2735,13 @@ function App() {
               </div>
             )
           })()}
-          {projectId && (
-            <button
-              type="button"
-              className="header-icon-button"
-              onClick={signOut}
-              aria-label="Sign out"
-              title={`Sign out (${session.user.email})`}
-            >
-              <LogOut size={16} aria-hidden="true" />
-            </button>
+          {session?.user?.email && (
+            <ProfileMenu
+              accountEmail={session.user.email}
+              onOpenAiSettings={() => setAiSettingsOpen(true)}
+              onOpenAccountDelete={() => setAccountDeleteOpen(true)}
+              onSignOut={signOut}
+            />
           )}
         </div>
       </header>
