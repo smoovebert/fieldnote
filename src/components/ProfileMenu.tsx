@@ -84,7 +84,7 @@ export function ProfileMenu({ accountEmail, feedbackSubject, feedbackBody, onOpe
             onClick={() => setOpen(false)}
           >
             <MessageSquareText size={14} aria-hidden="true" />
-            Send feedback…
+            Send feedback or ideas…
           </a>
           <button
             type="button"

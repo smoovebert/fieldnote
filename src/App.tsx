@@ -2743,15 +2743,22 @@ function App() {
             // (where they were, browser, project) is auto-stamped.
             const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
             const url = typeof window !== 'undefined' ? window.location.href : 'unknown'
-            const subject = `Fieldnote alpha feedback — ${activeView}`
+            const subject = `Fieldnote alpha — ${activeView}`
             const body = [
-              'What I was trying to do:',
+              "Pick whichever section fits and delete the other:",
               '',
+              '— Bug report —',
+              'What I was trying to do:',
               '',
               'What I expected to happen:',
               '',
-              '',
               'What actually happened:',
+              '',
+              '',
+              '— Feature request / idea —',
+              'What would help:',
+              '',
+              'Why it matters / where it would fit:',
               '',
               '',
               '— context (auto-filled, edit if any of this is wrong) —',
