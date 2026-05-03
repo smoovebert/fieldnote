@@ -8,13 +8,13 @@ This manual is written for researchers using the app. It assumes you are signed 
 
 Fieldnote is organized around the research loop:
 
-1. **Overview** — choose or create a project, review project status, manage safety/backups, and open AI settings.
-2. **Organize** — import and arrange sources such as interviews, documents, PDFs, DOCX files, Markdown, text, and CSV.
-3. **Code** — read a source and code selected passages with one or more codes.
-4. **Refine** — clean up the codebook, edit code descriptions, review references, and organize codes into a hierarchy.
-5. **Classify** — create cases/participants and add attributes such as role, cohort, site, or demographic fields.
-6. **Analyze** — ask structured questions of coded material, compare groups, inspect language, and export results.
-7. **Report** — preview and export project memos, codebooks, excerpts, cases, and source memos.
+1. **Overview** - choose or create a project, review project status, manage safety/backups, and open AI settings.
+2. **Organize** - import and arrange sources such as interviews, documents, PDFs, DOCX files, Markdown, text, and CSV.
+3. **Code** - read a source and code selected passages with one or more codes.
+4. **Refine** - clean up the codebook, edit code descriptions, review references, and organize codes into a hierarchy.
+5. **Classify** - create cases/participants and add attributes such as role, cohort, site, or demographic fields.
+6. **Analyze** - ask structured questions of coded material, compare groups, inspect language, and export results.
+7. **Report** - preview and export project memos, codebooks, excerpts, cases, and source memos.
 
 You do not have to use every mode every time. A simple interview project might use only Organize, Code, Refine, Analyze, and Report.
 
@@ -71,6 +71,8 @@ Fieldnote currently supports:
 
 Imported PDF and DOCX files are converted into readable text for coding.
 
+PDF sources also keep page structure. In Code mode, a PDF appears as a stack of page cards. New coded excerpts from PDFs keep their page number, so citations can read like `Interview 03, p. 5`.
+
 ### Source Folders
 
 Sources can be grouped into folders. Use folders for practical organization, such as:
@@ -117,6 +119,12 @@ Use quick coding when you are doing a first pass through interviews and want to 
 ### Instant Add Code
 
 If you notice a new theme while coding, add a new code without leaving the coding flow. New codes can be refined later in Refine mode.
+
+### Coding PDFs
+
+PDFs are coded one page at a time. If a selection crosses from one page card into another, Fieldnote rejects it and asks you to reselect within a single page.
+
+This keeps citations clean. New PDF excerpts carry a page number in search results, Refine, Analyze, Report, Word/PDF exports, and CSV/XLSX exports.
 
 ## Refine Mode
 
@@ -185,10 +193,10 @@ Analyze is a question workspace. Instead of thinking of it as separate charts, t
 
 The left rail is grouped by question type:
 
-- **Evidence** — find excerpts
-- **Compare** — compare codes across cases or attributes
-- **Language** — inspect word frequency in filtered excerpts
-- **Relationships** — inspect code co-occurrence
+- **Evidence** - find excerpts
+- **Compare** - compare codes across cases or attributes
+- **Language** - inspect word frequency in filtered excerpts
+- **Relationships** - inspect code co-occurrence
 
 The right rail shows the current question in plain language, result counts, active filters, snapshots, and exports.
 
@@ -285,6 +293,8 @@ Fieldnote supports:
 
 CSV/XLSX exports are useful for analysis tables and raw-data handoff. Word/PDF exports are better for readable reports.
 
+When coded excerpts come from PDFs, reports show page citations such as `Source title, p. 3`. Spreadsheet exports include a `Page` column next to the source title.
+
 ## AI Assist
 
 AI Assist is optional. It is designed to propose text, not write directly into project data without approval.
@@ -377,10 +387,10 @@ Open AI settings from Overview and check the provider.
 Fieldnote is actively evolving. Planned or partial areas include:
 
 - richer media handling
+- native PDF canvas viewing and richer DOCX preview
 - audio/video transcription
 - fuller collaboration/reviewer workflows
 - inter-coder reliability
-- richer chart bundles in reports
 - more advanced AI querying
 - archive-style full project exports
 

@@ -49,6 +49,7 @@ Then open the local URL Vite prints and sign up or sign in.
 ## User Manual
 
 For a researcher-facing guide to the Fieldnote workflow, see [`docs/user-manual.md`](docs/user-manual.md).
+For a shorter onboarding handout with generated PDF and DOCX exports, see [`docs/onboarding-guide.md`](docs/onboarding-guide.md) and `scripts/build-onboarding-guide.mjs`.
 
 ## Checks
 
