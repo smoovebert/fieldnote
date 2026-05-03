@@ -2200,9 +2200,14 @@ mark {
   border-radius: 0 7px 7px 0;
 }
 
+/* Right-rail properties dl — spec recipe:
+   dt = T6 muted (--ink-3), dd = T4 dark (--ink), right-aligned.
+   Each row has a 7px top/bottom pad and a --rule-soft underline;
+   last row drops the underline. The value gets one tier of
+   emphasis above the label. */
 .properties-list {
   display: grid;
-  gap: 8px;
+  gap: 0;
   margin: 0;
 }
 
@@ -2214,39 +2219,48 @@ mark {
 .property-field {
   display: grid;
   gap: 7px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 760;
+  color: var(--ink-3);
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
 }
 
 .property-field input,
 .property-field select {
   width: 100%;
-  height: 38px;
+  height: 34px;
   box-sizing: border-box;
-  border: 1px solid var(--line);
-  border-radius: 7px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
   padding: 0 10px;
   outline: none;
-  background: #fbfaf7;
+  background: var(--paper);
   color: var(--ink);
+  font: var(--t-t5);
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .properties-list div {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.properties-list div:last-child {
+  border-bottom: 0;
 }
 
 .properties-list dt {
-  color: var(--muted);
+  font: var(--t-t6);
+  color: var(--ink-3);
 }
 
 .properties-list dd {
   margin: 0;
+  font: var(--t-t4);
   color: var(--ink);
-  font-weight: 700;
   text-align: right;
 }
 
@@ -3377,12 +3391,11 @@ textarea {
 }
 
 .app-shell[data-shell="new"] .properties-view .panel-heading h2 {
-  font: var(--t-label);
-  letter-spacing: 0.12em;
+  /* T7: 10.5/1.2 sans 600, 0.10em up, --ink-3. */
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: var(--ink-2);
-  font-size: 11px;
-  font-weight: 600;
+  color: var(--ink-3);
   margin: 0;
 }
 
