@@ -5,16 +5,24 @@
 // because they're per-project, not per-user.
 
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, Sparkles, Trash2, User } from 'lucide-react'
+import { LogOut, MessageSquareText, Sparkles, Trash2, User } from 'lucide-react'
 
 type Props = {
   accountEmail: string
+  // Context strings the feedback-link uses to prefill the email body.
+  // The parent owns these because activeView / projectId etc. live in
+  // App.tsx state — passing the whole computed body keeps this menu
+  // free of app-state coupling.
+  feedbackSubject: string
+  feedbackBody: string
   onOpenAiSettings: () => void
   onOpenAccountDelete: () => void
   onSignOut: () => void
 }
 
-export function ProfileMenu({ accountEmail, onOpenAiSettings, onOpenAccountDelete, onSignOut }: Props) {
+const FEEDBACK_EMAIL = 'studio.ops@behemothagency.com'
+
+export function ProfileMenu({ accountEmail, feedbackSubject, feedbackBody, onOpenAiSettings, onOpenAccountDelete, onSignOut }: Props) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -69,6 +77,15 @@ export function ProfileMenu({ accountEmail, onOpenAiSettings, onOpenAccountDelet
             <div className="profile-menu-email" title={accountEmail}>{accountEmail}</div>
           </div>
           <div className="profile-menu-divider" />
+          <a
+            role="menuitem"
+            className="profile-menu-item"
+            href={`mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(feedbackSubject)}&body=${encodeURIComponent(feedbackBody)}`}
+            onClick={() => setOpen(false)}
+          >
+            <MessageSquareText size={14} aria-hidden="true" />
+            Send feedback…
+          </a>
           <button
             type="button"
             role="menuitem"

@@ -5401,6 +5401,8 @@ textarea {
   text-align: left;
   cursor: pointer;
   width: 100%;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 .profile-menu-item:hover {
   background: var(--pane);

@@ -2735,14 +2735,43 @@ function App() {
               </div>
             )
           })()}
-          {session?.user?.email && (
-            <ProfileMenu
-              accountEmail={session.user.email}
-              onOpenAiSettings={() => setAiSettingsOpen(true)}
-              onOpenAccountDelete={() => setAccountDeleteOpen(true)}
-              onSignOut={signOut}
-            />
-          )}
+          {session?.user?.email && (() => {
+            // Prefill the feedback mailto with as much context as we
+            // can derive client-side. Mirrors the four-things template
+            // in docs/alpha-feedback.md so the user only has to fill
+            // 'what you were trying to do / what happened' — the rest
+            // (where they were, browser, project) is auto-stamped.
+            const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+            const url = typeof window !== 'undefined' ? window.location.href : 'unknown'
+            const subject = `Fieldnote alpha feedback — ${activeView}`
+            const body = [
+              'What I was trying to do:',
+              '',
+              '',
+              'What I expected to happen:',
+              '',
+              '',
+              'What actually happened:',
+              '',
+              '',
+              '— context (auto-filled, edit if any of this is wrong) —',
+              `Mode: ${activeView}`,
+              `Project: ${projectId ?? '(no project loaded)'}`,
+              `URL: ${url}`,
+              `Browser: ${ua}`,
+              `Account: ${session.user.email}`,
+            ].join('\n')
+            return (
+              <ProfileMenu
+                accountEmail={session.user.email}
+                feedbackSubject={subject}
+                feedbackBody={body}
+                onOpenAiSettings={() => setAiSettingsOpen(true)}
+                onOpenAccountDelete={() => setAccountDeleteOpen(true)}
+                onSignOut={signOut}
+              />
+            )
+          })()}
         </div>
       </header>
 
