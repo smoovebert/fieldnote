@@ -1,6 +1,7 @@
 import type { ReportModel } from './buildReport'
 import { downloadBlob } from '../analyze/exportImage'
 import { cellRgbForPdf, maxCount, textBar } from './snapshotVisuals'
+import { formatExcerptCitation } from '../lib/excerptCitation'
 
 function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report'
@@ -93,7 +94,8 @@ export async function exportReportPdf(
       }
       for (const sample of entry.samples) {
         writeWrapped(`"${sample.text}"`, { size: 11, gap: 2 })
-        const cite = sample.note ? `— ${sample.sourceTitle} — ${sample.note}` : `— ${sample.sourceTitle}`
+        const citation = formatExcerptCitation(sample)
+        const cite = sample.note ? `— ${citation} — ${sample.note}` : `— ${citation}`
         writeWrapped(cite, { size: 9, color: 120, gap: 8 })
       }
       y += 6
@@ -144,7 +146,7 @@ export async function exportReportPdf(
       if (sm.results.kind === 'coded_excerpt') {
         for (const sample of sm.results.excerpts) {
           writeWrapped(`"${sample.text}"`, { size: 11, gap: 2 })
-          writeWrapped(`— ${sample.sourceTitle}`, { size: 9, color: 120, gap: 8 })
+          writeWrapped(`— ${formatExcerptCitation(sample)}`, { size: 9, color: 120, gap: 8 })
         }
       } else if (sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') {
         // Shaded heatmap grid: cell intensity scales with count.

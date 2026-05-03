@@ -1,5 +1,6 @@
 import { Scissors, Trash2 } from 'lucide-react'
 import type { Code, Excerpt } from './lib/types'
+import { formatExcerptCitation } from './lib/excerptCitation'
 
 export function ReferenceList({
   excerpts,
@@ -37,7 +38,7 @@ export function ReferenceList({
                   </button>
                 ))}
               </div>
-              <small>{excerpt.sourceTitle}</small>
+              <small>{formatExcerptCitation(excerpt)}</small>
             </div>
             <p>{excerpt.text}</p>
             <div className="reference-actions">

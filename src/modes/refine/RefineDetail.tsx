@@ -4,6 +4,7 @@ import type { Code, Excerpt } from '../../lib/types'
 import { ReferenceList } from '../../ReferenceList'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
 import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
+import { formatExcerptCitation } from '../../lib/excerptCitation'
 
 type SortedCode = Code & { depth: number }
 
@@ -52,7 +53,7 @@ export function RefineDetail(props: Props) {
   const [aiError, setAiError] = useState<string | undefined>()
 
   const referencesPreview = props.codeExcerpts
-    .map((e) => `${e.sourceTitle}: ${e.text.slice(0, 120)}`)
+    .map((e) => `${formatExcerptCitation(e)}: ${e.text.slice(0, 120)}`)
     .join('\n')
   const inputTokens = estimateInputTokens(referencesPreview)
   const inputCost = estimateCostUsd(inputTokens)

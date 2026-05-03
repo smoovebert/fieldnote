@@ -1,5 +1,6 @@
 import type { ReportModel } from './buildReport'
 import { cellBgCss, maxCount } from './snapshotVisuals'
+import { formatExcerptCitation } from '../lib/excerptCitation'
 import './ReportPreview.css'
 
 type Props = { model: ReportModel }
@@ -59,7 +60,7 @@ export function ReportPreview({ model }: Props) {
                 <blockquote key={sample.excerptId} className="report-sample-quote">
                   <p className="report-sample-text">{sample.text}</p>
                   <cite className="fn-meta">
-                    {sample.sourceTitle}
+                    {formatExcerptCitation(sample)}
                     {sample.note ? ` — ${sample.note}` : ''}
                   </cite>
                 </blockquote>
@@ -125,7 +126,7 @@ export function ReportPreview({ model }: Props) {
                 <ul className="report-snapshot-samples">
                   {sm.results.excerpts.map((sample, i) => (
                     <li key={i}>
-                      <em>{sample.sourceTitle}:</em> &ldquo;{sample.text}&rdquo;
+                      <em>{formatExcerptCitation(sample)}:</em> &ldquo;{sample.text}&rdquo;
                     </li>
                   ))}
                 </ul>

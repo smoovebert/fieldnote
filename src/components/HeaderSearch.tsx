@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Database, FileText, Highlighter, ListTree, MessageSquareText, Search, X } from 'lucide-react'
 import type { Case, Code, Excerpt, Memo, Source } from '../lib/types'
+import { formatExcerptCitation } from '../lib/excerptCitation'
 
 export type SearchHit =
   | { kind: 'source'; id: string; title: string; snippet: string }
   | { kind: 'memo'; id: string; title: string; snippet: string }
   | { kind: 'code'; id: string; title: string; snippet: string }
   | { kind: 'case'; id: string; title: string; snippet: string }
-  | { kind: 'excerpt'; id: string; sourceId: string; sourceTitle: string; codeId: string | null; snippet: string }
+  | { kind: 'excerpt'; id: string; sourceId: string; sourceTitle: string; pageNumber?: number; codeId: string | null; snippet: string }
 
 type Props = {
   sources: Source[]
@@ -142,6 +143,7 @@ export function HeaderSearch({ sources, codes, excerpts, cases, memos, onOpenSou
           id: e.id,
           sourceId: e.sourceId,
           sourceTitle: e.sourceTitle,
+          pageNumber: e.pageNumber,
           codeId: e.codeIds[0] ?? null,
           snippet: snippetAround(matches(e.text, trimmed) ? e.text : e.note, trimmed),
         })
@@ -237,7 +239,7 @@ export function HeaderSearch({ sources, codes, excerpts, cases, memos, onOpenSou
                   <SearchRow
                     key={hit.id}
                     icon={Highlighter}
-                    title={`${hit.sourceTitle}${code ? ` · ${code.name}` : ''}`}
+                    title={`${formatExcerptCitation(hit)}${code ? ` · ${code.name}` : ''}`}
                     snippet={hit.snippet}
                     onClick={() => handleHit(hit)}
                   />

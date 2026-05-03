@@ -19,7 +19,10 @@ export type ReportModel = {
   sampleExcerpts: Array<{
     code: { id: string; name: string }
     codeMemo: string | null
-    samples: Array<{ excerptId: string; sourceTitle: string; text: string; note: string }>
+    // Each sample carries pageNumber so the renderer can produce a
+    // 'Source, p. N' citation. Optional — undefined for non-PDF sources
+    // and for excerpts coded before PDF page-anchored coding shipped.
+    samples: Array<{ excerptId: string; sourceTitle: string; pageNumber?: number; text: string; note: string }>
   }>
   cases: Array<{
     id: string
@@ -165,6 +168,7 @@ export function buildReport(input: BuildReportInput): ReportModel {
       samples: matching.slice(0, SAMPLE_CAP).map((e) => ({
         excerptId: e.id,
         sourceTitle: e.sourceTitle,
+        pageNumber: e.pageNumber,
         text: e.text,
         note: e.note,
       })),

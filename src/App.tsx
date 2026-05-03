@@ -63,6 +63,7 @@ import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
 import { buildPageHighlights, wrapHighlightedTranscript } from './modes/code/transcript'
 import { isPdfSource, parseSourcePages } from './lib/sourcePages'
+import { formatExcerptCitation } from './lib/excerptCitation'
 import { CodeDetail } from './modes/code/CodeDetail'
 import { CodePickerPanel } from './components/CodePickerPanel'
 import { ReferenceList } from './ReferenceList'
@@ -1865,6 +1866,7 @@ function App() {
         codeIds: excerpt.codeIds,
         text: excerpt.text,
         note: excerpt.note,
+        ...(excerpt.pageNumber !== undefined ? { pageNumber: excerpt.pageNumber } : {}),
       })),
     }
   }
@@ -2069,7 +2071,7 @@ function App() {
     let rows: string[][] = []
     if (snap.results.kind === 'coded_excerpt') {
       rows = [
-        ['Project', 'Saved query', 'Snapshot label', 'Captured at', 'Source', 'Codes', 'Excerpt', 'Note'],
+        ['Project', 'Saved query', 'Snapshot label', 'Captured at', 'Source', 'Page', 'Codes', 'Excerpt', 'Note'],
         ...snap.results.excerpts.map((excerpt) => {
           const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
           return [
@@ -2078,6 +2080,7 @@ function App() {
             snap.label,
             snap.capturedAt,
             excerpt.sourceTitle,
+            excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
             excerptCodes.map((code) => code.name).join('; '),
             excerpt.text,
             excerpt.note,
@@ -2266,7 +2269,7 @@ function App() {
     event.preventDefault()
 
     const rows = [
-      ['Project', 'Source', 'Source folder', 'Case', 'Codes', 'Code descriptions', 'Excerpt', 'Note'],
+      ['Project', 'Source', 'Page', 'Source folder', 'Case', 'Codes', 'Code descriptions', 'Excerpt', 'Note'],
       ...excerpts.map((excerpt) => {
         const source = sources.find((item) => item.id === excerpt.sourceId)
         const linkedCase = caseBySourceId.get(excerpt.sourceId)
@@ -2274,6 +2277,7 @@ function App() {
         return [
           projectTitle,
           excerpt.sourceTitle,
+          excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
           source?.folder ?? '',
           linkedCase?.name ?? source?.caseName ?? '',
           excerptCodes.map((code) => code.name).join('; '),
@@ -2311,7 +2315,7 @@ function App() {
     event.preventDefault()
 
     const rows = [
-      ['Project', 'Case', 'Source', 'Codes', 'Excerpt', 'Note', ...attributes.map((attribute) => attribute.name)],
+      ['Project', 'Case', 'Source', 'Page', 'Codes', 'Excerpt', 'Note', ...attributes.map((attribute) => attribute.name)],
       ...excerpts.map((excerpt) => {
         const linkedCase = caseBySourceId.get(excerpt.sourceId)
         const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
@@ -2319,6 +2323,7 @@ function App() {
           projectTitle,
           linkedCase?.name ?? '',
           excerpt.sourceTitle,
+          excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
           excerptCodes.map((code) => code.name).join('; '),
           excerpt.text,
           excerpt.note,
@@ -2336,13 +2341,14 @@ function App() {
     event.preventDefault()
 
     const rows = [
-      ['Project', 'Source', 'Case', 'Codes', 'Excerpt', 'Note', 'Active filters'],
+      ['Project', 'Source', 'Page', 'Case', 'Codes', 'Excerpt', 'Note', 'Active filters'],
       ...analyzeResults.map((excerpt) => {
         const linkedCase = caseBySourceId.get(excerpt.sourceId)
         const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
         return [
           projectTitle,
           excerpt.sourceTitle,
+          excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
           linkedCase?.name ?? '',
           excerptCodes.map((code) => code.name).join('; '),
           excerpt.text,
@@ -3171,7 +3177,7 @@ function App() {
                   return (
                     <div key={excerpt.id} className="query-result-row" role="row">
                       <button type="button" onClick={() => selectActiveSource(excerpt.sourceId)}>
-                        {excerpt.sourceTitle}
+                        {formatExcerptCitation(excerpt)}
                       </button>
                       <span>{linkedCase?.name ?? '-'}</span>
                       <span>{excerptCodes.map((code) => code.name).join(', ')}</span>

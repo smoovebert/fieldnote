@@ -1,6 +1,7 @@
 import type { ReportModel } from './buildReport'
 import { downloadBlob } from '../analyze/exportImage'
 import { cellHexForDocx, maxCount, textBar } from './snapshotVisuals'
+import { formatExcerptCitation } from '../lib/excerptCitation'
 
 function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'report'
@@ -74,7 +75,8 @@ export async function exportReportDocx(
       if (entry.codeMemo) sections.push(para(entry.codeMemo, { color: '606060' }))
       for (const sample of entry.samples) {
         sections.push(para(`"${sample.text}"`))
-        const cite = sample.note ? `— ${sample.sourceTitle} — ${sample.note}` : `— ${sample.sourceTitle}`
+        const citation = formatExcerptCitation(sample)
+        const cite = sample.note ? `— ${citation} — ${sample.note}` : `— ${citation}`
         sections.push(para(cite, { color: '707070', size: 20 }))
       }
     }
@@ -113,7 +115,7 @@ export async function exportReportDocx(
       if (sm.results.kind === 'coded_excerpt') {
         for (const sample of sm.results.excerpts) {
           sections.push(para(`"${sample.text}"`))
-          sections.push(para(`— ${sample.sourceTitle}`, { color: '606060' }))
+          sections.push(para(`— ${formatExcerptCitation(sample)}`, { color: '606060' }))
         }
       } else if (sm.results.kind === 'matrix' || sm.results.kind === 'crosstab') {
         // Heatmap-shaded Word table. Cell shading scales with count

@@ -95,7 +95,18 @@ export type AnalysisSnapshotKind =
 // `kind` so the report renderer and the inspector know how to display
 // it without re-deriving from the current project state (which would
 // drift over time and defeat the snapshot).
-export type SnapshotExcerpt = { id: string; sourceTitle: string; codeIds: string[]; text: string; note: string; sourceId: string }
+// Inner shape of an excerpt as it appears inside a coded_excerpt snapshot.
+// pageNumber is captured at snapshot time so the report renders the right
+// citation even if the underlying excerpt is later edited or deleted.
+export type SnapshotExcerpt = {
+  id: string
+  sourceTitle: string
+  codeIds: string[]
+  text: string
+  note: string
+  sourceId: string
+  pageNumber?: number
+}
 export type SnapshotResults =
   | { kind: 'coded_excerpt'; excerpts: SnapshotExcerpt[] }
   | { kind: 'matrix'; columnMode: 'case' | 'attribute'; attributeName: string | null; colLabels: string[]; rows: Array<{ codeName: string; counts: number[] }> }
