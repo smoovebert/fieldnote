@@ -933,6 +933,11 @@ button {
   background: #f8fafc;
 }
 
+/* Subject-page title — T1 (Newsreader 32 / 1.15 / 500, -0.018em).
+   Editable input rendered for Overview/Organize (project name),
+   Code (source name), and Refine (code name). The native input
+   inherits the same family/size/weight so typing reads identically
+   to the rendered title. */
 .title-input {
   flex: 1 1 auto;
   width: auto;
@@ -940,15 +945,21 @@ button {
   border: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 25px;
-  font-weight: 760;
+  font: var(--t-t1);
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
   outline: none;
   text-overflow: ellipsis;
 }
 
+/* Mode-only title — T2 (Inter Tight 22 / 1.2 / 500, -0.012em).
+   Used by Classify, Analyze, and Report — pages with no concrete
+   subject. */
 .static-detail-title {
   color: var(--ink);
-  font-size: 25px;
+  font: var(--t-t2);
+  letter-spacing: -0.012em;
+  margin: 0;
 }
 
 .document-panel,
@@ -3104,13 +3115,14 @@ textarea {
   background: var(--paper);
 }
 
+/* T7 eyebrow above the page title — 10.5/1.2 sans 600, 0.10em up,
+   --ink-3. Spec: "DETAIL VIEW" / "RESEARCH REPORT" etc. */
 .app-shell[data-shell="new"] .detail-toolbar .eyebrow {
-  font: var(--t-label);
-  letter-spacing: 0.12em;
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--ink-3);
-  margin: 0 0 2px;
-  font-size: 10px;
+  margin: 0 0 4px;
 }
 
 .app-shell[data-shell="new"] .detail-toolbar-tools {
