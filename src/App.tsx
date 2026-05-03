@@ -2715,23 +2715,23 @@ function App() {
 
         <div className="header-tools">
           {(() => {
-            // Three-state status indicator — just the dot, no text.
-            // Visible status text was bumping the surrounding layout
-            // when the message changed length and was the most
-            // distracting element in the header. Full status is
-            // available on hover via title and to AT via the sr-only
-            // span; aria-live keeps the announcement working.
+            // Three-state status pill: colored dot on the left, status
+            // text on the right. The container is a fixed width so the
+            // surrounding header (mode tabs etc.) never shifts when the
+            // message length changes; the text itself ellipses inside
+            // that box when it's too long.
             const isError = /save failed|could not|error|invalid/i.test(saveStatus)
             const isWorking = !isError && saveStatus.endsWith('...')
             const tone = isError ? 'error' : isWorking ? 'saving' : 'ok'
             return (
               <div
-                className={`sync-indicator sync-indicator--${tone}`}
+                className={`sync-status sync-status--${tone}`}
                 role="status"
                 aria-live="polite"
                 title={saveStatus}
               >
-                <span className="sr-only">{saveStatus}</span>
+                <span className={`sync-dot sync-dot--${tone}`} aria-hidden="true" />
+                <span className="sync-status-text">{saveStatus}</span>
               </div>
             )
           })()}
