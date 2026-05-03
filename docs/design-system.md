@@ -123,10 +123,51 @@ The palette is rooted in a neutral foundation of "Paper White" and "Stone Grey" 
 - **Semantic Usage:** Use light tint variations (light teal/indigo) for background highlights in long-form text to indicate "coded" segments without obscuring legibility.
 
 ## Typography
-This design system employs a dual-font strategy to differentiate between "navigating" and "interpreting."
-- **Manrope:** The workhorse for the UI. Its geometric yet friendly terminals provide excellent legibility at small scales in sidebars and data grids.
-- **Newsreader:** Utilized exclusively for the source text (interviews, documents, field notes). The serif structure aids in long-form reading, reducing eye strain and signaling a shift into "deep analysis" mode.
-- **Inter:** Used for high-density labels and metadata tags where maximum character clarity is required in confined spaces.
+
+> **Source of truth:** [`design_handoff_type_hierarchy/README.md`](../design_handoff_type_hierarchy/README.md). Implementation in [`src/styles/tokens.css`](../src/styles/tokens.css) as `--t-t1` through `--t-t8`.
+
+Three families:
+
+- **Newsreader** (serif) — page-defining titles (T1) and the transcript / editorial reader. Weights 400, 500, 600 + italic 400.
+- **Inter Tight** (sans) — every UI surface: T2 page titles, T3 section heads, T4 code names + subheads, T5 body baseline, T6 dense / table cells, T7 eyebrows + panel heads + table column headers. Weights 400, 500, 600.
+- **JetBrains Mono** — counts, dates, refs, snapshot timestamps (T8 — also includes `font-feature-settings: "tnum", "zero"` for tabular figures). Weights 400, 500.
+
+Eight tiers, one job per role:
+
+| Tier | Token | Family · Size / LH · Weight | Tracking | Color | Role |
+|---|---|---|---|---|---|
+| **T1** | `--t-t1` | Newsreader · 32 / 1.15 · 500 | -0.018em | `--ink` | Page-defining titles (project, source, code as page subject) |
+| **T2** | `--t-t2` | Inter Tight · 22 / 1.2 · 500 | -0.012em | `--ink` | Page titles when no concrete subject (Analyze, Classify, Report) |
+| **T3** | `--t-t3` | Inter Tight · 16 / 1.35 · 500 | -0.005em | `--ink` | In-card section heads |
+| **T4** | `--t-t4` | Inter Tight · 14 / 1.4 · 500 | normal | `--ink` | Subheads, code names in lists, properties dd |
+| **T5** | `--t-t5` | Inter Tight · 13.5 / 1.5 · 400 | normal | `--ink-2` | **Body baseline** — paragraphs, descriptions |
+| **T6** | `--t-t6` | Inter Tight · 12.5 / 1.45 · 400 | normal | `--ink-2` / `--ink-3` | Table cells, dense properties dt, inline meta |
+| **T7** | `--t-t7` | Inter Tight · 10.5 / 1.2 · 600 UPPER | 0.10em | `--ink-3` | Eyebrows, right-rail panel heads, table column headers |
+| **T8** | `--t-t8` | JetBrains Mono · 11 / 1.3 · 400 | normal | `--ink-3` | Counts, dates, refs, IDs |
+
+**Editorial Report H1** is an outlier — Newsreader 44px / 1.1 / 500 / -0.02em — used only on the Report preview's project title. The largest type in the entire app.
+
+### Back-compat aliases
+
+The old short-hand names still resolve so existing CSS keeps working:
+
+- `--t-display` → T2
+- `--t-title` → T3
+- `--t-ui-lg` → T4
+- `--t-ui` → T5
+- `--t-ui-sm` → T6
+- `--t-label` → T7 (combine with `.fn-label` for the uppercase + tracking + color)
+- `--t-meta` → T8
+
+New code should reference `--t-tN` directly.
+
+### Rules
+
+1. **One job per role.** T7 is reserved for eyebrows above titles, right-rail panel headings, and table column headers — nowhere else.
+2. **Page titles are serif (T1)** when the page has a concrete subject. T2 sans is the fallback when it doesn't.
+3. **Numbers earn their weight.** KPI numbers use Newsreader at 36px / 500. Inline counts use T8 mono.
+4. **Key/value contrast.** In properties dl: dt = T6 muted, dd = T4 dark. The value is one tier above the label.
+5. **No font-size below 11px. No font-weight below 400.**
 
 ## Layout & Spacing
 The layout follows a **Fluid Grid** model with fixed utility panels.
