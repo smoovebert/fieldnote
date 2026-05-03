@@ -55,14 +55,43 @@
   --font-ui:     "Inter Tight", "Inter", -apple-system, system-ui, sans-serif;
   --font-mono:   "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Type scale — UI is small and tight; reader is big and airy */
-  --t-meta:    11px / 1.3   var(--font-mono);
-  --t-label:   11px / 1.2   var(--font-ui);     /* tracked, uppercase */
-  --t-ui-sm:   12.5px / 1.4 var(--font-ui);
-  --t-ui:      13.5px / 1.45 var(--font-ui);
-  --t-ui-lg:   15px / 1.4   var(--font-ui);
-  --t-title:   18px / 1.3   var(--font-ui);
-  --t-display: 22px / 1.2   var(--font-ui);
+  /* ---------------------------------------------------------------
+     Eight-tier type scale (per design_handoff_type_hierarchy/README).
+     Each tier has a single role; one job per role. The original
+     short-hand names (--t-display, --t-title, etc.) remain as aliases
+     for the tier they correspond to so existing CSS keeps resolving
+     while new work can reference tiers by their explicit T-name.
+
+     | Tier | Family · Size / LH · Wt | Tracking  | Color    | Role
+     |------|--------------------------|-----------|----------|------------------------
+     | T1   | Newsreader 32/1.15 500   | -0.018em  | --ink    | Display title (page subject)
+     | T2   | Inter Tight 22/1.2 500   | -0.012em  | --ink    | Page title (mode-only)
+     | T3   | Inter Tight 16/1.35 500  | -0.005em  | --ink    | Section heading
+     | T4   | Inter Tight 14/1.4 500   | normal    | --ink    | Subhead, code names
+     | T5   | Inter Tight 13.5/1.5 400 | normal    | --ink-2  | Body baseline
+     | T6   | Inter Tight 12.5/1.45 400| normal    | --ink-2  | Body small, table cells
+     | T7   | Inter Tight 10.5/1.2 600 | 0.10em up | --ink-3  | Eyebrow / panel head
+     | T8   | JetBrains Mono 11/1.3 400| normal    | --ink-3  | Counts, dates, refs
+     --------------------------------------------------------------- */
+  --t-t1:      500 32px / 1.15  var(--font-reader);
+  --t-t2:      500 22px / 1.2   var(--font-ui);
+  --t-t3:      500 16px / 1.35  var(--font-ui);
+  --t-t4:      500 14px / 1.4   var(--font-ui);
+  --t-t5:      400 13.5px / 1.5 var(--font-ui);
+  --t-t6:      400 12.5px / 1.45 var(--font-ui);
+  --t-t7:      600 10.5px / 1.2 var(--font-ui);
+  --t-t8:      400 11px / 1.3   var(--font-mono);
+
+  /* Backwards-compatible aliases — old names map to the closest tier so
+     46+ existing call sites in App.css pick up the recalibration without
+     a mass rename. New code should prefer the --t-tN names directly. */
+  --t-display: var(--t-t2);   /* 22/1.2 sans 500 */
+  --t-title:   var(--t-t3);   /* was 18/1.3; now matches T3 16/1.35 */
+  --t-ui-lg:   var(--t-t4);   /* was 15/1.4;  now matches T4 14/1.4 */
+  --t-ui:      var(--t-t5);   /* 13.5/1.5 sans 400 — body baseline */
+  --t-ui-sm:   var(--t-t6);   /* 12.5/1.45 sans 400 */
+  --t-label:   var(--t-t7);   /* 10.5/1.2 sans 600; tracking + uppercase live on .fn-label */
+  --t-meta:    var(--t-t8);   /* 11/1.3 mono */
 
   --t-reader:    18px / 1.7  var(--font-reader);
   --t-reader-lg: 20px / 1.75 var(--font-reader);
@@ -125,8 +154,11 @@
 
 /* ----- shared primitives -------------------------------------- */
 .fn-root {
-  font: var(--t-ui);
-  color: var(--ink);
+  /* Body baseline = T5 with --ink-2. Page titles, section heads, code
+     names etc. opt back into --ink via their own tier classes. The
+     softer body color is intentional: it lets T1-T4 elements pop. */
+  font: var(--t-t5);
+  color: var(--ink-2);
   background: var(--paper);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "ss01", "cv11", "calt";
@@ -134,16 +166,28 @@
 }
 
 .fn-label {
-  font: var(--t-label);
-  letter-spacing: 0.12em;
+  /* T7: 10.5px sans 600, 0.10em tracking, uppercase, --ink-3. */
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
 
 .fn-meta {
-  font: var(--t-meta);
+  /* T8: 11px mono, --ink-3, tabular figures. */
+  font: var(--t-t8);
   color: var(--ink-3);
   font-feature-settings: "tnum", "zero";
+}
+
+/* Display title — T1 with serif, used by page subjects (project name,
+   source name, code name when shown as the page subject). The optical-
+   sizing axis on Newsreader picks the right glyph variant for 32px. */
+.fn-t1 {
+  font: var(--t-t1);
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
+  color: var(--ink);
 }
 
 .fn-mono {
