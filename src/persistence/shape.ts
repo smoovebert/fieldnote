@@ -10,9 +10,6 @@ import { normalizeQueryDefinition } from '../analyze/queryDefinition'
 import {
   casesFromSources,
   defaultProject,
-  initialAttributes,
-  initialAttributeValues,
-  initialSavedQueries,
   sampleTranscript,
 } from '../lib/defaults'
 import type {
@@ -172,39 +169,69 @@ export function buildQueryRows(projectId: string, savedQueries: SavedQuery[]) {
 
 // ─── Inverse transforms ───────────────────────────────────────────────────────
 
+// JSON-fallback path: runs when loadProject finds zero rows in any of
+// the normalized tables (fieldnote_sources, fieldnote_codes, etc.) and
+// has to reconstruct ProjectData from the legacy JSON columns on the
+// project row.
+//
+// Empty-vs-missing matters here. A row whose `sources` column is
+// `null` is genuinely missing data — we fall back to a defensive
+// `Interview 03` source so the reader has something to render. A row
+// whose `sources` column is `[]` is a deliberately-empty project (a
+// brand-new project from the Inductive / Deductive / Focus-group /
+// Blank template, before autosave has flushed the relational rows).
+// Honor empty as empty.
+//
+// The same distinction applies to codes and memos. Attributes /
+// attribute values / saved queries don't live on the project row at
+// all in the legacy schema, so they default to empty here — the
+// composeProjectFromNormalized path is what populates them for
+// projects whose relational rows actually exist.
 export function normalizeProject(project: ProjectRow): ProjectData {
-  const fallbackSource: Source = {
-    id: 'interview-03',
-    title: project.source_title || 'Interview 03',
-    kind: 'Transcript',
-    folder: 'Internals',
-    content: project.transcript || sampleTranscript,
-  }
-  const sources = project.sources?.length ? project.sources : [fallbackSource]
-  const memos = project.memos?.length
-    ? project.memos
-    : [
-        {
-          id: 'project-memo',
-          title: 'Project memo',
-          linkedType: 'project' as const,
-          body: project.memo || defaultProject.memos[0].body,
-        },
-      ]
+  const sourcesProvided = Array.isArray(project.sources)
+  const sources: Source[] = sourcesProvided
+    ? project.sources!
+    : [{
+        id: 'interview-03',
+        title: project.source_title || 'Interview 03',
+        kind: 'Transcript',
+        folder: 'Internals',
+        content: project.transcript || sampleTranscript,
+      }]
+
+  const memosProvided = Array.isArray(project.memos)
+  const memos: Memo[] = memosProvided
+    ? project.memos!
+    : [{
+        id: 'project-memo',
+        title: 'Project memo',
+        linkedType: 'project' as const,
+        body: project.memo || defaultProject.memos[0].body,
+      }]
+
+  // Codes is required by the ProjectRow type but tolerated as empty
+  // here — empty array means deliberately-empty (template/blank), no
+  // fallback. The legacy "missing entirely" case isn't representable
+  // through this column, so we don't defend against it.
+  const codes = project.codes ?? []
+
+  const firstSourceId = sources[0]?.id ?? ''
 
   return {
     description: project.description ?? '',
-    activeSourceId: project.active_source_id || sources[0].id,
+    activeSourceId: project.active_source_id || firstSourceId,
     sources,
     cases: casesFromSources(sources),
-    attributes: initialAttributes,
-    attributeValues: initialAttributeValues,
-    savedQueries: initialSavedQueries,
-    codes: project.codes?.length ? project.codes : defaultProject.codes,
+    attributes: [],
+    attributeValues: [],
+    savedQueries: [],
+    codes,
     memos,
     excerpts: (project.excerpts ?? []).map((excerpt) => ({
       ...excerpt,
-      sourceId: excerpt.sourceId || sources.find((source) => source.title === excerpt.sourceTitle)?.id || sources[0].id,
+      sourceId: excerpt.sourceId
+        || sources.find((source) => source.title === excerpt.sourceTitle)?.id
+        || firstSourceId,
     })),
   }
 }
@@ -302,14 +329,14 @@ export function composeProjectFromNormalized(
 
   return {
     description: project.description ?? '',
-    activeSourceId: project.active_source_id || sources[0]?.id || defaultProject.activeSourceId,
-    sources: sources.length ? sources : normalizeProject(project).sources,
+    activeSourceId: project.active_source_id || sources[0]?.id || '',
+    sources,
     cases: cases.length ? cases : casesFromSources(sources),
-    attributes: attributes.length ? attributes : initialAttributes,
+    attributes,
     attributeValues,
     savedQueries,
-    codes: codes.length ? codes : normalizeProject(project).codes,
-    memos: memos.length ? memos : normalizeProject(project).memos,
+    codes,
+    memos,
     excerpts,
   }
 }

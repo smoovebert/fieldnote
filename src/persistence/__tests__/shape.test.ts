@@ -233,12 +233,30 @@ describe('buildQueryRows', () => {
 // ─── normalizeProject ─────────────────────────────────────────────────────────
 
 describe('normalizeProject', () => {
-  it('returns a usable ProjectData with empty inputs', () => {
+  it('returns empty arrays for an explicitly-empty project (template/blank flow)', () => {
+    // Empty arrays mean deliberately-empty (a brand-new project from a
+    // codebook-only template, before autosave has flushed relational
+    // rows). Must not get sample data injected.
     const project = { id: 'p', title: 'P', codes: [], excerpts: [], memos: [], sources: [] } as unknown as Parameters<typeof normalizeProject>[0]
     const data = normalizeProject(project)
-    expect(data.activeSourceId).toBeTruthy()
-    expect(Array.isArray(data.sources)).toBe(true)
-    expect(Array.isArray(data.codes)).toBe(true)
+    expect(data.sources).toEqual([])
+    expect(data.codes).toEqual([])
+    expect(data.memos).toEqual([])
+    expect(data.attributes).toEqual([])
+    expect(data.attributeValues).toEqual([])
+    expect(data.savedQueries).toEqual([])
+    expect(data.activeSourceId).toBe('')
+  })
+
+  it('falls back to a defensive Interview 03 source when sources is null (legacy row)', () => {
+    // Legacy projects whose JSON column was never set come through with
+    // sources === null/undefined; for those, inject the historical
+    // fallback so the reader still has something to render.
+    const project = { id: 'p', title: 'P', codes: [], excerpts: [], memos: null, sources: null } as unknown as Parameters<typeof normalizeProject>[0]
+    const data = normalizeProject(project)
+    expect(data.sources).toHaveLength(1)
+    expect(data.sources[0].title).toBe('Interview 03')
+    expect(data.memos).toHaveLength(1)
   })
   it('passes through non-empty sources unchanged', () => {
     const sources = [source('s1', { title: 'Custom' })]
