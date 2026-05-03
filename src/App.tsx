@@ -2715,22 +2715,23 @@ function App() {
 
         <div className="header-tools">
           {(() => {
-            // Three-state status pill — red / yellow / green dot
-            // alongside the human-readable text. Red on any error
-            // string, yellow on any in-progress message (the worker
-            // statuses all end in '...'), green when idle / settled.
-            // The dot is purely decorative (color-only); the text
-            // beside it carries the same information for AT users.
+            // Three-state status indicator — just the dot, no text.
+            // Visible status text was bumping the surrounding layout
+            // when the message changed length and was the most
+            // distracting element in the header. Full status is
+            // available on hover via title and to AT via the sr-only
+            // span; aria-live keeps the announcement working.
             const isError = /save failed|could not|error|invalid/i.test(saveStatus)
             const isWorking = !isError && saveStatus.endsWith('...')
             const tone = isError ? 'error' : isWorking ? 'saving' : 'ok'
             return (
               <div
-                className={`sync-box toolbar-status is-${tone}`}
+                className={`sync-indicator sync-indicator--${tone}`}
+                role="status"
                 aria-live="polite"
+                title={saveStatus}
               >
-                <span className={`sync-dot sync-dot--${tone}`} aria-hidden="true" />
-                <span>{saveStatus}</span>
+                <span className="sr-only">{saveStatus}</span>
               </div>
             )
           })()}
