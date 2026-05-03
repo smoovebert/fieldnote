@@ -720,12 +720,14 @@ button {
   background: var(--shell);
 }
 
+/* Left-rail section head — T7 in dark-chrome color (--shell-ink-3).
+   Spec: 'Section head: T7 in dark-chrome color.' */
 .pane-title {
   gap: 7px;
-  margin-bottom: 10px;
-  color: var(--shell-muted);
-  font-size: 12px;
-  font-weight: 760;
+  margin-bottom: var(--s-3);
+  color: var(--shell-ink-3);
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
   text-transform: uppercase;
 }
 
