@@ -3,16 +3,20 @@
 // in the existing modals.
 
 import { useEffect, useState } from 'react'
-import { Settings as SettingsIcon, Sparkles } from 'lucide-react'
+import { Settings as SettingsIcon, Sparkles, UserX } from 'lucide-react'
 import { loadAiSettings } from '../../lib/aiSettings'
 import type { AiProvider } from '../../ai/types'
 
 type Props = {
   userId: string | null
+  // Display-only — used in the Account panel so the user can see which
+  // address they're signed in as before opening the delete-account flow.
+  accountEmail: string | null
   lineNumberingMode: 'paragraph' | 'fixed-width'
   lineNumberingWidth: number
   onOpenProjectSettings: () => void
   onOpenAiSettings: () => void
+  onOpenAccountDelete: () => void
 }
 
 function aiProviderLabel(provider: AiProvider): string {
@@ -97,6 +101,26 @@ export function OverviewInspector(props: Props) {
         </dl>
         <button type="button" className="overview-settings-card-btn" onClick={props.onOpenAiSettings}>
           Edit AI settings
+        </button>
+      </section>
+
+      <section className="panel">
+        <div className="panel-heading">
+          <UserX size={16} aria-hidden="true" />
+          <h2>Account</h2>
+        </div>
+        <dl className="overview-settings-card-dl">
+          <div>
+            <dt>Signed in as</dt>
+            <dd>{props.accountEmail ?? 'Unknown'}</dd>
+          </div>
+        </dl>
+        <button
+          type="button"
+          className="overview-settings-card-btn account-delete-trigger"
+          onClick={props.onOpenAccountDelete}
+        >
+          Delete account…
         </button>
       </section>
     </>

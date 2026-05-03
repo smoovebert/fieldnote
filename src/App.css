@@ -2707,6 +2707,75 @@ textarea {
   line-height: 1.5;
   color: #3f484a;
 }
+
+/* ----- Account delete modal --------------------------------------- */
+.account-delete-card .modal-section p {
+  font: var(--t-t5);
+  color: var(--ink-2);
+  margin: 0 0 var(--s-3);
+}
+.account-delete-card .modal-section code {
+  font: var(--t-t8);
+  background: var(--pane);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.account-delete-card .property-field {
+  margin-top: var(--s-3);
+}
+.account-delete-card .property-field input {
+  height: 36px;
+  font: var(--t-t5);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.account-delete-understand {
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+  margin: var(--s-3) 0 var(--s-4);
+  font: var(--t-t5);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.account-delete-understand input { margin-top: 3px; }
+.account-delete-status {
+  font: var(--t-t6);
+  color: var(--ink-3);
+  margin: 0 0 var(--s-3);
+}
+.account-delete-actions {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: flex-end;
+}
+.account-delete-actions button {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--r-2);
+  font: var(--t-t5);
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.account-delete-actions .danger-button {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #ffffff;
+}
+.account-delete-actions .danger-button:disabled {
+  background: var(--pane);
+  border-color: var(--rule);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+.account-delete-trigger {
+  color: #b91c1c;
+}
 .modal-field {
   display: flex;
   flex-direction: column;

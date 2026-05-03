@@ -47,6 +47,7 @@ import { exportReportDocx } from './report/exportDocx'
 import { OverviewMode } from './modes/overview/OverviewMode'
 import { OverviewSidebar } from './modes/overview/OverviewSidebar'
 import { OverviewInspector } from './modes/overview/OverviewInspector'
+import { AccountDeletePanel } from './components/AccountDeletePanel'
 import { HeaderSearch } from './components/HeaderSearch'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportInspector } from './modes/report/ReportInspector'
@@ -486,6 +487,7 @@ function App() {
   const [lineNumberingWidth, setLineNumberingWidth] = useState(DEFAULT_LINE_NUMBERING_WIDTH)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
+  const [accountDeleteOpen, setAccountDeleteOpen] = useState(false)
   const [selectionHint, setSelectionHint] = useState('Select text in the source, then click Code selection.')
   const [saveStatus, setSaveStatus] = useState('Sign in to sync.')
   const [hasLoadedRemoteProject, setHasLoadedRemoteProject] = useState(false)
@@ -3306,10 +3308,12 @@ function App() {
         {activeView === 'overview' && (
           <OverviewInspector
             userId={session?.user?.id ?? null}
+            accountEmail={session?.user?.email ?? null}
             lineNumberingMode={lineNumberingMode}
             lineNumberingWidth={lineNumberingWidth}
             onOpenProjectSettings={() => setSettingsOpen(true)}
             onOpenAiSettings={() => setAiSettingsOpen(true)}
+            onOpenAccountDelete={() => setAccountDeleteOpen(true)}
           />
         )}
         {activeView === 'organize' && (
@@ -3410,6 +3414,23 @@ function App() {
     )}
     {aiSettingsOpen && session?.user && (
       <AiSettingsPanel userId={session.user.id} onClose={() => setAiSettingsOpen(false)} />
+    )}
+    {accountDeleteOpen && session?.user?.email && (
+      <AccountDeletePanel
+        accountEmail={session.user.email}
+        onClose={() => setAccountDeleteOpen(false)}
+        onDeleted={() => {
+          setAccountDeleteOpen(false)
+          // Tear down local state — the server-side cascade has already
+          // dropped every owned row, but the in-memory React state still
+          // holds the last project's data. Resetting puts the user back
+          // at the public landing once setSession(null) fires.
+          setProjectId(null)
+          setProjectRows([])
+          setHasLoadedRemoteProject(false)
+          setSession(null)
+        }}
+      />
     )}
     </>
   )
