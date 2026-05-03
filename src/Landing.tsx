@@ -38,7 +38,6 @@ const VS_ENTERPRISE: string[] = [
 const VS_FIELDNOTE: string[] = [
   'Web-based. Auto-saves to cloud with local recovery and downloadable backups.',
   'Six modes mapped to actual research stages — no menu archaeology.',
-  'Designed for solo and small-team work. Real-time edits, no merge conflicts.',
   'Editorial PDF, Word, CSV, and XLSX exports that read like work products.',
   'AI assist built in: suggested codes, draft descriptions, summaries, and project memos.',
 ]
@@ -52,7 +51,7 @@ const FEATURES: Array<{ num: string; eyebrow: string; h3: string; body: string; 
   },
   {
     num: '02', eyebrow: 'For comparison',
-    h3: 'Find the patterns.',
+    h3: 'Compare what they said.',
     body: "Cases, participant attributes, saved queries, matrix coding, crosstabs, word frequency, and code co-occurrence — every comparison you'd run in NVivo, in a workspace that won't fight you.",
     tags: ['Saved queries', 'Matrix', 'Crosstab', 'Co-occurrence'],
   },
@@ -152,7 +151,7 @@ export function Landing() {
               One calm workspace,<br /><em>source to report.</em>
             </h2>
             <p className="landing-loop-sub">
-              Six modes that map to how qualitative work actually moves — not how a 1998 desktop app organizes its menus.
+              Six modes that map to how qualitative work actually moves — not how decades-old enterprise software organizes its menus.
             </p>
           </div>
           <ol className="landing-loop-stages">
@@ -218,7 +217,7 @@ export function Landing() {
       <section className="landing-cta">
         <div className="landing-cta-inner">
           <h2 className="landing-cta-h2">
-            Open. Practical.<br /><em>Built for the work.</em>
+            Calm. Practical.<br /><em>Built for the work.</em>
           </h2>
           <div className="landing-cta-actions">
             <button type="button" className="landing-btn landing-btn-primary on-dark" onClick={() => openAuth('sign-up')}>
@@ -233,7 +232,14 @@ export function Landing() {
       </section>
 
       <footer className="landing-footer">
-        <span>Fieldnote — practical research software for people who actually have to do the work.</span>
+        <span className="landing-footer-line">Fieldnote — qualitative research software, in alpha.</span>
+        <nav className="landing-footer-links" aria-label="Site footer">
+          <a href="/terms-of-service.md" target="_blank" rel="noreferrer">Terms of Service</a>
+          <span aria-hidden="true">·</span>
+          <a href="/privacy-policy.md" target="_blank" rel="noreferrer">Privacy Policy</a>
+          <span aria-hidden="true">·</span>
+          <a href="mailto:studio.ops@behemothagency.com">Contact</a>
+        </nav>
       </footer>
 
       <AuthModal key={authMode} open={authOpen} initialMode={authMode} onClose={() => setAuthOpen(false)} />

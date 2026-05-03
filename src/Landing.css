@@ -508,12 +508,35 @@
 .landing-root .landing-footer {
   background: var(--shell-deep);
   color: var(--shell-ink-3);
-  padding: 32px;
+  padding: 28px 32px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
   font: var(--t-t6);
-  text-align: center;
+}
+.landing-root .landing-footer-line {
+  color: var(--shell-ink-3);
+}
+.landing-root .landing-footer-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.landing-root .landing-footer-links a {
+  color: var(--shell-ink-2);
+  text-decoration: none;
+  font: var(--t-t6);
+}
+.landing-root .landing-footer-links a:hover { color: var(--shell-ink); }
+.landing-root .landing-footer-links span { color: var(--shell-ink-3); }
+@media (max-width: 920px) {
+  .landing-root .landing-footer {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+  }
 }
 
 /* ---------- mobile: collapse 2-col grids and shrink hero type ---------- */
