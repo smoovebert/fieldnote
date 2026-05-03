@@ -232,7 +232,10 @@ export function Landing() {
       </section>
 
       <footer className="landing-footer">
-        <span className="landing-footer-line">Fieldnote — qualitative research software, in alpha.</span>
+        <div className="landing-footer-text">
+          <span className="landing-footer-line">Fieldnote — qualitative research software, in alpha.</span>
+          <span className="landing-footer-dedication">Made in California. Dedicated to Dr. S Robbins and Birdie Robbins.</span>
+        </div>
         <nav className="landing-footer-links" aria-label="Site footer">
           <a href="/terms-of-service.md" target="_blank" rel="noreferrer">Terms of Service</a>
           <span aria-hidden="true">·</span>

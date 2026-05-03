@@ -516,7 +516,22 @@
   gap: 16px;
   font: var(--t-t6);
 }
+.landing-root .landing-footer-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .landing-root .landing-footer-line {
+  color: var(--shell-ink-3);
+}
+/* Closing inscription — italic Newsreader so it reads as a quiet
+   editorial note rather than another marketing line. */
+.landing-root .landing-footer-dedication {
+  font-family: var(--font-reader);
+  font-style: italic;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--shell-ink-3);
 }
 .landing-root .landing-footer-links {
