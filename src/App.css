@@ -3849,15 +3849,23 @@ textarea {
   gap: var(--s-3);
 }
 
+/* Top-nav brand block — spec recipe:
+   eyebrow ('QUALITATIVE WORKSPACE', 9.5px sans 600 0.14em up
+   --shell-ink-3) above brand line ('Fieldnote', 16px sans 500
+   -0.01em --shell-ink). The two-line label stands alone — no
+   "F" mark glyph. */
 .app-shell[data-shell="new"] .app-header .brand-block {
   display: flex;
-  align-items: center;
-  gap: var(--s-2);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
   background: transparent;
   border: 0;
   cursor: pointer;
-  padding: var(--s-1) var(--s-2);
-  border-radius: var(--r-2);
+  padding: 0 var(--s-5);
+  height: 100%;
+  border-radius: 0;
   color: var(--shell-ink);
   text-align: left;
 }
@@ -3866,35 +3874,26 @@ textarea {
   background: var(--shell-deep);
 }
 
+/* The "F" mark is intentionally hidden under the new brand recipe
+   per the design handoff. Kept in the DOM in case other shells use
+   it (e.g. the old project-home header). */
 .app-shell[data-shell="new"] .app-header .brand-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-2);
-  background: var(--shell-deep);
-  color: var(--shell-ink);
-  display: grid;
-  place-items: center;
-  font-family: var(--font-reader);
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 1;
+  display: none;
 }
 
 .app-shell[data-shell="new"] .app-header .brand-block .eyebrow {
-  font: var(--t-label);
-  letter-spacing: 0.12em;
+  font: 600 9.5px/1.1 var(--font-ui);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--shell-ink-3);
-  font-size: 9.5px;
-  margin: 0;
+  margin: 0 0 2px;
 }
 
 .app-shell[data-shell="new"] .app-header .brand-block h1 {
-  font-size: 14px;
-  font-weight: 600;
+  font: 500 16px/1.1 var(--font-ui);
+  letter-spacing: -0.01em;
   color: var(--shell-ink);
   margin: 0;
-  line-height: 1.1;
 }
 
 .app-shell[data-shell="new"] .app-header .app-header-project {
@@ -3928,37 +3927,46 @@ textarea {
   justify-self: start;
 }
 
+/* Top-nav tabs — spec recipe:
+   inline-flex / 6px gap / 0 12px padding / 32px height / 6px radius.
+   Default: 13px sans 500 in --shell-ink-2; icon in --shell-ink-3.
+   Hover: text → --shell-active. Active: subtle white-translucent
+   bg (rgba 0.08), text + icon → --shell-active. */
 .app-shell[data-shell="new"] .app-header-modes button {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-2) var(--s-3);
+  gap: 6px;
+  padding: 0 12px;
+  height: 32px;
   border: 0;
-  border-radius: var(--r-2);
+  border-radius: 6px;
   background: transparent;
   color: var(--shell-ink-2);
   cursor: pointer;
-  font: var(--t-ui);
-  font-weight: 500;
+  font: 500 13px/1 var(--font-ui);
 }
 
 .app-shell[data-shell="new"] .app-header-modes button:hover {
-  background: var(--shell-deep);
   color: var(--shell-ink);
 }
 
 .app-shell[data-shell="new"] .app-header-modes button.active {
-  background: var(--shell-deep);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--shell-ink);
-  box-shadow: inset 0 -2px 0 0 var(--c-cyan);
+  box-shadow: none;
 }
 
 .app-shell[data-shell="new"] .app-header-modes button svg {
   color: var(--shell-ink-3);
+  stroke-width: 1.4;
+}
+
+.app-shell[data-shell="new"] .app-header-modes button:hover svg {
+  color: var(--shell-ink);
 }
 
 .app-shell[data-shell="new"] .app-header-modes button.active svg {
-  color: var(--c-cyan);
+  color: var(--shell-ink);
 }
 
 /* Right-side tools — sync indicator, settings, sign-out */
