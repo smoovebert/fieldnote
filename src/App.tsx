@@ -1411,7 +1411,16 @@ function App() {
     setActiveSourceId(sourceId)
   }
 
-  function applyCodesToText(selectedText: string, codeIds = selectedCodeIds, label = selectedCodeNames) {
+  // pageInfo is supplied by the Code-mode reader for PDF sources only.
+  // For non-PDF sources (and for legacy callers) it's omitted; the new
+  // excerpt persists with pageNumber/charOffset undefined and the
+  // citation falls through to source title alone.
+  function applyCodesToText(
+    selectedText: string,
+    codeIds = selectedCodeIds,
+    label = selectedCodeNames,
+    pageInfo?: { pageNumber: number; charOffset: number },
+  ) {
     let mergedExistingReference = false
 
     setExcerpts((current) => {
@@ -1436,6 +1445,7 @@ function App() {
           sourceTitle: activeSource.title,
           text: selectedText,
           note: '',
+          ...(pageInfo ? { pageNumber: pageInfo.pageNumber, charOffset: pageInfo.charOffset } : {}),
         },
         ...current,
       ]
@@ -1444,7 +1454,12 @@ function App() {
     window.getSelection()?.removeAllRanges()
   }
 
-  function codeSelection(selectedTextOverride?: string) {
+  // pageInfo comes from the Code-mode reader for PDF sources only. The
+  // toolbar button calls codeSelection() with no override; the reader
+  // computes pageInfo from the live selection just before invoking
+  // codeSelection so cross-page selections can be rejected before any
+  // excerpt is created.
+  function codeSelection(selectedTextOverride?: string, pageInfo?: { pageNumber: number; charOffset: number }) {
     const selectedText = selectedTextOverride?.trim() || window.getSelection()?.toString().trim()
 
     if (!selectedText || activeView !== 'code') {
@@ -1452,7 +1467,7 @@ function App() {
       return
     }
 
-    applyCodesToText(selectedText)
+    applyCodesToText(selectedText, undefined, undefined, pageInfo)
   }
 
   async function handleSuggestCodes(selectedText: string) {

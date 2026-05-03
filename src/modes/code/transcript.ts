@@ -34,6 +34,70 @@ export function markBackground(codes: { color: string }[]): CSSProperties {
 // without `pageNumber` (legacy data) match anywhere their text appears,
 // so old highlights still light up on whichever page the substring
 // happens to live.
+// Reader-side helper for the page-card render. Walks up from a DOM
+// node to the nearest `<section data-page="N">` ancestor and returns
+// the element. Returns null if the node lives outside any page card
+// (e.g. a click on the surrounding container, or a non-PDF source).
+export function findPageSection(node: Node, container: HTMLElement): HTMLElement | null {
+  let current: Node | null = node
+  while (current && current !== container) {
+    if (current.nodeType === 1) {
+      const el = current as HTMLElement
+      if (el.dataset && el.dataset.page) return el
+    }
+    current = current.parentNode
+  }
+  return null
+}
+
+// Sums the textContent length of every text node that precedes `range`
+// inside `pageElement`. Used to record `Excerpt.charOffset` so the
+// reader can later scroll-and-highlight to the exact spot on the page.
+export function charOffsetWithinPage(pageElement: HTMLElement, range: Range): number {
+  let offset = 0
+  const walker = document.createTreeWalker(pageElement, NodeFilter.SHOW_TEXT)
+  let node: Node | null = walker.nextNode()
+  while (node) {
+    if (node === range.startContainer) {
+      return offset + range.startOffset
+    }
+    // If the start container is somewhere ahead, accumulate this node's length.
+    offset += (node.textContent ?? '').length
+    node = walker.nextNode()
+  }
+  // Fallback when the start container isn't inside the page (shouldn't
+  // happen if the caller checked findPageSection first).
+  return offset
+}
+
+export type SelectionPageInfo =
+  | { kind: 'page'; pageNumber: number; charOffset: number }
+  | { kind: 'cross-page' }
+  | { kind: 'none' }
+
+// Reads the document's current selection and resolves it to a single
+// page card within `container`. Returns 'cross-page' when the start
+// and end live in different page sections (the caller should reject
+// the coding action with a hint). Returns 'none' for empty/collapsed
+// selections or when the selection lies outside any page card (which
+// happens for non-PDF sources — caller should fall through to the
+// existing non-page coding path).
+export function selectionPageInfo(container: HTMLElement | null): SelectionPageInfo {
+  if (!container) return { kind: 'none' }
+  const sel = typeof window === 'undefined' ? null : window.getSelection()
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return { kind: 'none' }
+  const range = sel.getRangeAt(0)
+  const startPage = findPageSection(range.startContainer, container)
+  const endPage = findPageSection(range.endContainer, container)
+  if (!startPage) return { kind: 'none' }
+  if (!endPage || startPage.dataset.page !== endPage.dataset.page) {
+    return { kind: 'cross-page' }
+  }
+  const pageNumber = Number(startPage.dataset.page)
+  if (!Number.isFinite(pageNumber) || pageNumber <= 0) return { kind: 'none' }
+  return { kind: 'page', pageNumber, charOffset: charOffsetWithinPage(startPage, range) }
+}
+
 export function buildPageHighlights(
   pageBody: string,
   excerpts: Array<{ text: string; codeIds: string[] }>,

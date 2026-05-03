@@ -2,13 +2,21 @@ import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Highlighter, Plus, Sparkles } from 'lucide-react'
 import type { Code, Source } from '../../lib/types'
-import { markBackground } from './transcript'
+import { markBackground, selectionPageInfo } from './transcript'
 import type { LineNumberingMode } from './transcript'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
 import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
 
 type SortedCode = Code & { depth: number }
-type QuickCodeMenu = { text: string; x: number; y: number }
+type QuickCodeMenu = {
+  text: string
+  x: number
+  y: number
+  // For PDF sources: which page this selection landed on, captured at
+  // the moment the menu opened. The original Selection has been wiped
+  // by the time the user clicks Apply, so we stash the page info here.
+  pageInfo?: { pageNumber: number; charOffset: number }
+}
 type HighlightedLine = Array<{ text: string; codes?: { id: string; color: string; name: string }[] }>
 type HighlightedPiece = { text: string; codes?: { id: string; color: string; name: string }[] }
 type HighlightedPage = { pageNumber: number; body: HighlightedPiece[] }
@@ -36,8 +44,8 @@ type Props = {
   setActiveCodeId: (id: string) => void
   setSelectionHint: (hint: string) => void
   toggleSelectedCode: (codeId: string) => void
-  codeSelection: (selectedTextOverride?: string) => void
-  applyCodesToText: (selectedText: string, codeIds?: string[], label?: string) => void
+  codeSelection: (selectedTextOverride?: string, pageInfo?: { pageNumber: number; charOffset: number }) => void
+  applyCodesToText: (selectedText: string, codeIds?: string[], label?: string, pageInfo?: { pageNumber: number; charOffset: number }) => void
   buildNewCode: (name: string, parentCodeId?: string) => Code
   onSuggestCodes: (selectedText: string) => Promise<{ ok: true; suggestions: Array<{ name: string; description: string }> } | { ok: false; message: string }>
   isHostedAi: boolean
@@ -70,13 +78,32 @@ export function CodeDetail(props: Props) {
         return
       }
 
+      // For PDF sources only: reject cross-page selections before the
+      // menu opens so the user gets feedback immediately rather than at
+      // Apply time. selectionPageInfo returns 'none' for non-PDF
+      // sources (no [data-page] ancestors), which falls through.
+      const pageResult = selectionPageInfo(transcriptElement)
+      if (pageResult.kind === 'cross-page') {
+        props.setSelectionHint('Code one page at a time. Re-select within a single page.')
+        window.getSelection()?.removeAllRanges()
+        setQuickCodeMenu(null)
+        return
+      }
+
       const rect = range.getBoundingClientRect()
       if (!rect.width && !rect.height) return
 
       const x = Math.min(window.innerWidth - 220, Math.max(220, rect.left + rect.width / 2))
       const y = Math.max(88, rect.top - 12)
       setQuickNewCodeName('')
-      setQuickCodeMenu({ text: selectedText, x, y })
+      setQuickCodeMenu({
+        text: selectedText,
+        x,
+        y,
+        pageInfo: pageResult.kind === 'page'
+          ? { pageNumber: pageResult.pageNumber, charOffset: pageResult.charOffset }
+          : undefined,
+      })
     })
   }
 
@@ -91,7 +118,7 @@ export function CodeDetail(props: Props) {
     props.setCodes((current) => [...current, code])
     props.setSelectedCodeIds(nextCodeIds)
     props.setActiveCodeId(code.id)
-    props.applyCodesToText(quickCodeMenu.text, nextCodeIds, nextLabel)
+    props.applyCodesToText(quickCodeMenu.text, nextCodeIds, nextLabel, quickCodeMenu.pageInfo)
   }
 
   return (
@@ -116,7 +143,24 @@ export function CodeDetail(props: Props) {
           <button
             type="button"
             className="primary-button toolbar-code-action"
-            onClick={() => props.codeSelection()}
+            onClick={() => {
+              // For PDF sources, resolve the live selection to a single
+              // page card before invoking codeSelection so cross-page
+              // selections are rejected with a clear hint and never
+              // create a partial excerpt. Non-PDF sources return 'none'
+              // and fall through to the existing coding path with no
+              // pageInfo.
+              const result = selectionPageInfo(transcriptRef.current)
+              if (result.kind === 'cross-page') {
+                props.setSelectionHint('Code one page at a time. Re-select within a single page.')
+                window.getSelection()?.removeAllRanges()
+                return
+              }
+              const pageInfo = result.kind === 'page'
+                ? { pageNumber: result.pageNumber, charOffset: result.charOffset }
+                : undefined
+              props.codeSelection(undefined, pageInfo)
+            }}
           >
             <Highlighter size={18} aria-hidden="true" />
             Code selection
@@ -317,7 +361,7 @@ export function CodeDetail(props: Props) {
                         }
                         const allNames = picks.map((p) => p.name).join(', ')
                         props.setSelectedCodeIds(nextCodeIds)
-                        props.applyCodesToText(quickCodeMenu?.text ?? '', nextCodeIds, allNames)
+                        props.applyCodesToText(quickCodeMenu?.text ?? '', nextCodeIds, allNames, quickCodeMenu?.pageInfo)
                         setAiPhase('idle')
                         setAiSuggestions([])
                         setQuickCodeMenu(null)
@@ -358,7 +402,7 @@ export function CodeDetail(props: Props) {
               </button>
             ))}
           </div>
-          <button className="primary-button" type="button" onClick={() => props.codeSelection(quickCodeMenu.text)}>
+          <button className="primary-button" type="button" onClick={() => props.codeSelection(quickCodeMenu.text, quickCodeMenu.pageInfo)}>
             <Highlighter size={16} aria-hidden="true" />
             Apply {props.selectedCodeIds.length} code{props.selectedCodeIds.length === 1 ? '' : 's'}
           </button>
