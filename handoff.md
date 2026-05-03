@@ -1,5 +1,7 @@
 # Fieldnote Handoff
 
+> **Development pause: 2026-05-03.** Active feature work is paused so alpha testers can use the product in real workflows for a stretch before the next development cycle. Roadmap, decisions, and priorities below remain valid; nothing has been retired. Feedback intake template at `docs/alpha-feedback.md`. Resume cue: when feedback has accumulated enough that we can re-prioritize the Required Next Step list against real signal rather than guesses.
+
 ## Current Status
 
 Fieldnote is a qualitative research coding app inspired by NVivo. It has a working prototype foundation, but the product direction has been corrected.
