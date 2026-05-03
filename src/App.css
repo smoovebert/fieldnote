@@ -5333,15 +5333,14 @@ textarea {
 .profile-menu-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 10px 0 8px;
+  justify-content: center;
+  width: 32px;
   height: 32px;
   border-radius: var(--r-2);
   background: transparent;
   border: 0;
   color: var(--shell-ink);
   cursor: pointer;
-  font: 500 12.5px/1 var(--font-ui);
 }
 .profile-menu-trigger:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -5350,12 +5349,6 @@ textarea {
   background: rgba(255, 255, 255, 0.10);
 }
 .profile-menu-trigger svg { color: var(--shell-ink-2); stroke-width: 1.4; }
-.profile-menu-trigger-name {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .profile-menu-popover {
   position: absolute;

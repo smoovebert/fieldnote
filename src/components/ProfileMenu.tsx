@@ -49,11 +49,6 @@ export function ProfileMenu({ accountEmail, onOpenAiSettings, onOpenAccountDelet
     fn()
   }
 
-  // Display short username derived from the email (the part before @);
-  // tooltip carries the full address. Avoids long-email overflow in
-  // a small button.
-  const shortName = accountEmail.split('@')[0] || accountEmail || 'Account'
-
   return (
     <div className="profile-menu" ref={containerRef}>
       <button
@@ -62,10 +57,10 @@ export function ProfileMenu({ accountEmail, onOpenAiSettings, onOpenAccountDelet
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label="Account menu"
         title={accountEmail}
       >
         <User size={16} aria-hidden="true" />
-        <span className="profile-menu-trigger-name">{shortName}</span>
       </button>
       {open && (
         <div className="profile-menu-popover" role="menu">
