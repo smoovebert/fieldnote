@@ -1034,6 +1034,12 @@ button {
   font-size: 18px;
 }
 
+.refine-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .reference-count {
   border: 1px solid var(--line);
   border-radius: 999px;

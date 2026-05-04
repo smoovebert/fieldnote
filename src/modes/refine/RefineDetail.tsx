@@ -107,7 +107,13 @@ export function RefineDetail(props: Props) {
           <p className="detail-kicker">Code definition</p>
           <h2>{props.activeCode.name}</h2>
         </div>
-        <span className="reference-count">{props.codeExcerpts.length} references</span>
+        <div className="refine-header-actions">
+          <span className="reference-count">{props.codeExcerpts.length} references</span>
+          <button className="danger-text-button" type="button" onClick={props.deleteActiveCode}>
+            <Trash2 size={15} aria-hidden="true" />
+            Delete code
+          </button>
+        </div>
       </div>
 
       {duplicates.length > 0 && (
@@ -316,10 +322,6 @@ export function RefineDetail(props: Props) {
 
       <div className="reference-toolbar">
         <p className="detail-kicker">References</p>
-        <button className="danger-text-button" type="button" onClick={props.deleteActiveCode}>
-          <Trash2 size={15} aria-hidden="true" />
-          Delete code
-        </button>
       </div>
 
       <ReferenceList
