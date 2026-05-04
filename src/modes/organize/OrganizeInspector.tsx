@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpenText, Database, FolderInput, FolderOpen, Sparkles, Trash2 } from 'lucide-react'
+import { BookOpenText, Database, FolderInput, FolderOpen, FolderPlus, Sparkles, Trash2 } from 'lucide-react'
 import type { Case, Memo, Source } from '../../lib/types'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
 import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
@@ -70,13 +70,30 @@ export function OrganizeInspector(props: Props) {
 
       <label className="property-field">
         <span>Folder</span>
-        <select value={activeSource.folder} onChange={(event) => updateSource(activeSource.id, { folder: event.target.value })}>
-          {sourceFolders.map((folder) => (
-            <option key={folder} value={folder}>
-              {folder}
-            </option>
-          ))}
-        </select>
+        <div className="property-field-row">
+          <select value={activeSource.folder} onChange={(event) => updateSource(activeSource.id, { folder: event.target.value })}>
+            {sourceFolders.map((folder) => (
+              <option key={folder} value={folder}>
+                {folder}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="property-field-action"
+            title="Create a new folder and move this source into it"
+            aria-label="New folder"
+            onClick={() => {
+              const raw = window.prompt('Folder name')
+              if (raw == null) return
+              const name = raw.trim()
+              if (!name || name === 'Internals') return
+              updateSource(activeSource.id, { folder: name })
+            }}
+          >
+            <FolderPlus size={14} aria-hidden="true" />
+          </button>
+        </div>
       </label>
 
       <label className="property-field">

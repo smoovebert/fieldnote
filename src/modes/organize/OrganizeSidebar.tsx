@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react'
-import { FilePlus2, ListTree } from 'lucide-react'
+import { FilePlus2, FolderPlus, ListTree } from 'lucide-react'
 import type { Source } from '../../lib/types'
 import { SourcesView } from '../../components/SourcesView'
 
@@ -11,10 +11,12 @@ type Props = {
   importTranscript: (event: ChangeEvent<HTMLInputElement>) => void
   onRenameFolder: (oldName: string, newName: string) => void
   onDeleteFolder: (name: string) => void
+  onCreateFolder: (name: string) => void
+  extraFolders: string[]
 }
 
 export function OrganizeSidebar(props: Props) {
-  const { activeSources, archivedSources, activeSourceId, onSelectSource, importTranscript, onRenameFolder, onDeleteFolder } = props
+  const { activeSources, archivedSources, activeSourceId, onSelectSource, importTranscript, onRenameFolder, onDeleteFolder, onCreateFolder, extraFolders } = props
 
   return (
     <section className="folder-pane" aria-label="Sources">
@@ -27,6 +29,20 @@ export function OrganizeSidebar(props: Props) {
         Import sources
         <input type="file" accept=".txt,.md,.csv,.docx,.pdf" multiple onChange={importTranscript} />
       </label>
+      <button
+        type="button"
+        className="folder-row new-folder-row"
+        onClick={() => {
+          const raw = window.prompt('Folder name')
+          if (raw == null) return
+          const name = raw.trim()
+          if (!name) return
+          onCreateFolder(name)
+        }}
+      >
+        <FolderPlus size={16} aria-hidden="true" />
+        New folder
+      </button>
       <SourcesView
         sources={activeSources}
         archivedSources={archivedSources}
@@ -34,6 +50,7 @@ export function OrganizeSidebar(props: Props) {
         onSelectSource={onSelectSource}
         onRenameFolder={onRenameFolder}
         onDeleteFolder={onDeleteFolder}
+        extraFolders={extraFolders}
       />
     </section>
   )

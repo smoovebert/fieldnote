@@ -456,6 +456,7 @@ function App() {
   const [activeCodeId, setActiveCodeId] = useState(initialCodes[0].id)
   const [activeMemoId, setActiveMemoId] = useState(initialMemos[0].id)
   const [sources, setSources] = useState(defaultProject.sources)
+  const [extraFolders, setExtraFolders] = useState<string[]>([])
   const [cases, setCases] = useState(defaultProject.cases)
   const [attributes, setAttributes] = useState(defaultProject.attributes)
   const [attributeValues, setAttributeValues] = useState(defaultProject.attributeValues)
@@ -510,7 +511,7 @@ function App() {
   const codeExcerpts = excerpts.filter((excerpt) => excerpt.codeIds.some((codeId) => activeCodeTreeIds.includes(codeId)))
   const activeSources = sources.filter((source) => !source.archived)
   const archivedSources = sources.filter((source) => source.archived)
-  const sourceFolders = Array.from(new Set(['Internals', 'Externals', ...activeSources.map((source) => source.folder).filter(Boolean)]))
+  const sourceFolders = Array.from(new Set(['Internals', 'Externals', ...activeSources.map((source) => source.folder).filter(Boolean), ...extraFolders]))
   const activeSourceMemo = memos.find((memo) => memo.linkedType === 'source' && memo.linkedId === activeSource.id)
   const activeSourceWords = activeSource.content.trim() ? activeSource.content.trim().split(/\s+/).length : 0
   const projectMemo = memos.find((memo) => memo.linkedType === 'project') ?? activeMemo
@@ -583,6 +584,7 @@ function App() {
     setActiveView('overview')
     setActiveSourceId(nextProject.activeSourceId)
     setSources(nextProject.sources)
+    setExtraFolders([])
     setCases(nextProject.cases)
     setAttributes(nextProject.attributes)
     setAttributeValues(nextProject.attributeValues)
@@ -1576,6 +1578,7 @@ function App() {
     if (oldName === 'Internals' || !newName.trim()) return
     if (newName === oldName) return
     setSources((current) => current.map((source) => (source.folder === oldName ? { ...source, folder: newName } : source)))
+    setExtraFolders((current) => current.map((folder) => (folder === oldName ? newName : folder)))
   }
 
   function deleteFolder(name: string) {
@@ -1586,6 +1589,15 @@ function App() {
       : `Delete "${name}"? Its ${affected} source${affected === 1 ? '' : 's'} will move to Internals.`
     if (!window.confirm(message)) return
     setSources((current) => current.map((source) => (source.folder === name ? { ...source, folder: 'Internals' } : source)))
+    setExtraFolders((current) => current.filter((folder) => folder !== name))
+  }
+
+  function createFolder(name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    const existing = new Set([...sources.map((source) => source.folder), ...extraFolders])
+    if (existing.has(trimmed)) return
+    setExtraFolders((current) => [...current, trimmed])
   }
 
   function updateProjectTitle(title: string) {
@@ -2808,10 +2820,12 @@ function App() {
             importTranscript={importTranscript}
             onRenameFolder={renameFolder}
             onDeleteFolder={deleteFolder}
+            onCreateFolder={createFolder}
+            extraFolders={extraFolders}
           />
         )}
 
-        {activeView !== 'organize' && (
+        {activeView !== 'organize' && activeView !== 'overview' && (
         <section className="list-view" aria-label="Objects">
           {activeView === 'report' && (
             <ReportSidebar
@@ -3390,6 +3404,7 @@ function App() {
         )}
         {activeView === 'organize' && (
           <OrganizeInspector
+            key={activeSource.id}
             activeSource={activeSource}
             sourceFolders={sourceFolders}
             cases={cases}

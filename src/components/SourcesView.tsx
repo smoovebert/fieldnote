@@ -14,6 +14,8 @@ type Props = {
   /** Optional — when set, folder headers (other than Internals) gain rename/delete affordances. */
   onRenameFolder?: (oldName: string, newName: string) => void
   onDeleteFolder?: (name: string) => void
+  /** Optional — folder names to render even if they currently hold zero sources. */
+  extraFolders?: string[]
 }
 
 const PROTECTED_FOLDERS = new Set(['Internals'])
@@ -26,6 +28,7 @@ export function SourcesView({
   initialCollapsedFolders = [],
   onRenameFolder,
   onDeleteFolder,
+  extraFolders = [],
 }: Props) {
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set(initialCollapsedFolders))
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null)
@@ -70,12 +73,17 @@ export function SourcesView({
     }
   }
 
-  // Group active sources by folder, preserving insertion order of folders
+  // Group active sources by folder, preserving insertion order of folders.
+  // Seed empty groups for any extraFolders so user-created folders that hold
+  // zero sources still render in the tree.
   const groups = new Map<string, Source[]>()
   for (const s of sources) {
     const folder = s.folder?.trim() || 'Internals'
     if (!groups.has(folder)) groups.set(folder, [])
     groups.get(folder)!.push(s)
+  }
+  for (const folder of extraFolders) {
+    if (!groups.has(folder)) groups.set(folder, [])
   }
 
   const canEdit = (folder: string) => Boolean(onRenameFolder || onDeleteFolder) && !PROTECTED_FOLDERS.has(folder)
