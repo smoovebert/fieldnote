@@ -49,35 +49,74 @@ a:focus-visible {
 }
 
 /* Always-visible slim scrollbars so users can tell what's scrollable
-   without scrolling first (overrides macOS overlay-scrollbar default). */
+   without scrolling first. macOS overlay scrollbars hide unless we
+   force the appearance + give the thumb explicit color. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+  scrollbar-color: rgba(100, 116, 139, 0.55) rgba(100, 116, 139, 0.08);
 }
 
-*::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+}
+*::-webkit-scrollbar-track {
+  background: rgba(100, 116, 139, 0.08);
+}
 *::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.35);
-  border-radius: 6px;
-  border: 2px solid transparent;
+  background: rgba(100, 116, 139, 0.55);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-height: 28px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
   background-clip: padding-box;
 }
-*::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.6); background-clip: padding-box; }
 *::-webkit-scrollbar-corner { background: transparent; }
 
-/* Dark surfaces (sidebar, mode shell) get a lighter thumb so it stays visible. */
-.workspace-sidebar *,
-.app-shell[data-shell="new"] .workspace-sidebar * {
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+/* Force scrollbars to render on the main scroll containers even when
+   their content currently fits, so users see the scroll affordance
+   exists. (Chrome/Safari hide auto-overflow bars on macOS otherwise.) */
+.detail-card,
+.overview-mode,
+.transcript,
+.workspace-sidebar,
+.list-view,
+.properties-view,
+.report-preview,
+.sources-view,
+.reference-list,
+.excerpt-list {
+  overflow-y: scroll;
 }
+
+/* Dark surfaces (sidebar, mode shell) get a lighter thumb. */
+.workspace-sidebar,
+.workspace-sidebar *,
+.app-shell[data-shell="new"] .workspace-sidebar,
+.app-shell[data-shell="new"] .workspace-sidebar * {
+  scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.08);
+}
+.workspace-sidebar::-webkit-scrollbar-track,
+.workspace-sidebar *::-webkit-scrollbar-track,
+.app-shell[data-shell="new"] .workspace-sidebar::-webkit-scrollbar-track,
+.app-shell[data-shell="new"] .workspace-sidebar *::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+.workspace-sidebar::-webkit-scrollbar-thumb,
 .workspace-sidebar *::-webkit-scrollbar-thumb,
+.app-shell[data-shell="new"] .workspace-sidebar::-webkit-scrollbar-thumb,
 .app-shell[data-shell="new"] .workspace-sidebar *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.35);
   background-clip: padding-box;
 }
+.workspace-sidebar::-webkit-scrollbar-thumb:hover,
 .workspace-sidebar *::-webkit-scrollbar-thumb:hover,
+.app-shell[data-shell="new"] .workspace-sidebar::-webkit-scrollbar-thumb:hover,
 .app-shell[data-shell="new"] .workspace-sidebar *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.6);
   background-clip: padding-box;
 }
