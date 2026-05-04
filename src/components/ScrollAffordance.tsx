@@ -17,12 +17,17 @@ export function ScrollAffordance() {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const [onDark, setOnDark] = useState(false)
 
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel) return
     const scroller = sentinel.parentElement
     if (!scroller) return
+
+    // Walk up the DOM looking for the dark workspace sidebar so the
+    // badge can flip to a light-on-dark variant against navy chrome.
+    setOnDark(scroller.closest('.workspace-sidebar') !== null)
 
     const update = () => {
       const overflow = scroller.scrollHeight - scroller.clientHeight
@@ -68,7 +73,7 @@ export function ScrollAffordance() {
       <div ref={sentinelRef} className="scroll-affordance-sentinel" aria-hidden="true" />
       {visible && pos && createPortal(
         <div
-          className="scroll-affordance is-visible"
+          className={`scroll-affordance is-visible${onDark ? ' is-on-dark' : ''}`}
           style={{ top: pos.top, left: pos.left }}
           aria-hidden="true"
         >

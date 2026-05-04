@@ -1173,6 +1173,14 @@ button {
   transform: translateY(0);
 }
 
+/* Dark-surface variant — for the navy workspace sidebar where the
+   default dark slate badge would disappear into the background. */
+.scroll-affordance.is-on-dark {
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
 .reference-count {
   border: 1px solid var(--line);
   border-radius: 999px;
