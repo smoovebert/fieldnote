@@ -3,6 +3,8 @@
 // state is local — only the reparent decision flows back out via callback.
 
 import { useMemo, useState } from 'react'
+import type { ChangeEvent, KeyboardEvent } from 'react'
+import { Plus } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { buildCodeTree } from '../../lib/codeTree'
 
@@ -12,6 +14,9 @@ type Props = {
   activeCodeId: string
   onSelectCode: (id: string) => void
   onReparentCode: (codeId: string, parentCodeId: string) => void
+  newCodeName: string
+  onNewCodeNameChange: (next: string) => void
+  onAddCode: () => void
 }
 
 export function RefineSidebar(props: Props) {
@@ -129,6 +134,20 @@ export function RefineSidebar(props: Props) {
           </button>
         )
       })}
+      <div className="new-code refine-sidebar-new-code">
+        <input
+          value={props.newCodeName}
+          placeholder="New code"
+          aria-label="New code name"
+          onChange={(event: ChangeEvent<HTMLInputElement>) => props.onNewCodeNameChange(event.target.value)}
+          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+            if (event.key === 'Enter') props.onAddCode()
+          }}
+        />
+        <button type="button" className="icon-button" onClick={props.onAddCode} aria-label="Add code">
+          <Plus size={18} aria-hidden="true" />
+        </button>
+      </div>
     </>
   )
 }

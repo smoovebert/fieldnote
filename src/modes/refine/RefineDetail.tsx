@@ -1,10 +1,12 @@
+// Refine-mode center pane: workspace for the active code's references.
+// Properties, code-family navigation, merge candidates, and code-level
+// lifecycle actions (Merge / Delete) live in the right-rail RefineInspector.
+// Split lives here because its UI operates on the references list.
+
 import { useMemo, useState } from 'react'
-import { AlertTriangle, Scissors, Sparkles, Trash2 } from 'lucide-react'
+import { AlertTriangle, Scissors, Trash2 } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { ReferenceList } from '../../ReferenceList'
-import { AiPreviewPanel } from '../../components/AiPreviewPanel'
-import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
-import { formatExcerptCitation } from '../../lib/excerptCitation'
 
 type SortedCode = Code & { depth: number }
 
@@ -14,12 +16,6 @@ type Props = {
   codeExcerpts: Excerpt[]
   allExcerpts: Excerpt[]
   parentCodeOptions: SortedCode[]
-  activeCodeParent: Code | undefined
-  activeCodeChildren: Code[]
-  updateCode: (codeId: string, patch: Partial<Code>) => void
-  updateCodeParent: (codeId: string, parentCodeId: string) => void
-  mergeActiveCodeIntoTarget: (targetCodeId: string) => void
-  deleteActiveCode: () => void
   updateExcerptNote: (id: string, note: string) => void
   deleteExcerpt: (id: string) => void
   removeCodeFromExcerpt: (excerptId: string, codeId: string) => void
@@ -27,8 +23,6 @@ type Props = {
   splitCodeInto: (sourceCodeId: string, excerptIds: string[], newCodeName: string, parentCodeId?: string) => void
   onSelectCode: (codeId: string) => void
   retagOrphan: (excerptId: string, codeId: string) => void
-  onDraftDescription: (codeName: string, references: Array<{ sourceTitle: string; text: string }>) => Promise<{ ok: true; description: string } | { ok: false; message: string }>
-  isHostedAi: boolean
 }
 
 function normalizeName(name: string): string {
@@ -42,32 +36,10 @@ function findDuplicates(activeCode: Code, codes: Code[]): Code[] {
 }
 
 export function RefineDetail(props: Props) {
-  const [mergeTargetCodeId, setMergeTargetCodeId] = useState('')
   const [splitOpen, setSplitOpen] = useState(false)
   const [splitName, setSplitName] = useState('')
   const [splitParentId, setSplitParentId] = useState<string>(() => props.activeCode.parentCodeId ?? '')
   const [splitSelected, setSplitSelected] = useState<Set<string>>(() => new Set())
-
-  const [aiPhase, setAiPhase] = useState<'idle' | 'preview' | 'loading' | 'result' | 'error'>('idle')
-  const [aiDraft, setAiDraft] = useState('')
-  const [aiError, setAiError] = useState<string | undefined>()
-
-  const referencesPreview = props.codeExcerpts
-    .map((e) => `${formatExcerptCitation(e)}: ${e.text.slice(0, 120)}`)
-    .join('\n')
-  const inputTokens = estimateInputTokens(referencesPreview)
-  const inputCost = estimateCostUsd(inputTokens)
-
-  // Show whenever there's at least one reference. The draft lands in the
-  // AI preview panel first (the user accepts before it touches the
-  // description field), so we don't need to gate on description length.
-  const showDraftButton = props.codeExcerpts.length > 0
-
-  const handleMerge = () => {
-    if (!mergeTargetCodeId) return
-    props.mergeActiveCodeIntoTarget(mergeTargetCodeId)
-    setMergeTargetCodeId('')
-  }
 
   const duplicates = useMemo(() => findDuplicates(props.activeCode, props.codes), [props.activeCode, props.codes])
 
@@ -104,16 +76,10 @@ export function RefineDetail(props: Props) {
     <article className="detail-card refine-surface">
       <div className="refine-header">
         <div>
-          <p className="detail-kicker">Code definition</p>
+          <p className="detail-kicker">Code workspace</p>
           <h2>{props.activeCode.name}</h2>
         </div>
-        <div className="refine-header-actions">
-          <span className="reference-count">{props.codeExcerpts.length} references</span>
-          <button className="danger-text-button" type="button" onClick={props.deleteActiveCode}>
-            <Trash2 size={15} aria-hidden="true" />
-            Delete code
-          </button>
-        </div>
+        <span className="reference-count">{props.codeExcerpts.length} references</span>
       </div>
 
       {duplicates.length > 0 && (
@@ -132,122 +98,12 @@ export function RefineDetail(props: Props) {
               {index < duplicates.length - 1 ? ', ' : ''}
             </span>
           ))}
-          <span>. Use Merge below to combine them.</span>
+          <span>. Use Merge in the inspector to combine them.</span>
         </div>
       )}
 
-      <div className="code-definition-grid">
-        <label className="property-field">
-          <span>Name</span>
-          <input value={props.activeCode.name} onChange={(event) => props.updateCode(props.activeCode.id, { name: event.target.value })} />
-        </label>
-        <label className="property-field color-field">
-          <span>Color</span>
-          <input type="color" value={props.activeCode.color} onChange={(event) => props.updateCode(props.activeCode.id, { color: event.target.value })} />
-        </label>
-      </div>
-
-      <div className="code-hierarchy-row">
-        <label className="property-field">
-          <span>Parent code</span>
-          <select value={props.activeCode.parentCodeId ?? ''} onChange={(event) => props.updateCodeParent(props.activeCode.id, event.target.value)}>
-            <option value="">Top-level code</option>
-            {props.parentCodeOptions.map((code) => (
-              <option key={code.id} value={code.id}>
-                {'-'.repeat(code.depth)} {code.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="code-family-summary">
-          <span>{props.activeCodeParent ? `Under ${props.activeCodeParent.name}` : 'Top-level'}</span>
-          <small>{props.activeCodeChildren.length} child code{props.activeCodeChildren.length === 1 ? '' : 's'}</small>
-        </div>
-      </div>
-
-      <label className="property-field">
-        <span>
-          Description
-          {showDraftButton && aiPhase === 'idle' && (
-            <button
-              type="button"
-              className="refine-ai-trigger"
-              onClick={() => setAiPhase('preview')}
-            >
-              <Sparkles size={14} aria-hidden="true" />
-              Draft from references
-            </button>
-          )}
-        </span>
-        <textarea
-          className="code-description"
-          value={props.activeCode.description}
-          aria-label="Code description"
-          onChange={(event) => props.updateCode(props.activeCode.id, { description: event.target.value })}
-        />
-      </label>
-
-      {aiPhase !== 'idle' && (
-        <AiPreviewPanel
-          phase={aiPhase as 'preview' | 'loading' | 'result' | 'error'}
-          inputPreview={referencesPreview}
-          estimatedTokens={inputTokens}
-          estimatedCostUsd={inputCost}
-          errorMessage={aiError}
-          showHostedQuota={props.isHostedAi}
-          onCancel={() => { setAiPhase('idle'); setAiDraft(''); setAiError(undefined) }}
-          onSend={async () => {
-            setAiPhase('loading')
-            const result = await props.onDraftDescription(
-              props.activeCode.name,
-              props.codeExcerpts.map((e) => ({ sourceTitle: e.sourceTitle, text: e.text }))
-            )
-            if (result.ok) {
-              setAiDraft(result.description)
-              setAiPhase('result')
-            } else {
-              setAiError(result.message)
-              setAiPhase('error')
-            }
-          }}
-        >
-          {aiPhase === 'result' && (
-            <div className="ai-draft-preview">
-              <p>{aiDraft}</p>
-              <div className="ai-draft-actions">
-                <button type="button" onClick={() => { setAiPhase('idle'); setAiDraft('') }}>Discard</button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => {
-                    props.updateCode(props.activeCode.id, { description: aiDraft })
-                    setAiPhase('idle')
-                    setAiDraft('')
-                  }}
-                >
-                  Insert into description
-                </button>
-              </div>
-            </div>
-          )}
-        </AiPreviewPanel>
-      )}
-
-      <div className="code-maintenance-row">
-        <label className="property-field">
-          <span>Merge / bulk recode into</span>
-          <select value={mergeTargetCodeId} onChange={(event) => setMergeTargetCodeId(event.target.value)}>
-            <option value="">Choose another code</option>
-            {props.parentCodeOptions.map((code) => (
-              <option key={code.id} value={code.id}>
-                {'-'.repeat(code.depth)} {code.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="secondary-button" type="button" disabled={!mergeTargetCodeId} onClick={handleMerge}>
-          Merge code
-        </button>
+      <div className="reference-toolbar">
+        <p className="detail-kicker">References</p>
         <button
           className="secondary-button"
           type="button"
@@ -255,7 +111,7 @@ export function RefineDetail(props: Props) {
           disabled={props.codeExcerpts.length === 0}
         >
           <Scissors size={15} aria-hidden="true" />
-          {splitOpen ? 'Close split' : 'Split code'}
+          {splitOpen ? 'Close split' : 'Split into new code'}
         </button>
       </div>
 
@@ -319,10 +175,6 @@ export function RefineDetail(props: Props) {
           </footer>
         </section>
       )}
-
-      <div className="reference-toolbar">
-        <p className="detail-kicker">References</p>
-      </div>
 
       <ReferenceList
         excerpts={props.codeExcerpts}

@@ -54,6 +54,7 @@ import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportInspector } from './modes/report/ReportInspector'
 import { ReportSidebar } from './modes/report/ReportSidebar'
 import { RefineDetail } from './modes/refine/RefineDetail'
+import { RefineInspector } from './modes/refine/RefineInspector'
 import { RefineSidebar } from './modes/refine/RefineSidebar'
 import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
@@ -2873,6 +2874,9 @@ function App() {
               onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
               onOpenCrosstab={() => setAnalyzePanel('crosstab')}
               onReparentCode={updateCodeParent}
+              newCodeName={newCodeName}
+              onNewCodeNameChange={setNewCodeName}
+              onAddCode={addCode}
             />
           )}
         </section>
@@ -3022,12 +3026,6 @@ function App() {
             codeExcerpts={codeExcerpts}
             allExcerpts={excerpts}
             parentCodeOptions={parentCodeOptions}
-            activeCodeParent={activeCodeParent}
-            activeCodeChildren={activeCodeChildren}
-            updateCode={updateCode}
-            updateCodeParent={updateCodeParent}
-            mergeActiveCodeIntoTarget={mergeActiveCodeIntoTarget}
-            deleteActiveCode={deleteActiveCode}
             updateExcerptNote={updateExcerptNote}
             deleteExcerpt={deleteExcerpt}
             removeCodeFromExcerpt={removeCodeFromExcerpt}
@@ -3035,8 +3033,6 @@ function App() {
             splitCodeInto={splitCodeInto}
             onSelectCode={(id) => setActiveCodeId(id)}
             retagOrphan={retagOrphan}
-            onDraftDescription={handleDraftDescription}
-            isHostedAi={isHostedAi}
           />
         )}
 
@@ -3423,9 +3419,9 @@ function App() {
           />
         )}
 
-        {(activeView === 'code' || activeView === 'refine') && (
+        {activeView === 'code' && (
           <CodePickerPanel
-            variant={activeView === 'code' ? 'code' : 'refine'}
+            variant="code"
             sortedCodes={sortedCodes}
             excerpts={excerpts}
             selectedCodeIds={selectedCodeIds}
@@ -3435,6 +3431,24 @@ function App() {
             onToggleSelectedCode={toggleSelectedCode}
             onNewCodeNameChange={setNewCodeName}
             onAddCode={addCode}
+          />
+        )}
+        {activeView === 'refine' && (
+          <RefineInspector
+            activeCode={activeCode}
+            codes={codes}
+            allExcerpts={excerpts}
+            codeExcerpts={codeExcerpts}
+            parentCodeOptions={parentCodeOptions}
+            activeCodeParent={activeCodeParent}
+            activeCodeChildren={activeCodeChildren}
+            updateCode={updateCode}
+            updateCodeParent={updateCodeParent}
+            mergeActiveCodeIntoTarget={mergeActiveCodeIntoTarget}
+            deleteActiveCode={deleteActiveCode}
+            onSelectCode={(id) => setActiveCodeId(id)}
+            onDraftDescription={handleDraftDescription}
+            isHostedAi={isHostedAi}
           />
         )}
 
@@ -3645,6 +3659,9 @@ function ListView({
   onOpenCoOccurrence,
   onOpenCrosstab,
   onReparentCode,
+  newCodeName,
+  onNewCodeNameChange,
+  onAddCode,
 }: {
   activeView: WorkspaceView
   activeSourceId: string
@@ -3665,6 +3682,9 @@ function ListView({
   onOpenCoOccurrence: () => void
   onOpenCrosstab: () => void
   onReparentCode: (codeId: string, parentCodeId: string) => void
+  newCodeName: string
+  onNewCodeNameChange: (next: string) => void
+  onAddCode: () => void
 }) {
   return (
     <>
@@ -3686,6 +3706,9 @@ function ListView({
           activeCodeId={activeCodeId}
           onSelectCode={onSelectCode}
           onReparentCode={onReparentCode}
+          newCodeName={newCodeName}
+          onNewCodeNameChange={onNewCodeNameChange}
+          onAddCode={onAddCode}
         />
       )}
       {activeView === 'classify' && (
