@@ -27,7 +27,14 @@ export function ScrollAffordance() {
 
     // Walk up the DOM looking for the dark workspace sidebar so the
     // badge can flip to a light-on-dark variant against navy chrome.
-    setOnDark(scroller.closest('.workspace-sidebar') !== null)
+    const sidebar = scroller.closest('.workspace-sidebar') as HTMLElement | null
+    setOnDark(sidebar !== null)
+
+    // For position, use the column-edge ancestor (workspace-sidebar in
+    // the left rail) when present — its outer edges line up with the
+    // other rails' outer edges. Otherwise the scroller itself is fine
+    // (center pane and right rail are already column-edge containers).
+    const positionSource = sidebar ?? scroller
 
     const update = () => {
       const overflow = scroller.scrollHeight - scroller.clientHeight
@@ -39,7 +46,7 @@ export function ScrollAffordance() {
       const shouldShow = distanceFromBottom > NEAR_BOTTOM_THRESHOLD
       setVisible(shouldShow)
       if (shouldShow) {
-        const rect = scroller.getBoundingClientRect()
+        const rect = positionSource.getBoundingClientRect()
         setPos({
           top: rect.bottom - INSET - BADGE_SIZE,
           left: rect.right - INSET - BADGE_SIZE,
