@@ -1182,6 +1182,19 @@ button {
   transform: translateY(0);
 }
 
+/* Buffer below the last content row of scroll surfaces so the
+   floating badge tucks into empty space, not on top of text. The
+   right rail (.properties-view) already has natural margin below
+   its panels, so we don't add it there. */
+.detail-card,
+.overview-mode,
+.transcript,
+.report-scroll,
+.list-view,
+.folder-pane {
+  padding-bottom: 36px;
+}
+
 .reference-count {
   border: 1px solid var(--line);
   border-radius: 999px;
