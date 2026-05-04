@@ -7,6 +7,7 @@ import { StatCard } from './StatCard'
 import { listVersions, type ProjectVersion } from '../../lib/localRecovery'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
 import { estimateCostUsd } from '../../ai/client'
+import { ScrollAffordance } from '../../components/ScrollAffordance'
 
 type Props = {
   title: string
@@ -235,6 +236,7 @@ export function OverviewMode(props: Props) {
           </ul>
         </section>
       )}
+      <ScrollAffordance />
     </article>
   )
 }

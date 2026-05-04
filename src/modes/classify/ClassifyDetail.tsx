@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { FilePlus2, Plus, Trash2, UserPlus } from 'lucide-react'
 import type { Attribute, AttributeValue, Case, Source } from '../../lib/types'
+import { ScrollAffordance } from '../../components/ScrollAffordance'
 
 type Props = {
   cases: Case[]
@@ -165,6 +166,7 @@ export function ClassifyDetail(props: Props) {
           </div>
         )}
       </div>
+      <ScrollAffordance />
     </article>
   )
 }

@@ -2880,6 +2880,7 @@ function App() {
               onAddCode={addCode}
             />
           )}
+          <ScrollAffordance />
         </section>
         )}
 
@@ -3381,6 +3382,7 @@ function App() {
               <strong>Coming soon</strong>
               <span>Saved analysis presets beyond coded excerpts and matrix drill-down editing.</span>
             </div>
+            <ScrollAffordance />
           </article>
         )}
 

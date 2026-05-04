@@ -5,6 +5,7 @@ import type { Code, Source } from '../../lib/types'
 import { markBackground, selectionPageInfo } from './transcript'
 import type { LineNumberingMode } from './transcript'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
+import { ScrollAffordance } from '../../components/ScrollAffordance'
 import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
 
 type SortedCode = Code & { depth: number }
@@ -247,6 +248,7 @@ export function CodeDetail(props: Props) {
                 </section>
               )
             })}
+            <ScrollAffordance />
           </div>
         ) : (
           <div className="transcript" ref={transcriptRef} aria-label="Source text with line numbers" onMouseUp={captureQuickCodeSelection} onKeyUp={captureQuickCodeSelection}>
@@ -277,6 +279,7 @@ export function CodeDetail(props: Props) {
                 </span>
               </div>
             ))}
+            <ScrollAffordance />
           </div>
         )}
       </div>

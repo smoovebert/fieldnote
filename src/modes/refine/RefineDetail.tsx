@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, Scissors, Trash2 } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { ReferenceList } from '../../ReferenceList'
+import { ScrollAffordance } from '../../components/ScrollAffordance'
 
 type SortedCode = Code & { depth: number }
 
@@ -231,6 +232,7 @@ export function RefineDetail(props: Props) {
           )}
         </section>
       )}
+      <ScrollAffordance />
     </article>
   )
 }

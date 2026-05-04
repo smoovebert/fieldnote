@@ -2,6 +2,7 @@ import type { ChangeEvent } from 'react'
 import { FilePlus2, FolderPlus, ListTree } from 'lucide-react'
 import type { Source } from '../../lib/types'
 import { SourcesView } from '../../components/SourcesView'
+import { ScrollAffordance } from '../../components/ScrollAffordance'
 
 type Props = {
   activeSources: Source[]
@@ -52,6 +53,7 @@ export function OrganizeSidebar(props: Props) {
         onDeleteFolder={onDeleteFolder}
         extraFolders={extraFolders}
       />
+      <ScrollAffordance />
     </section>
   )
 }

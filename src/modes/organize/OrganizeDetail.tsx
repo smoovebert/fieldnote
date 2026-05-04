@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react'
 import { FilePlus2, FileText } from 'lucide-react'
 import type { Excerpt, Memo, Source } from '../../lib/types'
+import { ScrollAffordance } from '../../components/ScrollAffordance'
 
 type Props = {
   sources: Source[]
@@ -59,6 +60,7 @@ export function OrganizeDetail(props: Props) {
           </article>
         )}
       </div>
+      <ScrollAffordance />
     </article>
   )
 }
