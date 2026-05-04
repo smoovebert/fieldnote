@@ -1157,6 +1157,18 @@ button {
   align-self: stretch;
 }
 
+/* Reserve breathing room at the bottom of scroll surfaces so the
+   floating badge doesn't sit on top of content. */
+.detail-card,
+.overview-mode,
+.transcript,
+.report-scroll,
+.list-view,
+.folder-pane,
+.properties-view {
+  padding-bottom: 48px;
+}
+
 .scroll-affordance {
   position: absolute;
   bottom: 0;
