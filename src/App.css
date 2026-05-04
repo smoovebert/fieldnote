@@ -1146,22 +1146,12 @@ button {
    Anchor is a sticky zero-height wrapper so the badge anchors to the
    bottom of the scroll viewport on every surface (block parents,
    flex-column parents) without depending on auto-margins. */
-.scroll-affordance-anchor {
-  position: sticky;
-  bottom: 10px;
-  height: 0;
-  width: 100%;
-  pointer-events: none;
-  z-index: 4;
-  flex: 0 0 auto;
-  align-self: stretch;
+.scroll-affordance-sentinel {
+  display: none;
 }
 
-
 .scroll-affordance {
-  position: absolute;
-  bottom: 0;
-  right: 10px;
+  position: fixed;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -1171,28 +1161,16 @@ button {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 160ms ease, transform 160ms ease;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
 }
 
 .scroll-affordance.is-visible {
   opacity: 1;
   transform: translateY(0);
-}
-
-/* Buffer below the last content row of scroll surfaces so the
-   floating badge tucks into empty space, not on top of text. The
-   right rail (.properties-view) already has natural margin below
-   its panels, so we don't add it there. */
-.detail-card,
-.overview-mode,
-.transcript,
-.report-scroll,
-.list-view,
-.folder-pane {
-  padding-bottom: 36px;
 }
 
 .reference-count {
