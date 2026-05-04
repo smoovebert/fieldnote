@@ -53,6 +53,7 @@ import { HeaderSearch } from './components/HeaderSearch'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportInspector } from './modes/report/ReportInspector'
 import { ReportSidebar } from './modes/report/ReportSidebar'
+import { ScrollAffordance } from './components/ScrollAffordance'
 import { RefineDetail } from './modes/refine/RefineDetail'
 import { RefineInspector } from './modes/refine/RefineInspector'
 import { RefineSidebar } from './modes/refine/RefineSidebar'
@@ -3498,6 +3499,7 @@ function App() {
           <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} compact />
           </section>
         )}
+        <ScrollAffordance />
       </aside>}
     </main>
     {settingsOpen && (
