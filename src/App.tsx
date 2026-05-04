@@ -3389,13 +3389,9 @@ function App() {
       {activeView !== 'classify' && <aside className="properties-view">
         {activeView === 'overview' && (
           <OverviewInspector
-            userId={session?.user?.id ?? null}
-            accountEmail={session?.user?.email ?? null}
             lineNumberingMode={lineNumberingMode}
             lineNumberingWidth={lineNumberingWidth}
             onOpenProjectSettings={() => setSettingsOpen(true)}
-            onOpenAiSettings={() => setAiSettingsOpen(true)}
-            onOpenAccountDelete={() => setAccountDeleteOpen(true)}
           />
         )}
         {activeView === 'organize' && (
