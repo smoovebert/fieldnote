@@ -1142,14 +1142,25 @@ button {
 .refine-sidebar-new-code { margin-bottom: 10px; padding: 0 8px; }
 
 /* Scroll affordance — a small floating badge that hints "more below"
-   when a scroll container overflows. See ScrollAffordance.tsx. */
-.scroll-affordance {
+   when a scroll container overflows. See ScrollAffordance.tsx.
+   Anchor is a sticky zero-height wrapper so the badge anchors to the
+   bottom of the scroll viewport on every surface (block parents,
+   flex-column parents) without depending on auto-margins. */
+.scroll-affordance-anchor {
   position: sticky;
   bottom: 10px;
-  align-self: flex-end;
-  margin-left: auto;
-  margin-right: 10px;
-  margin-top: -32px;
+  height: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 4;
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+
+.scroll-affordance {
+  position: absolute;
+  bottom: 0;
+  right: 10px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -1162,8 +1173,6 @@ button {
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 160ms ease, transform 160ms ease;
-  z-index: 4;
-  flex: 0 0 auto;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
 }
 

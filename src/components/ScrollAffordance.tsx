@@ -49,12 +49,10 @@ export function ScrollAffordance() {
   }, [])
 
   return (
-    <div
-      ref={anchorRef}
-      className={`scroll-affordance${visible ? ' is-visible' : ''}`}
-      aria-hidden="true"
-    >
-      <ChevronDown size={11} strokeWidth={1.25} aria-hidden="true" />
+    <div ref={anchorRef} className="scroll-affordance-anchor" aria-hidden="true">
+      <div className={`scroll-affordance${visible ? ' is-visible' : ''}`}>
+        <ChevronDown size={11} strokeWidth={1.25} aria-hidden="true" />
+      </div>
     </div>
   )
 }
