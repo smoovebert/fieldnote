@@ -6182,3 +6182,26 @@ textarea {
   color: var(--shell-ink-2, #d1d5db);
 }
 .overview-sidebar-import:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* ===== Always-visible scrollbars override ============================
+   App.css loads after index.css and has many `overflow: auto` rules on
+   the scroll containers — those auto rules let macOS hide the bars
+   when "Show scroll bars: Automatically based on mouse or trackpad" is
+   set. Force `overflow-y: scroll` on the main scroll surfaces so the
+   slim styled bar always renders. */
+.detail-card,
+.overview-mode,
+.transcript,
+.workspace-sidebar,
+.list-view,
+.properties-view,
+.sources-view,
+.reference-list,
+.excerpt-list,
+.report-preview,
+.folder-pane,
+.code-picker,
+.refine-inspector,
+.source-properties-panel {
+  overflow-y: scroll !important;
+}

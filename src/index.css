@@ -53,7 +53,7 @@ a:focus-visible {
    force the appearance + give the thumb explicit color. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.55) rgba(100, 116, 139, 0.08);
+  scrollbar-color: rgba(71, 85, 105, 0.7) rgba(100, 116, 139, 0.08);
 }
 
 *::-webkit-scrollbar {
@@ -65,7 +65,7 @@ a:focus-visible {
   background: rgba(100, 116, 139, 0.08);
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.55);
+  background: rgba(71, 85, 105, 0.7);
   border-radius: 8px;
   border: 3px solid transparent;
   background-clip: padding-box;
@@ -76,22 +76,6 @@ a:focus-visible {
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-corner { background: transparent; }
-
-/* Force scrollbars to render on the main scroll containers even when
-   their content currently fits, so users see the scroll affordance
-   exists. (Chrome/Safari hide auto-overflow bars on macOS otherwise.) */
-.detail-card,
-.overview-mode,
-.transcript,
-.workspace-sidebar,
-.list-view,
-.properties-view,
-.report-preview,
-.sources-view,
-.reference-list,
-.excerpt-list {
-  overflow-y: scroll;
-}
 
 /* Dark surfaces (sidebar, mode shell) get a lighter thumb. */
 .workspace-sidebar,
