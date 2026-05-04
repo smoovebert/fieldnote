@@ -1139,7 +1139,7 @@ button {
   gap: 8px;
 }
 
-.refine-sidebar-new-code { margin-top: 12px; padding: 0 8px 8px; }
+.refine-sidebar-new-code { margin-bottom: 10px; padding: 0 8px; }
 
 .reference-count {
   border: 1px solid var(--line);

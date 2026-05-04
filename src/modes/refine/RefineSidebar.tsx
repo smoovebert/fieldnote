@@ -61,6 +61,20 @@ export function RefineSidebar(props: Props) {
 
   return (
     <>
+      <div className="new-code refine-sidebar-new-code">
+        <input
+          value={props.newCodeName}
+          placeholder="New code"
+          aria-label="New code name"
+          onChange={(event: ChangeEvent<HTMLInputElement>) => props.onNewCodeNameChange(event.target.value)}
+          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+            if (event.key === 'Enter') props.onAddCode()
+          }}
+        />
+        <button type="button" className="icon-button" onClick={props.onAddCode} aria-label="Add code">
+          <Plus size={18} aria-hidden="true" />
+        </button>
+      </div>
       <p className="code-tree-hint">Drag a code onto another to nest it. Drop above to unparent.</p>
       <div
         className={`code-tree-root-drop${rootDropActive ? ' is-drop-target' : ''}`}
@@ -134,20 +148,6 @@ export function RefineSidebar(props: Props) {
           </button>
         )
       })}
-      <div className="new-code refine-sidebar-new-code">
-        <input
-          value={props.newCodeName}
-          placeholder="New code"
-          aria-label="New code name"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => props.onNewCodeNameChange(event.target.value)}
-          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-            if (event.key === 'Enter') props.onAddCode()
-          }}
-        />
-        <button type="button" className="icon-button" onClick={props.onAddCode} aria-label="Add code">
-          <Plus size={18} aria-hidden="true" />
-        </button>
-      </div>
     </>
   )
 }
