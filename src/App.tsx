@@ -3493,11 +3493,11 @@ function App() {
           />
         )}
 
-        {(activeView === 'code' || activeView === 'refine') && (
+        {activeView === 'code' && (
           <section className="panel">
           <div className="panel-heading">
             <Highlighter size={18} aria-hidden="true" />
-            <h2>Coded excerpts</h2>
+            <h2>References</h2>
           </div>
           <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} compact />
           </section>
