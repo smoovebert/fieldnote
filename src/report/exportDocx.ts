@@ -46,7 +46,7 @@ export async function exportReportDocx(
   sections.push(heading(model.cover.title, 1))
   sections.push(
     para(
-      `${model.cover.dateIso} · ${model.cover.counts.sources} sources · ${model.cover.counts.codes} codes · ${model.cover.counts.references} coded references · ${model.cover.counts.cases} cases`,
+      `${model.cover.dateIso} · ${model.cover.counts.sources} sources · ${model.cover.counts.codes} codes · ${model.cover.counts.references} excerpts · ${model.cover.counts.cases} cases`,
       { color: '707070', size: 20 },
     ),
   )

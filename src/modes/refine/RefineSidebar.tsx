@@ -143,7 +143,7 @@ export function RefineSidebar(props: Props) {
             <span className="code-dot" style={{ background: code.color }} />
             <div>
               <strong>{code.name}</strong>
-              <span>{refCounts.get(code.id) ?? 0} direct references</span>
+              <span>{refCounts.get(code.id) ?? 0} direct excerpt{refCounts.get(code.id) === 1 ? '' : 's'}</span>
             </div>
           </button>
         )

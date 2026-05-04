@@ -30,7 +30,7 @@ export function ReportInspector(props: Props) {
           <dd>{props.codeCount}</dd>
         </div>
         <div>
-          <dt>References</dt>
+          <dt>Excerpts</dt>
           <dd>{props.excerptCount}</dd>
         </div>
         <div>

@@ -33,7 +33,7 @@ export function OrganizeDetail(props: Props) {
           <small>Type</small>
           <small>Folder</small>
           <small>Case</small>
-          <small>References</small>
+          <small>Excerpts</small>
           <small>Memo</small>
         </div>
         {sources.map((source) => {

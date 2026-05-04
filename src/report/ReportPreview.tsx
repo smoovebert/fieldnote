@@ -18,7 +18,7 @@ export function ReportPreview({ model }: Props) {
           {' · '}
           {model.cover.counts.codes} codes
           {' · '}
-          {model.cover.counts.references} coded references
+          {model.cover.counts.references} excerpts
           {' · '}
           {model.cover.counts.cases} cases
         </p>

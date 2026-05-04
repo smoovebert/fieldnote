@@ -302,7 +302,7 @@ const modeItems: Array<{
   { id: 'overview', label: 'Overview', description: 'Project summary, project memo, and quick stats.', status: 'ready', icon: LayoutDashboard },
   { id: 'organize', label: 'Organize', description: 'Import, prepare, and arrange sources.', status: 'ready',   icon: Folders },
   { id: 'code',     label: 'Code',     description: 'Close-read sources and code selected passages.', status: 'ready',   icon: Highlighter },
-  { id: 'refine',   label: 'Refine',   description: 'Clean the codebook and review code references.', status: 'partial', icon: ListTree },
+  { id: 'refine',   label: 'Refine',   description: 'Clean the codebook and review code excerpts.', status: 'partial', icon: ListTree },
   { id: 'classify', label: 'Classify', description: 'Create cases, attributes, and metadata.', status: 'partial', icon: Tags },
   { id: 'analyze',  label: 'Analyze',  description: 'Run searches, matrices, and comparisons.', status: 'partial', icon: BarChart3 },
   { id: 'report',   label: 'Report',   description: 'Export excerpts, memos, and codebooks.', status: 'partial', icon: FileText },
@@ -1236,7 +1236,7 @@ function App() {
 
   const analyzePanelCount =
     analyzePanel === 'matrix'
-      ? `${matrixTotalReferences} matrix references`
+      ? `${matrixTotalReferences} matrix excerpts`
       : analyzePanel === 'frequency'
         ? `${wordFrequencyRows.length} terms`
         : analyzePanel === 'cooccurrence'
@@ -1345,7 +1345,7 @@ function App() {
   function deleteActiveCode() {
     const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id)).length
     const shouldDelete = window.confirm(
-      `Delete "${activeCode.name}"? It will be removed from ${references} coded reference${references === 1 ? '' : 's'}.`
+      `Delete "${activeCode.name}"? It will be removed from ${references} excerpt${references === 1 ? '' : 's'}.`
     )
     if (!shouldDelete) return
 
@@ -1372,7 +1372,7 @@ function App() {
 
     const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(activeCode.id)).length
     if (!offerBackupBeforeRisky(
-      `Merge "${activeCode.name}" into "${targetCode.name}"? ${references} coded reference${references === 1 ? '' : 's'} will move to "${targetCode.name}", and "${activeCode.name}" will be removed from the codebook.`
+      `Merge "${activeCode.name}" into "${targetCode.name}"? ${references} excerpt${references === 1 ? '' : 's'} will move to "${targetCode.name}", and "${activeCode.name}" will be removed from the codebook.`
     )) return
 
     const next = libMergeCodeInto({
@@ -1420,7 +1420,7 @@ function App() {
         return { ...excerpt, codeIds: nextCodeIds }
       }),
     )
-    setSelectionHint(`Split ${excerptIds.length} reference${excerptIds.length === 1 ? '' : 's'} into new code "${trimmed}".`)
+    setSelectionHint(`Split ${excerptIds.length} excerpt${excerptIds.length === 1 ? '' : 's'} into new code "${trimmed}".`)
   }
 
   function buildNewCode(name: string, parentCodeId?: string): Code {
@@ -1493,7 +1493,7 @@ function App() {
         ...current,
       ]
     })
-    setSelectionHint(`${mergedExistingReference ? 'Added codes to existing reference' : 'Coded selection'} as ${label}.`)
+    setSelectionHint(`${mergedExistingReference ? 'Added codes to existing excerpt' : 'Coded selection'} as ${label}.`)
     window.getSelection()?.removeAllRanges()
   }
 
@@ -1530,7 +1530,7 @@ function App() {
 
   async function handleDraftDescription(codeName: string, references: Array<{ sourceTitle: string; text: string }>) {
     const refLines = references.map((r) => `[${r.sourceTitle}] ${r.text}`).join('\n')
-    const inputText = `Code name: ${codeName}\n\nReferences:\n${refLines}`
+    const inputText = `Code name: ${codeName}\n\nExcerpts:\n${refLines}`
     const result = await callAi({ kind: 'draft_description', inputText, projectId: projectId ?? null })
     if (!result.ok) return { ok: false as const, message: result.message }
     const response = result.response as { description: string }
@@ -2215,7 +2215,7 @@ function App() {
     const excerpt = excerpts.find((item) => item.id === id)
     if (!excerpt) return
 
-    const shouldDelete = window.confirm('Delete this coded reference? This removes the excerpt from all codes.')
+    const shouldDelete = window.confirm('Delete this excerpt? This removes the excerpt from all codes.')
     if (!shouldDelete) return
 
     setExcerpts((current) => libDeleteExcerpt(current, id))
@@ -2228,8 +2228,8 @@ function App() {
 
     const shouldRemove = window.confirm(
       excerpt.codeIds.length === 1
-        ? `Remove "${code.name}"? This reference has no other codes, so the reference will be deleted.`
-        : `Remove "${code.name}" from this reference?`
+        ? `Remove "${code.name}"? This excerpt has no other codes, so the excerpt will be deleted.`
+        : `Remove "${code.name}" from this excerpt?`
     )
     if (!shouldRemove) return
 
@@ -2248,17 +2248,17 @@ function App() {
       if (result.reason === 'selection-not-in-text') {
         setSelectionHint(
           selectedText
-            ? 'The selected text must be inside the coded reference you are splitting.'
-            : 'Select part of the coded reference text first, then click Split.',
+            ? 'The selected text must be inside the excerpt you are splitting.'
+            : 'Select part of the excerpt text first, then click Split.',
         )
       } else if (result.reason === 'selection-is-whole-text') {
-        setSelectionHint('Split needs a smaller selection, not the whole coded reference.')
+        setSelectionHint('Split needs a smaller selection, not the whole excerpt.')
       }
       return
     }
     setExcerpts(result.excerpts)
     window.getSelection()?.removeAllRanges()
-    setSelectionHint('Split the selected text into a new coded reference.')
+    setSelectionHint('Split the selected text into a new excerpt.')
   }
 
   function updateProjectMemo(body: string) {
@@ -2503,7 +2503,7 @@ function App() {
     event.preventDefault()
 
     const rows = [
-      ['Project', 'Parent code', 'Code', 'Description', 'References', 'Example excerpt'],
+      ['Project', 'Parent code', 'Code', 'Description', 'Excerpts', 'Example excerpt'],
       ...sortedCodes.map((code) => {
         const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id))
         return [projectTitle, code.parentCodeId ? codeById.get(code.parentCodeId)?.name ?? '' : '', code.name, code.description, String(references.length), references[0]?.text ?? '']
@@ -3273,7 +3273,7 @@ function App() {
                 {!analyzeResults.length && (
                   <div className="empty-table-state">
                     <strong>No matching excerpts</strong>
-                    <span>Loosen the filters or add more coded references.</span>
+                    <span>Loosen the filters or add more excerpts.</span>
                   </div>
                 )}
               </div>
@@ -3497,7 +3497,7 @@ function App() {
           <section className="panel">
           <div className="panel-heading">
             <Highlighter size={18} aria-hidden="true" />
-            <h2>References</h2>
+            <h2>Excerpts</h2>
           </div>
           <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} compact />
           </section>

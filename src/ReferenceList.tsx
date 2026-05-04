@@ -20,7 +20,7 @@ export function ReferenceList({
   compact?: boolean
 }) {
   if (!excerpts.length) {
-    return <p className="empty-reference-state">No coded references in this view yet.</p>
+    return <p className="empty-reference-state">No excerpts in this view yet.</p>
   }
 
   return (

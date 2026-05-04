@@ -53,7 +53,7 @@ export async function exportReportPdf(
   writeWrapped('RESEARCH REPORT', { size: 11, bold: true, color: 120, gap: 12 })
   writeWrapped(model.cover.title, { size: 28, bold: true, gap: 8 })
   writeWrapped(
-    `${model.cover.dateIso} · ${model.cover.counts.sources} sources · ${model.cover.counts.codes} codes · ${model.cover.counts.references} coded references · ${model.cover.counts.cases} cases`,
+    `${model.cover.dateIso} · ${model.cover.counts.sources} sources · ${model.cover.counts.codes} codes · ${model.cover.counts.references} excerpts · ${model.cover.counts.cases} cases`,
     { size: 10, color: 120, gap: 0 },
   )
 

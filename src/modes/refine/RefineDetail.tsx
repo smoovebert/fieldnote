@@ -79,7 +79,7 @@ export function RefineDetail(props: Props) {
           <p className="detail-kicker">Code workspace</p>
           <h2>{props.activeCode.name}</h2>
         </div>
-        <span className="reference-count">{props.codeExcerpts.length} references</span>
+        <span className="reference-count">{props.codeExcerpts.length} excerpt{props.codeExcerpts.length === 1 ? '' : 's'}</span>
       </div>
 
       {duplicates.length > 0 && (
@@ -103,7 +103,7 @@ export function RefineDetail(props: Props) {
       )}
 
       <div className="reference-toolbar">
-        <p className="detail-kicker">References</p>
+        <p className="detail-kicker">Excerpts</p>
         <button
           className="secondary-button"
           type="button"
@@ -119,7 +119,7 @@ export function RefineDetail(props: Props) {
         <section className="split-code-panel">
           <header>
             <strong>Split this code</strong>
-            <span>Select references to move into a new code. Unselected references stay on "{props.activeCode.name}".</span>
+            <span>Select excerpts to move into a new code. Unselected excerpts stay on "{props.activeCode.name}".</span>
           </header>
           <div className="split-code-form">
             <label className="property-field">
@@ -189,7 +189,7 @@ export function RefineDetail(props: Props) {
         <section className="orphan-review">
           <header className="orphan-review-header">
             <AlertTriangle size={15} aria-hidden="true" />
-            <strong>{orphanExcerpts.length} orphan reference{orphanExcerpts.length === 1 ? '' : 's'}</strong>
+            <strong>{orphanExcerpts.length} orphan excerpt{orphanExcerpts.length === 1 ? '' : 's'}</strong>
             <span>Excerpts whose codes were deleted or never set.</span>
             <button type="button" onClick={() => setOrphanReviewOpen((open) => !open)}>
               {orphanReviewOpen ? 'Hide' : 'Review'}

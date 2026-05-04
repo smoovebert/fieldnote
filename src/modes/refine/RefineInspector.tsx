@@ -99,7 +99,7 @@ export function RefineInspector(props: Props) {
   }, [props.activeCode, props.codes])
 
   const confirmMerge = (targetCode: Code) => {
-    if (!window.confirm(`Merge "${props.activeCode.name}" into "${targetCode.name}"? Every reference moves over and "${props.activeCode.name}" is removed.`)) return
+    if (!window.confirm(`Merge "${props.activeCode.name}" into "${targetCode.name}"? Every excerpt moves over and "${props.activeCode.name}" is removed.`)) return
     props.mergeActiveCodeIntoTarget(targetCode.id)
   }
 
@@ -149,7 +149,7 @@ export function RefineInspector(props: Props) {
               onClick={() => setAiPhase('preview')}
             >
               <Sparkles size={14} aria-hidden="true" />
-              Draft from references
+              Draft from excerpts
             </button>
           )}
         </span>
@@ -204,7 +204,7 @@ export function RefineInspector(props: Props) {
 
       <dl className="properties-list compact-properties">
         <div>
-          <dt>References</dt>
+          <dt>Excerpts</dt>
           <dd>{props.codeExcerpts.length}</dd>
         </div>
         <div>
@@ -265,13 +265,13 @@ export function RefineInspector(props: Props) {
                 >
                   <span className="code-dot" style={{ background: cand.code.color }} />
                   <span className="refine-merge-candidate-name">{cand.code.name}</span>
-                  <small>{cand.overlap} of {props.codeExcerpts.length} refs overlap</small>
+                  <small>{cand.overlap} of {props.codeExcerpts.length} excerpts overlap</small>
                 </button>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="refine-inspector-empty">{props.codeExcerpts.length === 0 ? 'Apply this code to references first to see suggested merge targets.' : 'No other code shares any references with this one.'}</p>
+          <p className="refine-inspector-empty">{props.codeExcerpts.length === 0 ? 'Apply this code to some text first to see suggested merge targets.' : 'No other code shares any excerpts with this one.'}</p>
         )}
 
         <div className="refine-merge-fallback">

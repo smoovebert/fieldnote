@@ -118,7 +118,7 @@ export function OrganizeInspector(props: Props) {
           <dd>{activeSourceWords}</dd>
         </div>
         <div>
-          <dt>References</dt>
+          <dt>Excerpts</dt>
           <dd>{sourceExcerpts.length}</dd>
         </div>
         <div>
