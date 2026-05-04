@@ -119,6 +119,8 @@ export function CodeDetail(props: Props) {
     props.setSelectedCodeIds(nextCodeIds)
     props.setActiveCodeId(code.id)
     props.applyCodesToText(quickCodeMenu.text, nextCodeIds, nextLabel, quickCodeMenu.pageInfo)
+    setQuickNewCodeName('')
+    setQuickCodeMenu(null)
   }
 
   return (
@@ -407,7 +409,15 @@ export function CodeDetail(props: Props) {
               </button>
             ))}
           </div>
-          <button className="primary-button" type="button" onClick={() => props.codeSelection(quickCodeMenu.text, quickCodeMenu.pageInfo)}>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={props.selectedCodeIds.length === 0}
+            onClick={() => {
+              props.codeSelection(quickCodeMenu.text, quickCodeMenu.pageInfo)
+              setQuickCodeMenu(null)
+            }}
+          >
             <Highlighter size={16} aria-hidden="true" />
             Apply {props.selectedCodeIds.length} code{props.selectedCodeIds.length === 1 ? '' : 's'}
           </button>
