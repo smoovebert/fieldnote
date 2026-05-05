@@ -2,6 +2,8 @@
 
 Fieldnote is a modern qualitative coding workspace built with React, Vite, Vercel, Supabase Auth, and Supabase Postgres.
 
+Production: https://fieldnoteqda.com
+
 ## What Is Wired Up
 
 - React/Vite frontend for coding transcripts.

@@ -158,7 +158,8 @@ Workspace layout is now three columns:
 
 ## Live Links
 
-- Production app: https://fieldnote-seven.vercel.app
+- Production app: https://fieldnoteqda.com
+- Vercel fallback URL: https://fieldnote-seven.vercel.app
 - GitHub repo: https://github.com/smoovebert/fieldnote
 - Vercel project: `behemoth-agency/fieldnote`
 - Supabase project: `Fieldnote`
@@ -170,6 +171,8 @@ Use the production URL for normal testing:
 ```text
 https://fieldnote-seven.vercel.app
 ```
+
+Primary production domain is `https://fieldnoteqda.com`; keep the Vercel URL as a fallback while DNS and auth settings settle.
 
 Vercel has the required `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` variables in Production and Development. Preview deployments from the production branch do not automatically receive those variables, so ad hoc preview links may show the missing-env message unless deployed with explicit build env values or created from a non-production preview branch.
 

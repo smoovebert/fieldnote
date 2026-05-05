@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.fieldnoteqda.com"
+        }
+      ],
+      "destination": "https://fieldnoteqda.com/$1",
+      "permanent": true
+    }
+  ]
+}

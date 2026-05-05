@@ -101,7 +101,7 @@ Three filters in order:
 
 - Build/dev: Albert Ocampo (GitHub: smoovebert).
 - Studio email: studio.ops@behemothagency.com.
-- Live URLs: production at https://fieldnote-seven.vercel.app.
+- Live URLs: production at https://fieldnoteqda.com; Vercel fallback at https://fieldnote-seven.vercel.app.
 
 ## Known constraints worth remembering
 
