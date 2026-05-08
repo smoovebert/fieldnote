@@ -3645,8 +3645,16 @@ textarea {
 }
 
 /* ----- Reader column ------------------------------------------------ */
+/* Container-query unit `cqi` (= 1% of inline size) lets the transcript
+   font scale to fit the column. With --reader-fit-chars set to the
+   user's lineNumberingWidth, an N-source-char numbered line always
+   spans roughly the full container width: 40-char numbering reads as
+   big copy, 200-char as small dense copy. The 1.85 multiplier is the
+   empirical em-to-ch ratio for Newsreader's body face; clamp() floors
+   the size at 12px (narrow panes) and caps at 28px (ultrawide). The
+   --reader-measure cap is gone — the font itself is now the cap. */
 .app-shell[data-shell="new"] .reader-column {
-  max-width: var(--reader-measure);
+  container-type: inline-size;
   margin: 0 auto;
   padding: var(--reader-pad-y) var(--reader-pad-x);
   background: var(--paper);
@@ -3685,7 +3693,11 @@ textarea {
    the same baseline as its line. */
 .app-shell[data-shell="new"] .reader-column .transcript {
   font-family: var(--font-reader);
-  font-size: 16.5px;
+  /* Container-query-driven sizing: an N-source-char line fills the
+     container at the chosen font-size. 100cqi = full inline size of
+     reader-column. 1.85 = empirical em→ch ratio for Newsreader's
+     body face. Clamp guards against extreme panes. */
+  font-size: clamp(12px, calc(100cqi / var(--reader-fit-chars, 80) * 1.85), 28px);
   line-height: 1.75;
   color: var(--ink);
 }

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Highlighter, Plus, Sparkles } from 'lucide-react'
 import type { Code, Source } from '../../lib/types'
 import { markBackground, selectionPageInfo } from './transcript'
@@ -196,16 +197,19 @@ export function CodeDetail(props: Props) {
         </div>
       </div>
 
-      {/* The fixed-width numbering mode used to override --reader-measure
-          to exactly `${lineNumberingWidth}ch`, but `ch` is the width of
-          `0` and a serif body font has plenty of glyphs wider than that
-          (m, w, capitals, punctuation), so an 80-source-char line
-          routinely overflowed the 80ch container and wrapped visually.
-          Line breaks are already enforced in the content via injected
-          `\n` (wrapHighlightedTranscript), so the container width
-          doesn't need to track lineNumberingWidth at all — let the
-          global --reader-measure token (96ch) apply in both modes. */}
-      <div className="reader-column">
+      {/* Container-query-driven font scaling: `--reader-fit-chars`
+          tells the reader's transcript font-size rule how many source
+          chars an "ideal" line should be so the chosen size fills
+          the column. In fixed-width numbering mode that's exactly
+          lineNumberingWidth — every numbered line is hard-wrapped at
+          that count, so the font scales to make N chars span the
+          container. In paragraph mode the wrap is natural; we still
+          pass the same hint so the font doesn't lurch when the user
+          flips modes. */}
+      <div
+        className="reader-column"
+        style={{ '--reader-fit-chars': props.lineNumberingWidth } as CSSProperties}
+      >
         <div className="reader-meta-strip fn-meta">
           <span>{props.activeSource.caseName || props.activeSource.kind}</span>
           <span aria-hidden="true">·</span>
