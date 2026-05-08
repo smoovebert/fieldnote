@@ -466,7 +466,8 @@ function App() {
   const [codes, setCodes] = useState(defaultProject.codes)
   const [memos, setMemos] = useState(defaultProject.memos)
   const [excerpts, setExcerpts] = useState(defaultProject.excerpts)
-  const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([initialCodes[0].id])
+  const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([])
+  const [persistActiveCodes, setPersistActiveCodes] = useState(false)
   const [newCodeName, setNewCodeName] = useState('')
   const [newAttributeName, setNewAttributeName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -596,7 +597,7 @@ function App() {
     setExcerpts(nextProject.excerpts)
     setActiveCodeId(nextProject.codes[0]?.id ?? initialCodes[0].id)
     setActiveMemoId(nextProject.memos[0]?.id ?? initialMemos[0].id)
-    setSelectedCodeIds(nextProject.codes[0]?.id ? [nextProject.codes[0].id] : [initialCodes[0].id])
+    setSelectedCodeIds([])
     setQueryText('')
     setQueryCodeId('')
     setQueryAdditionalCodeIds([])
@@ -1366,6 +1367,35 @@ function App() {
     setActiveCodeId(next.codes[0].id)
   }
 
+  function deleteCodes(codeIds: string[]) {
+    if (codeIds.length === 0) return
+    const remainingAfter = codes.length - codeIds.length
+    if (remainingAfter <= 0) {
+      setSelectionHint('Keep at least one code in the codebook.')
+      return
+    }
+    const refCount = excerpts.filter((e) => e.codeIds.some((id) => codeIds.includes(id))).length
+    const ok = window.confirm(
+      `Delete ${codeIds.length} code${codeIds.length === 1 ? '' : 's'}? They will be removed from ${refCount} excerpt${refCount === 1 ? '' : 's'}, and any children re-parent up.`
+    )
+    if (!ok) return
+
+    // Iterate libDeleteCode — children re-parent up on each pass, so
+    // any order produces the same final state.
+    let acc = { codes, excerpts, memos }
+    for (const id of codeIds) {
+      acc = libDeleteCode({ codes: acc.codes, excerpts: acc.excerpts, memos: acc.memos, codeId: id })
+    }
+    setCodes(acc.codes)
+    setExcerpts(acc.excerpts)
+    setMemos(acc.memos)
+    setSelectedCodeIds((current) => current.filter((id) => !codeIds.includes(id)))
+    if (codeIds.includes(activeCode.id)) {
+      setActiveCodeId(acc.codes[0]?.id ?? '')
+    }
+    setSelectionHint(`Deleted ${codeIds.length} code${codeIds.length === 1 ? '' : 's'}.`)
+  }
+
   function mergeActiveCodeIntoTarget(targetCodeId: string) {
     const targetCode = codes.find((code) => code.id === targetCodeId)
     if (!activeCode || !targetCode || activeCode.id === targetCode.id) return
@@ -1496,6 +1526,7 @@ function App() {
     })
     setSelectionHint(`${mergedExistingReference ? 'Added codes to existing excerpt' : 'Coded selection'} as ${label}.`)
     window.getSelection()?.removeAllRanges()
+    if (!persistActiveCodes) setSelectedCodeIds([])
   }
 
   // pageInfo comes from the Code-mode reader for PDF sources only. The
@@ -1607,7 +1638,20 @@ function App() {
   }
 
   function createCaseFromSource() {
-    const caseName = activeSource.caseName?.trim() || activeSource.title
+    // Prompt for the case name explicitly. Falling back silently to
+    // the source title (the prior behavior) led to cases named after
+    // filenames like "Interview-03.txt" — confusing in the case
+    // list later. Pre-fill the prompt with the source's existing
+    // caseName, or the source title as a sensible default.
+    const suggested = activeSource.caseName?.trim() || activeSource.title
+    const raw = window.prompt('Name this case (e.g. "Participant One")', suggested)
+    if (raw == null) return
+    const caseName = raw.trim()
+    if (!caseName) {
+      setSelectionHint('Case name is required.')
+      return
+    }
+
     const existingCase = cases.find((item) => item.name.toLowerCase() === caseName.toLowerCase())
 
     if (existingCase) {
@@ -1617,6 +1661,7 @@ function App() {
         )
       )
       updateSource(activeSource.id, { caseName: existingCase.name })
+      setSelectionHint(`Added "${activeSource.title}" to case "${existingCase.name}".`)
       return
     }
 
@@ -1628,6 +1673,7 @@ function App() {
     }
     setCases((current) => [...current, newCase])
     updateSource(activeSource.id, { caseName: newCase.name })
+    setSelectionHint(`Created case "${newCase.name}".`)
   }
 
   function createCasesFromSources() {
@@ -1712,15 +1758,44 @@ function App() {
     })
   }
 
-  function importAttributesCsv(event: ChangeEvent<HTMLInputElement>) {
+  async function importAttributesFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
     event.target.value = ''
 
-    file.text().then((text) => {
-      const rows = parseCsv(text)
+    let rows: string[][]
+    try {
+      const lower = file.name.toLowerCase()
+      if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+        // SheetJS sheet_to_json with header:1 returns array-of-arrays
+        // in the same shape as parseCsv, so the rest of the import
+        // logic stays unchanged. raw:false coerces dates/numbers to
+        // their displayed string form (matches what a human sees in
+        // the spreadsheet).
+        const XLSX = await import('xlsx')
+        const buffer = await file.arrayBuffer()
+        const workbook = XLSX.read(buffer, { type: 'array' })
+        const firstSheetName = workbook.SheetNames[0]
+        if (!firstSheetName) {
+          setSelectionHint('Spreadsheet has no sheets.')
+          return
+        }
+        const sheet = workbook.Sheets[firstSheetName]
+        const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, defval: '' })
+        rows = aoa
+          .map((row) => row.map((cell) => (cell == null ? '' : String(cell))))
+          .filter((row) => row.some((cell) => cell.trim() !== ''))
+      } else {
+        rows = parseCsv(await file.text())
+      }
+    } catch (error) {
+      setSelectionHint(`Could not read file: ${error instanceof Error ? error.message : String(error)}`)
+      return
+    }
+
+    {
       if (rows.length < 2) {
-        setSelectionHint('CSV needs a header row plus at least one case row.')
+        setSelectionHint('File needs a header row plus at least one case row.')
         return
       }
       const header = rows[0]
@@ -1754,20 +1829,35 @@ function App() {
       })
 
       let updated = 0
-      let skipped = 0
+      let skippedNoName = 0
       const updatesByPair = new Map<string, string>() // `${caseId}::${attributeId}` -> value
+      const newCases: Case[] = []
+      // Working snapshot the loop reads from — includes both pre-existing
+      // cases and any cases we create during this import so duplicate
+      // rows for the same name resolve to the same generated case.
+      const caseLookup = [...cases]
 
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i]
         const caseName = row[0]?.trim()
         if (!caseName) {
-          skipped += 1
+          skippedNoName += 1
           continue
         }
-        const matchedCase = cases.find((c) => c.name.trim().toLowerCase() === caseName.toLowerCase())
+        let matchedCase = caseLookup.find((c) => c.name.trim().toLowerCase() === caseName.toLowerCase())
         if (!matchedCase) {
-          skipped += 1
-          continue
+          // Auto-create the case so the row's attributes actually
+          // land somewhere. Researchers commonly import the
+          // demographics spreadsheet before transcripts; the prior
+          // behavior silently skipped every row in that flow.
+          matchedCase = {
+            id: `case-${Date.now()}-${newCases.length}`,
+            name: caseName,
+            description: '',
+            sourceIds: [],
+          }
+          newCases.push(matchedCase)
+          caseLookup.push(matchedCase)
         }
         for (let col = 0; col < attrNames.length; col++) {
           const attrId = attrIdByHeaderIndex[col]
@@ -1781,6 +1871,9 @@ function App() {
 
       if (newAttrs.length) {
         setAttributes((current) => [...current, ...newAttrs])
+      }
+      if (newCases.length) {
+        setCases((current) => [...current, ...newCases])
       }
       if (updatesByPair.size) {
         setAttributeValues((current) => {
@@ -1801,14 +1894,12 @@ function App() {
         })
       }
 
-      const summary = `Imported ${updated} attribute value${updated === 1 ? '' : 's'}` +
-        (newAttrs.length ? `, created ${newAttrs.length} new attribute${newAttrs.length === 1 ? '' : 's'}` : '') +
-        (skipped > 0 ? `, skipped ${skipped} row${skipped === 1 ? '' : 's'} (no matching case)` : '') +
-        '.'
-      setSelectionHint(summary)
-    }).catch((error) => {
-      setSelectionHint(`Could not read CSV: ${error instanceof Error ? error.message : String(error)}`)
-    })
+      const parts: string[] = [`Imported ${updated} attribute value${updated === 1 ? '' : 's'}`]
+      if (newAttrs.length) parts.push(`created ${newAttrs.length} new attribute${newAttrs.length === 1 ? '' : 's'}`)
+      if (newCases.length) parts.push(`created ${newCases.length} new case${newCases.length === 1 ? '' : 's'}`)
+      if (skippedNoName > 0) parts.push(`skipped ${skippedNoName} row${skippedNoName === 1 ? '' : 's'} with no name`)
+      setSelectionHint(parts.join(', ') + '.')
+    }
   }
 
   function applyQueryDefinition(definition: QueryDefinition) {
@@ -2878,6 +2969,7 @@ function App() {
               newCodeName={newCodeName}
               onNewCodeNameChange={setNewCodeName}
               onAddCode={addCode}
+              onDeleteCodes={deleteCodes}
             />
           )}
           <ScrollAffordance />
@@ -2966,6 +3058,10 @@ function App() {
             onProjectMemoChange={updateProjectMemo}
             onDraftProjectMemo={handleDraftProjectMemo}
             isHostedAi={isHostedAi}
+            onOpenAiSettings={() => setAiSettingsOpen(true)}
+            cases={cases}
+            attributes={attributes}
+            onNavigate={setActiveView}
             onRestoreVersion={(version) => {
               setActiveSourceId(version.data.activeSourceId)
               setSources(version.data.sources)
@@ -3018,6 +3114,9 @@ function App() {
             buildNewCode={buildNewCode}
             onSuggestCodes={handleSuggestCodes}
             isHostedAi={isHostedAi}
+            persistActiveCodes={persistActiveCodes}
+            setPersistActiveCodes={setPersistActiveCodes}
+            onOpenAiSettings={() => setAiSettingsOpen(true)}
           />
         )}
 
@@ -3050,7 +3149,7 @@ function App() {
             setNewAttributeName={setNewAttributeName}
             createCasesFromSources={createCasesFromSources}
             addAttribute={addAttribute}
-            importAttributesCsv={importAttributesCsv}
+            importAttributesFile={importAttributesFile}
             selectActiveSource={selectActiveSource}
             assignSourceToCase={assignSourceToCase}
             updateCase={updateCase}
@@ -3291,20 +3390,21 @@ function App() {
                       <option value="attribute">Attribute values</option>
                     </select>
                   </label>
-                  <label className="property-field">
-                    <span>Attribute</span>
-                    <select
-                      value={activeMatrixAttribute?.id ?? ''}
-                      disabled={matrixColumnMode !== 'attribute'}
-                      onChange={(event) => setMatrixAttributeId(event.target.value)}
-                    >
-                      {attributes.map((attribute) => (
-                        <option key={attribute.id} value={attribute.id}>
-                          {attribute.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  {matrixColumnMode === 'attribute' && (
+                    <label className="property-field">
+                      <span>Attribute</span>
+                      <select
+                        value={activeMatrixAttribute?.id ?? ''}
+                        onChange={(event) => setMatrixAttributeId(event.target.value)}
+                      >
+                        {attributes.map((attribute) => (
+                          <option key={attribute.id} value={attribute.id}>
+                            {attribute.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                 </div>
                 <MatrixView
                   rowLabels={matrixRows.map((code) => code.name)}
@@ -3415,6 +3515,7 @@ function App() {
             deleteActiveSource={deleteActiveSource}
             onSummarizeSource={handleSummarizeSource}
             isHostedAi={isHostedAi}
+            onOpenAiSettings={() => setAiSettingsOpen(true)}
           />
         )}
 
@@ -3448,6 +3549,7 @@ function App() {
             onSelectCode={(id) => setActiveCodeId(id)}
             onDraftDescription={handleDraftDescription}
             isHostedAi={isHostedAi}
+            onOpenAiSettings={() => setAiSettingsOpen(true)}
           />
         )}
 
@@ -3662,6 +3764,7 @@ function ListView({
   newCodeName,
   onNewCodeNameChange,
   onAddCode,
+  onDeleteCodes,
 }: {
   activeView: WorkspaceView
   activeSourceId: string
@@ -3684,6 +3787,7 @@ function ListView({
   onReparentCode: (codeId: string, parentCodeId: string) => void
   newCodeName: string
   onNewCodeNameChange: (next: string) => void
+  onDeleteCodes: (codeIds: string[]) => void
   onAddCode: () => void
 }) {
   return (
@@ -3709,6 +3813,7 @@ function ListView({
           newCodeName={newCodeName}
           onNewCodeNameChange={onNewCodeNameChange}
           onAddCode={onAddCode}
+          onDeleteCodes={onDeleteCodes}
         />
       )}
       {activeView === 'classify' && (

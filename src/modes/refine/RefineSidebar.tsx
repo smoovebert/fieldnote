@@ -3,8 +3,8 @@
 // state is local — only the reparent decision flows back out via callback.
 
 import { useMemo, useState } from 'react'
-import type { ChangeEvent, KeyboardEvent } from 'react'
-import { Plus } from 'lucide-react'
+import type { ChangeEvent, KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
+import { Plus, Trash2, X } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { buildCodeTree } from '../../lib/codeTree'
 
@@ -17,6 +17,7 @@ type Props = {
   newCodeName: string
   onNewCodeNameChange: (next: string) => void
   onAddCode: () => void
+  onDeleteCodes: (codeIds: string[]) => void
 }
 
 export function RefineSidebar(props: Props) {
@@ -24,6 +25,11 @@ export function RefineSidebar(props: Props) {
   const [draggingCodeId, setDraggingCodeId] = useState<string | null>(null)
   const [dropTargetCodeId, setDropTargetCodeId] = useState<string | null>(null)
   const [rootDropActive, setRootDropActive] = useState(false)
+  // Bulk-selection set for multi-delete. Cmd/Ctrl-click toggles a code
+  // in/out without changing the active code; plain click selects the
+  // active code and clears the bulk set so the two interactions don't
+  // fight each other.
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set())
 
   // Build descendant set for the dragged code so we can reject drops onto
   // self/descendants — without this, a user could drag a parent into its
@@ -75,7 +81,7 @@ export function RefineSidebar(props: Props) {
           <Plus size={18} aria-hidden="true" />
         </button>
       </div>
-      <p className="code-tree-hint">Drag a code onto another to nest it. Drop above to unparent.</p>
+      <p className="code-tree-hint">Drag a code onto another to nest it. Drop above to unparent. {navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}-click to multi-select for bulk delete.</p>
       <div
         className={`code-tree-root-drop${rootDropActive ? ' is-drop-target' : ''}`}
         onDragOver={(event) => {
@@ -95,14 +101,41 @@ export function RefineSidebar(props: Props) {
       >
         ↑ Drop here to make top-level
       </div>
+      {bulkSelected.size > 0 && (
+        <div className="refine-bulk-bar">
+          <span className="refine-bulk-count">{bulkSelected.size} selected</span>
+          <button
+            type="button"
+            className="refine-bulk-delete"
+            onClick={() => {
+              const ids = Array.from(bulkSelected)
+              props.onDeleteCodes(ids)
+              setBulkSelected(new Set())
+            }}
+          >
+            <Trash2 size={13} aria-hidden="true" />
+            Delete
+          </button>
+          <button
+            type="button"
+            className="refine-bulk-clear"
+            onClick={() => setBulkSelected(new Set())}
+            aria-label="Clear bulk selection"
+          >
+            <X size={13} aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {orderedCodes.map((code) => {
         const isActive = code.id === props.activeCodeId
         const isDragging = draggingCodeId === code.id
         const isDropTarget = dropTargetCodeId === code.id && isValidDrop(code.id)
+        const isBulkSelected = bulkSelected.has(code.id)
         const classes = ['list-item']
         if (isActive) classes.push('active')
         if (isDragging) classes.push('is-dragging')
         if (isDropTarget) classes.push('is-drop-target')
+        if (isBulkSelected) classes.push('is-bulk-selected')
         return (
           <button
             className={classes.join(' ')}
@@ -110,7 +143,19 @@ export function RefineSidebar(props: Props) {
             type="button"
             style={{ paddingLeft: 14 + code.depth * 16 }}
             draggable
-            onClick={() => props.onSelectCode(code.id)}
+            onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+              if (event.metaKey || event.ctrlKey) {
+                setBulkSelected((current) => {
+                  const next = new Set(current)
+                  if (next.has(code.id)) next.delete(code.id)
+                  else next.add(code.id)
+                  return next
+                })
+                return
+              }
+              setBulkSelected(new Set())
+              props.onSelectCode(code.id)
+            }}
             onDragStart={(event) => {
               setDraggingCodeId(code.id)
               event.dataTransfer.effectAllowed = 'move'

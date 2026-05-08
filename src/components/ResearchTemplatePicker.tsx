@@ -19,7 +19,10 @@ type Props = {
   onClose: () => void
 }
 
-const PRESELECTED_ID = 'inductive-interview'
+// Default to Blank so new users aren't pushed into a methodology
+// codebook before they understand what one is. Methodology templates
+// live under their own heading further down the modal.
+const PRESELECTED_ID = 'blank'
 
 export function ResearchTemplatePicker({ defaultName, busy, errorMessage, onCreate, onClose }: Props) {
   const [title, setTitle] = useState(defaultName ?? '')
@@ -92,15 +95,12 @@ export function ResearchTemplatePicker({ defaultName, busy, errorMessage, onCrea
             />
           </label>
 
-          <div className="research-template-grid-label">Pick a starting point</div>
-          <div className="research-template-grid" role="radiogroup" aria-label="Starting point">
-            {RESEARCH_TEMPLATES.map((template) => {
+          {(() => {
+            const starts = RESEARCH_TEMPLATES.filter((t) => t.kind === 'start')
+            const templates = RESEARCH_TEMPLATES.filter((t) => t.kind === 'template')
+            const renderCard = (template: ResearchTemplate) => {
               const isSelected = template.id === selectedId
-              const codeCount = template.id === 'sample'
-                ? template.buildSeed().codes.length
-                : template.id === 'blank'
-                  ? 0
-                  : template.buildSeed().codes.length
+              const codeCount = template.buildSeed().codes.length
               return (
                 <button
                   key={template.id}
@@ -118,8 +118,24 @@ export function ResearchTemplatePicker({ defaultName, busy, errorMessage, onCrea
                   </div>
                 </button>
               )
-            })}
-          </div>
+            }
+            return (
+              <>
+                <div className="research-template-grid-label">Pick a starting point</div>
+                <div className="research-template-grid" role="radiogroup" aria-label="Starting point">
+                  {starts.map(renderCard)}
+                </div>
+
+                <div className="research-template-grid-label research-template-grid-label-secondary">
+                  Templates
+                  <span className="research-template-grid-label-hint">— methodology codebooks for common qualitative approaches</span>
+                </div>
+                <div className="research-template-grid" role="radiogroup" aria-label="Methodology templates">
+                  {templates.map(renderCard)}
+                </div>
+              </>
+            )
+          })()}
 
           {errorMessage && (
             <p className="research-template-error" role="alert">{errorMessage}</p>

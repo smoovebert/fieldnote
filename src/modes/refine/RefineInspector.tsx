@@ -28,6 +28,7 @@ type Props = {
   onSelectCode: (codeId: string) => void
   onDraftDescription: (codeName: string, references: Array<{ sourceTitle: string; text: string }>) => Promise<{ ok: true; description: string } | { ok: false; message: string }>
   isHostedAi: boolean
+  onOpenAiSettings: () => void
 }
 
 type MergeCandidate = {
@@ -169,6 +170,7 @@ export function RefineInspector(props: Props) {
           estimatedCostUsd={inputCost}
           errorMessage={aiError}
           showHostedQuota={props.isHostedAi}
+          onOpenSettings={() => { props.onOpenAiSettings(); setAiPhase('idle'); setAiError(undefined) }}
           onCancel={() => { setAiPhase('idle'); setAiDraft(''); setAiError(undefined) }}
           onSend={async () => {
             setAiPhase('loading')

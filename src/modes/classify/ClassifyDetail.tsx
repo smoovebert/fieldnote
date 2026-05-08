@@ -15,7 +15,7 @@ type Props = {
   setNewAttributeName: (value: string) => void
   createCasesFromSources: () => void
   addAttribute: () => void
-  importAttributesCsv: (event: ChangeEvent<HTMLInputElement>) => void
+  importAttributesFile: (event: ChangeEvent<HTMLInputElement>) => void
   selectActiveSource: (id: string) => void
   assignSourceToCase: (sourceId: string, caseId: string) => void
   updateCase: (caseId: string, patch: Partial<Case>) => void
@@ -63,10 +63,15 @@ export function ClassifyDetail(props: Props) {
           <UserPlus size={16} aria-hidden="true" />
           Create cases from sources
         </button>
-        <label className="secondary-button" title="Import attribute values from CSV (first column = case name, headers = attribute names)">
+        <label className="secondary-button" title="Import attribute values from CSV or Excel (first column = case name, headers = attribute names). Cases that don't exist yet are created automatically.">
           <FilePlus2 size={16} aria-hidden="true" />
-          Import attributes CSV
-          <input type="file" accept=".csv" style={{ display: 'none' }} onChange={props.importAttributesCsv} />
+          Import attributes (CSV / XLSX)
+          <input
+            type="file"
+            accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            style={{ display: 'none' }}
+            onChange={props.importAttributesFile}
+          />
         </label>
         <label className="inline-entry">
           <input value={props.newAttributeName} placeholder="New attribute" onChange={(event) => props.setNewAttributeName(event.target.value)} />

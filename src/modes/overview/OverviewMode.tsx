@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { BarChart3, Download, History, Network, RotateCcw, Sparkles } from 'lucide-react'
-import type { Code, Excerpt, Memo, Source } from '../../lib/types'
+import type { Attribute, Case, Code, Excerpt, Memo, Source } from '../../lib/types'
 import { computeOntology, computeProgress } from './stats'
 import { StatCard } from './StatCard'
 import { listVersions, type ProjectVersion } from '../../lib/localRecovery'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
 import { estimateCostUsd } from '../../ai/client'
 import { ScrollAffordance } from '../../components/ScrollAffordance'
+import { SetupChecklist } from './SetupChecklist'
+
+type WorkspaceView = 'overview' | 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 
 type Props = {
   title: string
@@ -26,6 +29,12 @@ type Props = {
   onExportBackup: () => void
   onDraftProjectMemo: () => Promise<{ ok: true; memo: string } | { ok: false; message: string }>
   isHostedAi: boolean
+  onOpenAiSettings: () => void
+  // Onboarding checklist data — derived inside SetupChecklist from
+  // these arrays. The whole list self-hides once everything is done.
+  cases: Case[]
+  attributes: Attribute[]
+  onNavigate: (view: WorkspaceView) => void
 }
 
 export function OverviewMode(props: Props) {
@@ -83,6 +92,15 @@ export function OverviewMode(props: Props) {
         </div>
       </header>
 
+      <SetupChecklist
+        projectId={props.projectId}
+        sources={props.sources}
+        cases={props.cases}
+        attributes={props.attributes}
+        excerpts={props.excerpts}
+        onNavigate={props.onNavigate}
+      />
+
       <div className="overview-stats">
         <StatCard
           label="Progress"
@@ -127,6 +145,7 @@ export function OverviewMode(props: Props) {
             estimatedCostUsd={estCost}
             errorMessage={aiError}
             showHostedQuota={props.isHostedAi}
+            onOpenSettings={() => { props.onOpenAiSettings(); setAiPhase('idle'); setAiError(undefined) }}
             onCancel={() => { setAiPhase('idle'); setAiDraft(''); setAiError(undefined) }}
             onSend={async () => {
               setAiPhase('loading')

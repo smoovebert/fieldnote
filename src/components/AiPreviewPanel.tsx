@@ -21,6 +21,11 @@ type Props = {
   children?: ReactNode // result body
   onSend: () => void
   onCancel: () => void
+  // When provided, the error state renders an "Open AI settings" link
+  // so users hitting consent/key/quota errors can reach the panel
+  // (where the IRB consent checkbox + BYOK live) without hunting for
+  // it in the profile menu.
+  onOpenSettings?: () => void
 }
 
 function quotaTone(q: Quota): string {
@@ -29,7 +34,7 @@ function quotaTone(q: Quota): string {
   return 'ai-preview-quota'
 }
 
-export function AiPreviewPanel({ phase, inputPreview, estimatedTokens, estimatedCostUsd, errorMessage, showHostedQuota, children, onSend, onCancel }: Props) {
+export function AiPreviewPanel({ phase, inputPreview, estimatedTokens, estimatedCostUsd, errorMessage, showHostedQuota, children, onSend, onCancel, onOpenSettings }: Props) {
   // Reload quota whenever the panel enters or returns to the preview
   // phase (i.e., after a successful call lands and the user opens
   // another draft). Keeps the badge fresh without a global subscription.
@@ -87,8 +92,15 @@ export function AiPreviewPanel({ phase, inputPreview, estimatedTokens, estimated
 
       {phase === 'error' && (
         <div className="ai-preview-error">
-          {errorMessage ?? 'Something went wrong.'}
-          <button type="button" onClick={onCancel}>Dismiss</button>
+          <span>{errorMessage ?? 'Something went wrong.'}</span>
+          <div className="ai-preview-error-actions">
+            {onOpenSettings && (
+              <button type="button" className="link-button" onClick={onOpenSettings}>
+                Open AI settings
+              </button>
+            )}
+            <button type="button" onClick={onCancel}>Dismiss</button>
+          </div>
         </div>
       )}
     </section>

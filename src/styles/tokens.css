@@ -117,7 +117,7 @@
   --shadow-sheet: 0 1px 0 oklch(0 0 0 / 0.04), 0 24px 60px -20px oklch(0 0 0 / 0.18);
 
   /* Reader column */
-  --reader-measure: 64ch;     /* ~65 chars per line */
+  --reader-measure: 96ch;     /* ~110 chars per line — Fieldnote's reader is a work surface (coding/highlighting), so we widen past the prose-reading 64–72ch cap. Still centers on ultra-wide displays via margin: 0 auto. */
   --reader-pad-x: 56px;
   --reader-pad-y: 56px;
 }

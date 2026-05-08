@@ -2,15 +2,27 @@ import { describe, expect, it } from 'vitest'
 import { RESEARCH_TEMPLATES, getTemplate } from '../researchTemplates'
 
 describe('researchTemplates registry', () => {
-  it('ships exactly five entries: three methodology + sample + blank', () => {
+  it('ships exactly five entries: blank + sample + three methodology templates', () => {
     expect(RESEARCH_TEMPLATES).toHaveLength(5)
+    // Blank is first so it's the default selection in the picker;
+    // Sample sits next to it on the "starts" row; methodology
+    // templates follow under their own heading.
     expect(RESEARCH_TEMPLATES.map((t) => t.id)).toEqual([
+      'blank',
+      'sample',
       'inductive-interview',
       'deductive-interview',
       'focus-group',
-      'sample',
-      'blank',
     ])
+  })
+
+  it('classifies each entry as a start or a template', () => {
+    const byId = new Map(RESEARCH_TEMPLATES.map((t) => [t.id, t.kind]))
+    expect(byId.get('blank')).toBe('start')
+    expect(byId.get('sample')).toBe('start')
+    expect(byId.get('inductive-interview')).toBe('template')
+    expect(byId.get('deductive-interview')).toBe('template')
+    expect(byId.get('focus-group')).toBe('template')
   })
 
   it('every template has the required string fields', () => {
@@ -24,7 +36,7 @@ describe('researchTemplates registry', () => {
   })
 
   it('getTemplate returns the right template by id and undefined for unknown', () => {
-    expect(getTemplate('focus-group')?.name).toBe('Focus group')
+    expect(getTemplate('focus-group')?.name).toBe('Focus group analysis')
     expect(getTemplate('does-not-exist')).toBeUndefined()
   })
 })

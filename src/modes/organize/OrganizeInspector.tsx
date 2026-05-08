@@ -22,6 +22,7 @@ type Props = {
   deleteActiveSource: () => void
   onSummarizeSource: (source: { title: string; content: string }) => Promise<{ ok: true; summary: string } | { ok: false; message: string }>
   isHostedAi: boolean
+  onOpenAiSettings: () => void
 }
 
 export function OrganizeInspector(props: Props) {
@@ -183,6 +184,7 @@ export function OrganizeInspector(props: Props) {
             estimatedCostUsd={inputCost}
             errorMessage={aiError}
             showHostedQuota={props.isHostedAi}
+            onOpenSettings={() => { props.onOpenAiSettings(); setAiPhase('idle'); setAiError(undefined) }}
             onCancel={() => { setAiPhase('idle'); setAiError(undefined) }}
             onSend={async () => {
               setAiPhase('loading')

@@ -16,6 +16,10 @@ export type ResearchTemplate = {
   name: string
   tagline: string         // one-line subtitle on the picker card
   description: string     // longer paragraph (reserved for future expand affordance)
+  // 'start' = empty/demo project (Blank, Sample) — the picker groups
+  // these on the top row. 'template' = methodology codebook — grouped
+  // under a "Templates" heading below the starts.
+  kind: 'start' | 'template'
   buildSeed: () => ProjectData
 }
 
@@ -243,39 +247,44 @@ const blankSeed: ProjectData = {
 
 export const RESEARCH_TEMPLATES: ResearchTemplate[] = [
   {
-    id: 'inductive-interview',
-    name: 'Inductive interview study',
-    tagline: 'Open coding, in-vivo first, structure emerges.',
-    description: 'Top-level parents name kinds of moments rather than predetermined themes. Best for first-cycle coding when you want categories to surface from the data.',
-    buildSeed: () => mkSeed(inductive),
-  },
-  {
-    id: 'deductive-interview',
-    name: 'Deductive interview study',
-    tagline: 'Codebook organized around your research questions.',
-    description: 'One parent per RQ (rename them), with direct-evidence / counter-evidence / edge-case scaffolding underneath. Best when you start with hypotheses you want to test against the transcripts.',
-    buildSeed: () => mkSeed(deductive),
-  },
-  {
-    id: 'focus-group',
-    name: 'Focus group',
-    tagline: 'Track group dynamics alongside content.',
-    description: 'Disagreement, consensus building, shifting positions, dominant voices, silences — plus content-theme placeholders to populate as analysis develops.',
-    buildSeed: () => mkSeed(focusGroup),
+    id: 'blank',
+    name: 'Blank project',
+    tagline: 'Empty canvas. Bring your own codebook.',
+    description: 'No codes, no sources, no scaffolding. Pick this if you already know your codebook and want to set it up from scratch.',
+    kind: 'start',
+    buildSeed: () => blankSeed,
   },
   {
     id: 'sample',
     name: 'Sample project',
     tagline: 'Preloaded study to explore the app.',
     description: 'Two short interviews, a small code hierarchy, two cases with attributes, and two saved analyses. Useful for the first-time tour; replace with your own work for real research.',
+    kind: 'start',
     buildSeed: () => defaultProject,
   },
   {
-    id: 'blank',
-    name: 'Blank project',
-    tagline: 'Empty canvas. Bring your own codebook.',
-    description: 'No codes, no sources, no scaffolding. Pick this if you already know your codebook and want to set it up from scratch.',
-    buildSeed: () => blankSeed,
+    id: 'inductive-interview',
+    name: 'Narrative inquiry',
+    tagline: 'Identity, tension, turning point, outcome — story-shaped coding.',
+    description: 'Top-level parents name kinds of moments in a participant’s story rather than predetermined themes. Best for first-cycle interview coding when you want categories to surface from the data and you care about how the story unfolds.',
+    kind: 'template',
+    buildSeed: () => mkSeed(inductive),
+  },
+  {
+    id: 'deductive-interview',
+    name: 'Framework analysis',
+    tagline: 'Codebook organized around your research questions.',
+    description: 'One parent per research question (rename them), with direct-evidence / counter-evidence / edge-case scaffolding underneath. Best when you start with hypotheses or a defined question set to test against the transcripts.',
+    kind: 'template',
+    buildSeed: () => mkSeed(deductive),
+  },
+  {
+    id: 'focus-group',
+    name: 'Focus group analysis',
+    tagline: 'Track group dynamics alongside content themes.',
+    description: 'Disagreement, consensus building, shifting positions, dominant voices, silences — plus content-theme placeholders to populate as analysis develops.',
+    kind: 'template',
+    buildSeed: () => mkSeed(focusGroup),
   },
 ]
 

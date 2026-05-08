@@ -1140,6 +1140,10 @@ button {
 }
 
 .refine-sidebar-new-code { margin-bottom: 10px; padding: 0 8px; }
+.workspace-sidebar .new-code { border-color: rgba(255, 255, 255, 0.18); }
+.workspace-sidebar .new-code input { color: #ffffff; }
+.workspace-sidebar .new-code input::placeholder { color: rgba(255, 255, 255, 0.55); }
+.workspace-sidebar .new-code .icon-button { border-left-color: rgba(255, 255, 255, 0.18); }
 
 /* Scroll affordance — a small floating badge that hints "more below"
    when a scroll container overflows. See ScrollAffordance.tsx.
@@ -2974,6 +2978,19 @@ textarea {
   color: var(--ink-3);
   margin-bottom: var(--s-2);
 }
+.research-template-grid-label-secondary {
+  margin-top: var(--s-3);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.research-template-grid-label-hint {
+  font: var(--t-meta);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-4);
+}
 .research-template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -4498,6 +4515,127 @@ textarea {
 }
 .overview-description:focus { outline: 1px dashed var(--accent, #4a6cf7); outline-offset: 4px; }
 
+/* ----- Setup checklist (Overview onboarding) ---------------------- */
+.setup-checklist {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--rule-soft, #e5e7eb);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(13, 92, 99, 0.05), rgba(13, 92, 99, 0.02));
+}
+.setup-checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.setup-checklist-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 2px 0;
+  color: var(--ink, #111827);
+}
+.setup-checklist-progress {
+  font-size: 12px;
+  color: var(--ink-3, #6b7280);
+  margin: 0;
+}
+.setup-checklist-dismiss {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-3, #6b7280);
+  cursor: pointer;
+}
+.setup-checklist-dismiss:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink, #111827);
+}
+.setup-checklist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.setup-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--rule-soft, #e5e7eb);
+}
+.setup-checklist-item.is-done {
+  opacity: 0.6;
+  background: transparent;
+}
+.setup-checklist-bullet {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  border: 1.5px solid var(--rule, #d1d5db);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+.setup-checklist-item.is-done .setup-checklist-bullet {
+  background: #0d5c63;
+  border-color: #0d5c63;
+  color: #ffffff;
+}
+.setup-checklist-text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.setup-checklist-text strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink, #111827);
+}
+.setup-checklist-item.is-done .setup-checklist-text strong {
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-4, #9ca3af);
+}
+.setup-checklist-text span {
+  font-size: 12px;
+  color: var(--ink-3, #6b7280);
+  line-height: 1.4;
+}
+.setup-checklist-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid #0d5c63;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0d5c63;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 0 0 auto;
+  align-self: center;
+}
+.setup-checklist-cta:hover {
+  background: #0d5c63;
+  color: #ffffff;
+}
+
 .overview-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4859,6 +4997,54 @@ textarea {
   background: rgba(99, 102, 241, 0.18);
   box-shadow: inset 2px 0 0 rgba(99, 102, 241, 0.9);
 }
+
+.list-item.is-bulk-selected {
+  background: rgba(244, 114, 182, 0.16);
+  box-shadow: inset 3px 0 0 rgba(244, 114, 182, 0.85);
+}
+
+.refine-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(244, 114, 182, 0.16);
+  color: #ffffff;
+  font-size: 12px;
+}
+.refine-bulk-count {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.refine-bulk-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: #b91c1c;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.refine-bulk-delete:hover { background: #991b1b; }
+.refine-bulk-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}
+.refine-bulk-clear:hover { background: rgba(255, 255, 255, 0.12); }
 
 .code-tree-hint {
   margin: 8px 12px 0;
@@ -5849,8 +6035,12 @@ textarea {
 .ai-preview-actions button.primary-button { background: var(--accent, #4a6cf7); color: #fff; border-color: var(--accent, #4a6cf7); }
 
 .ai-preview-loading { font-size: 13px; color: var(--muted, #6b7280); padding: 8px 0; }
-.ai-preview-error { font-size: 13px; color: #b91c1c; display: flex; align-items: center; gap: 12px; }
+.ai-preview-error { font-size: 13px; color: #b91c1c; display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 12px; }
+.ai-preview-error > span { flex: 1 1 100%; }
+.ai-preview-error-actions { display: flex; gap: 12px; align-items: center; flex: 0 0 auto; }
 .ai-preview-error button { background: transparent; border: 0; color: #b91c1c; font-weight: 600; cursor: pointer; }
+.ai-preview-error .link-button { color: #0d5c63; text-decoration: underline; padding: 0; }
+.ai-preview-error .link-button:hover { color: #094a4f; }
 
 /* ----- AI Settings modal ------------------------------------------ */
 .settings-icon-btn {

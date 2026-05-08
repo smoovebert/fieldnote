@@ -13,6 +13,9 @@ type QuickCodeMenu = {
   text: string
   x: number
   y: number
+  // 'above' renders the menu upward from y (default); 'below' flips it
+  // when the selection is too close to the viewport top.
+  placement: 'above' | 'below'
   // For PDF sources: which page this selection landed on, captured at
   // the moment the menu opened. The original Selection has been wiped
   // by the time the user clicks Apply, so we stash the page info here.
@@ -50,6 +53,9 @@ type Props = {
   buildNewCode: (name: string, parentCodeId?: string) => Code
   onSuggestCodes: (selectedText: string) => Promise<{ ok: true; suggestions: Array<{ name: string; description: string }> } | { ok: false; message: string }>
   isHostedAi: boolean
+  persistActiveCodes: boolean
+  setPersistActiveCodes: React.Dispatch<React.SetStateAction<boolean>>
+  onOpenAiSettings: () => void
 }
 
 export function CodeDetail(props: Props) {
@@ -95,12 +101,19 @@ export function CodeDetail(props: Props) {
       if (!rect.width && !rect.height) return
 
       const x = Math.min(window.innerWidth - 220, Math.max(220, rect.left + rect.width / 2))
-      const y = Math.max(88, rect.top - 12)
+      // Flip below the selection when there isn't enough room above for
+      // the menu to render upward. ~320px covers the typical menu height
+      // (heading + quote + new-code field + AI panel header).
+      const placement: 'above' | 'below' = rect.top < 320 ? 'below' : 'above'
+      const y = placement === 'below'
+        ? Math.min(window.innerHeight - 16, rect.bottom + 12)
+        : Math.max(88, rect.top - 12)
       setQuickNewCodeName('')
       setQuickCodeMenu({
         text: selectedText,
         x,
         y,
+        placement,
         pageInfo: pageResult.kind === 'page'
           ? { pageNumber: pageResult.pageNumber, charOffset: pageResult.charOffset }
           : undefined,
@@ -142,6 +155,14 @@ export function CodeDetail(props: Props) {
               }}
             />
             Quick menu
+          </label>
+          <label className="quick-toggle" title="When on, active codes stay selected after coding a passage so you can apply them again. When off (default), the active set clears after each apply.">
+            <input
+              type="checkbox"
+              checked={props.persistActiveCodes}
+              onChange={(event) => props.setPersistActiveCodes(event.target.checked)}
+            />
+            Persist active codes
           </label>
           <button
             type="button"
@@ -285,7 +306,14 @@ export function CodeDetail(props: Props) {
       </div>
 
       {quickCodingEnabled && quickCodeMenu && (
-        <div className="quick-code-menu" style={{ left: quickCodeMenu.x, top: quickCodeMenu.y }}>
+        <div
+          className="quick-code-menu"
+          style={{
+            left: quickCodeMenu.x,
+            top: quickCodeMenu.y,
+            transform: quickCodeMenu.placement === 'below' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+          }}
+        >
           <div className="quick-code-heading">
             <strong>Code selection</strong>
             <button type="button" aria-label="Close quick coding menu" onClick={() => setQuickCodeMenu(null)}>
@@ -311,6 +339,7 @@ export function CodeDetail(props: Props) {
               estimatedCostUsd={inputCost}
               errorMessage={aiError}
               showHostedQuota={props.isHostedAi}
+              onOpenSettings={() => { props.onOpenAiSettings(); setAiPhase('idle'); setAiError(undefined) }}
               onCancel={() => { setAiPhase('idle'); setAiSuggestions([]); setAiError(undefined) }}
               onSend={async () => {
                 setAiPhase('loading')
