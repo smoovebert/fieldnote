@@ -127,6 +127,18 @@ type CoOccurrenceRow = {
 
 type LineNumberingMode = 'paragraph' | 'fixed-width'
 
+// Synthetic code used as a render-time fallback when the codebook is
+// empty (Blank-template projects, fresh backups, etc.). Kept out of
+// state so the codebook stays truly empty until the user adds a code;
+// the unique `__empty__` id can't collide with any real generated id.
+const EMPTY_CODEBOOK_PLACEHOLDER: Code = {
+  id: '__empty_codebook__',
+  name: 'No codes yet',
+  color: 'oklch(0.85 0 0)',
+  description: '',
+  parentCodeId: undefined,
+}
+
 const DEFAULT_LINE_NUMBERING_MODE: LineNumberingMode = 'fixed-width'
 const DEFAULT_LINE_NUMBERING_WIDTH = 80
 const LINE_NUMBERING_WIDTH_MIN = 40
@@ -498,7 +510,14 @@ function App() {
   const [hasLoadedRemoteProject, setHasLoadedRemoteProject] = useState(false)
 
   const activeSource = sources.find((source) => source.id === activeSourceId) ?? sources[0] ?? defaultProject.sources[0]
-  const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0]
+  // Render-time placeholder for an empty codebook (Blank template,
+  // freshly-imported backup with no codes, etc.). Keeps the dozens of
+  // `activeCode.x` dereferences below from crashing on undefined; the
+  // placeholder is never written to `codes` state and never persists.
+  // Any operation that filters/maps `codes` by this synthetic id is a
+  // no-op (the id can't match a real row), so it's safe to leave call
+  // sites as-is.
+  const activeCode = codes.find((code) => code.id === activeCodeId) ?? codes[0] ?? EMPTY_CODEBOOK_PLACEHOLDER
   const activeMemo = memos.find((memo) => memo.id === activeMemoId) ?? memos[0]
   const selectedCodes = codes.filter((code) => selectedCodeIds.includes(code.id))
   // Empty active set is now allowed (was forced to >=1). Surface a
@@ -595,7 +614,11 @@ function App() {
     setCodes(nextProject.codes)
     setMemos(nextProject.memos)
     setExcerpts(nextProject.excerpts)
-    setActiveCodeId(nextProject.codes[0]?.id ?? initialCodes[0].id)
+    // Empty codebook is allowed (Blank template, fresh imports). Empty
+    // string falls through to EMPTY_CODEBOOK_PLACEHOLDER at render —
+    // pointing at a sample-template id from `initialCodes` would have
+    // been silently misleading.
+    setActiveCodeId(nextProject.codes[0]?.id ?? '')
     setActiveMemoId(nextProject.memos[0]?.id ?? initialMemos[0].id)
     setSelectedCodeIds([])
     setQueryText('')
