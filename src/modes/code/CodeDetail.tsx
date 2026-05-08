@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
 import { Highlighter, Plus, Sparkles } from 'lucide-react'
 import type { Code, Source } from '../../lib/types'
 import { markBackground, selectionPageInfo } from './transcript'
@@ -197,14 +196,16 @@ export function CodeDetail(props: Props) {
         </div>
       </div>
 
-      <div
-        className="reader-column"
-        style={
-          props.lineNumberingMode === 'fixed-width'
-            ? ({ '--reader-measure': `${props.lineNumberingWidth}ch` } as CSSProperties)
-            : undefined
-        }
-      >
+      {/* The fixed-width numbering mode used to override --reader-measure
+          to exactly `${lineNumberingWidth}ch`, but `ch` is the width of
+          `0` and a serif body font has plenty of glyphs wider than that
+          (m, w, capitals, punctuation), so an 80-source-char line
+          routinely overflowed the 80ch container and wrapped visually.
+          Line breaks are already enforced in the content via injected
+          `\n` (wrapHighlightedTranscript), so the container width
+          doesn't need to track lineNumberingWidth at all — let the
+          global --reader-measure token (96ch) apply in both modes. */}
+      <div className="reader-column">
         <div className="reader-meta-strip fn-meta">
           <span>{props.activeSource.caseName || props.activeSource.kind}</span>
           <span aria-hidden="true">·</span>
