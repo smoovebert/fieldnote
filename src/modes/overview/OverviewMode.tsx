@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { BarChart3, Download, History, Network, RotateCcw, Sparkles } from 'lucide-react'
+import { BarChart3, ChevronRight, Download, History, Network, RotateCcw, Sparkles } from 'lucide-react'
 import type { Attribute, Case, Code, Excerpt, Memo, Source } from '../../lib/types'
 import { computeOntology, computeProgress } from './stats'
 import { StatCard } from './StatCard'
@@ -11,6 +11,22 @@ import { ScrollAffordance } from '../../components/ScrollAffordance'
 import { SetupChecklist } from './SetupChecklist'
 
 type WorkspaceView = 'overview' | 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
+
+type OverviewNextStep = {
+  title: string
+  detail: string
+  cta: string
+  target: WorkspaceView
+}
+
+const WORKFLOW_STEPS = [
+  { key: 'organize', label: 'Organize' },
+  { key: 'code', label: 'Code' },
+  { key: 'refine', label: 'Refine' },
+  { key: 'classify', label: 'Classify' },
+  { key: 'analyze', label: 'Analyze' },
+  { key: 'report', label: 'Report' },
+] as const satisfies ReadonlyArray<{ key: Exclude<WorkspaceView, 'overview'>; label: string }>
 
 type Props = {
   title: string
@@ -49,6 +65,24 @@ export function OverviewMode(props: Props) {
   const enabled = props.snapshotsCount > 0
   const estTokens = props.snapshotsCount * 800
   const estCost = estimateCostUsd(estTokens)
+  const hasRefinedCode = props.codes.some((code) => code.description.trim() || code.parentCodeId)
+  const nextStep: OverviewNextStep = getOverviewNextStep({
+    sourceCount: props.sources.length,
+    excerptCount: props.excerpts.length,
+    codeCount: props.codes.length,
+    hasRefinedCode,
+    caseCount: props.cases.length,
+    attributeCount: props.attributes.length,
+    snapshotsCount: props.snapshotsCount,
+  })
+  const workflowDone = {
+    organize: props.sources.length > 0,
+    code: props.excerpts.length > 0,
+    refine: hasRefinedCode,
+    classify: props.cases.length > 0 && props.attributes.length > 0,
+    analyze: props.snapshotsCount > 0,
+    report: props.snapshotsCount > 0,
+  } satisfies Record<(typeof WORKFLOW_STEPS)[number]['key'], boolean>
 
   // Reload versions whenever the project changes or the user toggles Overview.
   // Cheap query (small per-project list) so re-running on focus is fine.
@@ -100,6 +134,39 @@ export function OverviewMode(props: Props) {
         excerpts={props.excerpts}
         onNavigate={props.onNavigate}
       />
+
+      <section className="overview-orientation" aria-label="Project orientation">
+        <div className="overview-orientation-main">
+          <p className="detail-kicker">Project overview</p>
+          <h2>Home base for this research project</h2>
+          <p>Use Overview to see where the project stands, keep the project memo alive, download backups, and jump to the next useful mode.</p>
+        </div>
+        <div className="overview-next-step">
+          <span className="overview-next-step-label">Recommended next step</span>
+          <strong>{nextStep.title}</strong>
+          <p>{nextStep.detail}</p>
+          <button type="button" className="overview-next-step-cta" onClick={() => props.onNavigate(nextStep.target)}>
+            {nextStep.cta}
+            <ChevronRight size={14} aria-hidden="true" />
+          </button>
+        </div>
+        <ol className="overview-workflow" aria-label="Workflow progress">
+          {WORKFLOW_STEPS.map((step) => (
+            <li
+              key={step.key}
+              className={[
+                workflowDone[step.key] ? 'is-done' : '',
+                nextStep.target === step.key ? 'is-current' : '',
+              ].filter(Boolean).join(' ')}
+            >
+              <button type="button" onClick={() => props.onNavigate(step.key)}>
+                <span aria-hidden="true" />
+                {step.label}
+              </button>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <div className="overview-stats">
         <StatCard
@@ -258,6 +325,63 @@ export function OverviewMode(props: Props) {
       <ScrollAffordance />
     </article>
   )
+}
+
+function getOverviewNextStep(input: {
+  sourceCount: number
+  excerptCount: number
+  codeCount: number
+  hasRefinedCode: boolean
+  caseCount: number
+  attributeCount: number
+  snapshotsCount: number
+}): OverviewNextStep {
+  if (input.sourceCount === 0) {
+    return {
+      title: 'Import the first source',
+      detail: 'Start with a transcript, document, PDF, or spreadsheet. One real source is enough to test the workflow.',
+      cta: 'Open Organize',
+      target: 'organize',
+    }
+  }
+  if (input.excerptCount === 0) {
+    return {
+      title: 'Code the first passage',
+      detail: 'Open a source, highlight a meaningful passage, and apply one or more codes.',
+      cta: 'Open Code',
+      target: 'code',
+    }
+  }
+  if (input.codeCount > 0 && !input.hasRefinedCode) {
+    return {
+      title: 'Refine the early codebook',
+      detail: 'Write a definition, nest a subcode, or split/merge anything that already feels too broad.',
+      cta: 'Open Refine',
+      target: 'refine',
+    }
+  }
+  if (input.caseCount === 0 || input.attributeCount === 0) {
+    return {
+      title: 'Add cases and attributes',
+      detail: 'Cases and attributes make comparisons possible in matrix coding and crosstabs.',
+      cta: 'Open Classify',
+      target: 'classify',
+    }
+  }
+  if (input.snapshotsCount === 0) {
+    return {
+      title: 'Ask an analysis question',
+      detail: 'Run a query, matrix, crosstab, word frequency, or co-occurrence view, then send useful results to Report.',
+      cta: 'Open Analyze',
+      target: 'analyze',
+    }
+  }
+  return {
+    title: 'Review the report',
+    detail: 'Check the memo, codebook, excerpts, cases, and pinned analysis snapshots before exporting.',
+    cta: 'Open Report',
+    target: 'report',
+  }
 }
 
 const LAST_N_VERSIONS_HINT = 10

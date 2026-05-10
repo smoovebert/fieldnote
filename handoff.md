@@ -38,6 +38,7 @@ That spec ("Modern QDA System") is the source of truth for the creative directio
 
 Alpha testers need enough in-product orientation to understand the workflow without a separate walkthrough. A compact reusable `ModeOrientation` strip now appears in the main work surfaces:
 
+- **Overview** acts as the project cockpit: explains that it is the home base, shows a data-driven recommended next step, and includes a clickable workflow progress row (Organize -> Code -> Refine -> Classify -> Analyze -> Report).
 - **Organize** explains importing, folders, source memos, and case assignment.
 - **Code** explains close-reading, multi-code selections, quick coding, new codes, and PDF page anchoring.
 - **Refine** explains the second-pass codebook workflow: rename, define, review excerpts, split, merge, and nest.
