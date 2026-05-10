@@ -113,7 +113,7 @@ export function MatrixView({
               const m = cellByLabels.get(`${rows[r]}__${cols[c]}`)
               if (m) onCellSelect?.(m.rowId, m.colId)
             }}
-            emptyMessage={classifyEmptyMessage ?? 'Matrix needs cases or attribute values — go to Classify mode.'}
+            emptyMessage={classifyEmptyMessage ?? 'Matrix needs cases or attribute values. Set them up in Classify, or broaden the active filters.'}
           />
         ) : null}
         {view === 'bars' ? (
@@ -132,6 +132,11 @@ export function MatrixView({
               <tr><th>Code</th>{cols.map((c) => <th key={c}>{c}</th>)}</tr>
             </thead>
             <tbody>
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={Math.max(1, cols.length + 1)}>Matrix needs cases or attribute values. Set them up in Classify, or broaden the active filters.</td>
+                </tr>
+              )}
               {rows.map((rowLabel, r) => (
                 <tr key={rowLabel}>
                   <td>{rowLabel}</td>

@@ -6,6 +6,7 @@ import { markBackground, selectionPageInfo } from './transcript'
 import type { LineNumberingMode } from './transcript'
 import { AiPreviewPanel } from '../../components/AiPreviewPanel'
 import { ScrollAffordance } from '../../components/ScrollAffordance'
+import { ModeOrientation } from '../../components/ModeOrientation'
 import { estimateCostUsd, estimateInputTokens } from '../../ai/client'
 
 type SortedCode = Code & { depth: number }
@@ -138,7 +139,7 @@ export function CodeDetail(props: Props) {
   }
 
   return (
-    <article className="document-panel">
+    <article className="document-panel code-document-panel">
       <div className="active-codes-bar">
         <div className="active-codes-bar-text">
           <strong className="active-codes-title">{props.selectedCodeNames}</strong>
@@ -196,6 +197,17 @@ export function CodeDetail(props: Props) {
           </button>
         </div>
       </div>
+
+      <ModeOrientation
+        kicker="Coding pass"
+        title="Close-read and mark evidence"
+        body="Highlight a passage, then apply one or more codes. The quick menu is best for exploratory coding; the right rail is best when you already know which codes should stay active."
+        points={[
+          { label: 'Multiple codes', detail: 'A passage can carry several codes when themes overlap.' },
+          { label: 'New codes', detail: 'Create a code directly from the quick menu when a theme appears mid-read.' },
+          { label: 'PDFs', detail: 'Code within one page at a time so excerpts keep a stable page anchor.' },
+        ]}
+      />
 
       {/* Container-query-driven font scaling: `--reader-fit-chars`
           tells the reader's transcript font-size rule how many source

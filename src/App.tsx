@@ -70,6 +70,7 @@ import { isPdfSource, parseSourcePages } from './lib/sourcePages'
 import { formatExcerptCitation } from './lib/excerptCitation'
 import { CodeDetail } from './modes/code/CodeDetail'
 import { CodePickerPanel } from './components/CodePickerPanel'
+import { ModeOrientation } from './components/ModeOrientation'
 import { ReferenceList } from './ReferenceList'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
@@ -3209,6 +3210,17 @@ function App() {
               <span className="reference-count">{analyzePanelCount}</span>
             </div>
 
+            <ModeOrientation
+              kicker="Analysis pass"
+              title="Ask structured questions of the coded evidence"
+              body="Use the filters to narrow the slice of data, then switch views depending on the kind of question. Send useful results to Report so they become part of the audit trail."
+              points={[
+                { label: 'Find excerpts', detail: 'Retrieve the exact coded passages behind a theme.' },
+                { label: 'Compare groups', detail: 'Use matrix and crosstabs to compare codes by cases or attributes.' },
+                { label: 'Trace patterns', detail: 'Use word frequency and co-occurrence to spot language and theme relationships.' },
+              ]}
+            />
+
             <div className="query-builder">
               <label className="property-field">
                 <span>Text</span>
@@ -3397,7 +3409,7 @@ function App() {
                 {!analyzeResults.length && (
                   <div className="empty-table-state">
                     <strong>No matching excerpts</strong>
-                    <span>Loosen the filters or add more excerpts.</span>
+                    <span>Broaden the filters, choose a different code or case, or code more passages first.</span>
                   </div>
                 )}
               </div>

@@ -27,7 +27,7 @@ const TABLEAU_10 = [
 
 export function GroupedBars({ data, seriesKeys, palette = TABLEAU_10, onBarClick }: Props) {
   if (data.length === 0 || seriesKeys.length === 0) {
-    return <div className="chart-empty-state">No matrix data — adjust filters.</div>
+    return <div className="chart-empty-state">No matrix data yet. Add cases or attributes in Classify, then code more excerpts.</div>
   }
   return (
     <ResponsiveContainer width="100%" height={Math.max(280, data.length * 36)}>

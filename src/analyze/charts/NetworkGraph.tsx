@@ -31,7 +31,7 @@ export function NetworkGraph({ nodes, links, width, height, onSelect, onExporter
   }, [onExporterReady])
 
   if (nodes.length < 2) {
-    return <div className="chart-empty-state">Network needs &ge; 2 connected codes &mdash; adjust filters.</div>
+    return <div className="chart-empty-state">Network needs at least 2 connected codes. Code overlapping themes, or broaden the filters.</div>
   }
 
   return (

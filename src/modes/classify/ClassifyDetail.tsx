@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react'
 import { FilePlus2, Plus, Trash2, UserPlus } from 'lucide-react'
 import type { Attribute, AttributeValue, Case, Source } from '../../lib/types'
 import { ScrollAffordance } from '../../components/ScrollAffordance'
+import { ModeOrientation } from '../../components/ModeOrientation'
 
 type Props = {
   cases: Case[]
@@ -57,6 +58,17 @@ export function ClassifyDetail(props: Props) {
         </div>
         <span className="reference-count">{props.cases.length} cases</span>
       </div>
+
+      <ModeOrientation
+        kicker="Comparison setup"
+        title="Define who or what each source represents"
+        body="Cases are the participants, sites, organizations, or document groups you want to compare. Attributes are the demographics or categories that make Analyze useful."
+        points={[
+          { label: 'Cases', detail: 'Create one for each participant, site, or comparison unit.' },
+          { label: 'Attributes', detail: 'Add columns like cohort, role, location, date, or group.' },
+          { label: 'Analyze later', detail: 'Matrix coding and crosstabs use these values to compare themes.' },
+        ]}
+      />
 
       <div className="classify-toolbar">
         <button className="secondary-button" type="button" onClick={props.createCasesFromSources}>
@@ -167,7 +179,7 @@ export function ClassifyDetail(props: Props) {
         {!props.cases.length && (
           <div className="empty-table-state">
             <strong>No cases yet</strong>
-            <span>Create cases from sources, then fill in participant attributes here.</span>
+            <span>Create cases from sources, or import an attribute sheet. Cases unlock comparisons in Analyze.</span>
           </div>
         )}
       </div>

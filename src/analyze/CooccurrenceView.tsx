@@ -116,7 +116,7 @@ export function CooccurrenceView({
             colLabels={ranked.map((c) => c.name)}
             cells={heatmapCells}
             onCellClick={(r, c) => onPairSelect?.(ranked[r].id, ranked[c].id)}
-            emptyMessage="No co-occurring codes yet — adjust filters."
+            emptyMessage="No co-occurring codes yet. Co-occurrence needs excerpts with two or more codes."
           />
         ) : null}
         {view === 'network' ? (
@@ -138,6 +138,11 @@ export function CooccurrenceView({
           <table className="analyze-table">
             <thead><tr><th>Code A</th><th>Code B</th><th>Count</th></tr></thead>
             <tbody>
+              {pairs.length === 0 && (
+                <tr>
+                  <td colSpan={3}>No code pairs yet. Code overlapping themes, or broaden the active filters.</td>
+                </tr>
+              )}
               {pairs.slice(0, topN * topN).map((p) => (
                 <tr key={`${p.codeAId}-${p.codeBId}`}
                     onClick={() => onPairSelect?.(p.codeAId, p.codeBId)}

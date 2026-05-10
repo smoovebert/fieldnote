@@ -19,7 +19,7 @@ type Props = {
 
 export function BarChart({ data, onSelect, tooltipFormatter }: Props) {
   if (data.length === 0) {
-    return <div className="chart-empty-state">No terms yet — adjust filters.</div>
+    return <div className="chart-empty-state">No terms yet. Code more passages, or broaden the active filters.</div>
   }
   return (
     <ResponsiveContainer width="100%" height={Math.max(220, data.length * 22)}>

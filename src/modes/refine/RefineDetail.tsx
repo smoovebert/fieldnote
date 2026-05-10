@@ -8,6 +8,7 @@ import { AlertTriangle, Scissors, Trash2 } from 'lucide-react'
 import type { Code, Excerpt } from '../../lib/types'
 import { ReferenceList } from '../../ReferenceList'
 import { ScrollAffordance } from '../../components/ScrollAffordance'
+import { ModeOrientation } from '../../components/ModeOrientation'
 
 type SortedCode = Code & { depth: number }
 
@@ -82,6 +83,17 @@ export function RefineDetail(props: Props) {
         </div>
         <span className="reference-count">{props.codeExcerpts.length} excerpt{props.codeExcerpts.length === 1 ? '' : 's'}</span>
       </div>
+
+      <ModeOrientation
+        kicker="Refinement pass"
+        title="Turn first-pass codes into a codebook"
+        body="Use Refine after coding to clean up names, write definitions, review excerpts, split broad codes, merge duplicates, and drag codes into a hierarchy."
+        points={[
+          { label: 'Review evidence', detail: 'Read the excerpts for this code before changing its meaning.' },
+          { label: 'Shape hierarchy', detail: 'Use parent and child codes when a theme has clear subthemes.' },
+          { label: 'Protect meaning', detail: 'Split or merge only when the excerpts still support the new code definition.' },
+        ]}
+      />
 
       {duplicates.length > 0 && (
         <div className="duplicate-codes-banner" role="status">

@@ -2,6 +2,7 @@ import type { ChangeEvent } from 'react'
 import { FilePlus2, FileText } from 'lucide-react'
 import type { Excerpt, Memo, Source } from '../../lib/types'
 import { ScrollAffordance } from '../../components/ScrollAffordance'
+import { ModeOrientation } from '../../components/ModeOrientation'
 
 type Props = {
   sources: Source[]
@@ -28,6 +29,16 @@ export function OrganizeDetail(props: Props) {
           <input type="file" accept=".txt,.md,.csv,.docx,.pdf" multiple onChange={importTranscript} />
         </label>
       </div>
+      <ModeOrientation
+        kicker="What happens here"
+        title="Organize the material before analysis"
+        body="Bring in transcripts, notes, PDFs, and spreadsheets. Use folders, source memos, and case assignments to keep context attached before close-reading in Code."
+        points={[
+          { label: 'Start small', detail: 'One or two sources is enough to begin alpha testing.' },
+          { label: 'Preserve context', detail: 'Use source memos for interview notes, provenance, or cleanup reminders.' },
+          { label: 'Prepare comparisons', detail: 'Assign sources to cases when the source belongs to a participant, site, or document group.' },
+        ]}
+      />
       <div className="source-table" role="table" aria-label="Project sources">
         <div className="source-row source-row-head" role="row">
           <span>Title</span>
@@ -56,7 +67,7 @@ export function OrganizeDetail(props: Props) {
           <article className="empty-list-state">
             <FileText size={20} aria-hidden="true" />
             <strong>No sources yet</strong>
-            <span>Import a text file or move an existing source here from the properties rail.</span>
+            <span>Import a transcript, document, PDF, or spreadsheet. Fieldnote can start with a single interview.</span>
           </article>
         )}
       </div>

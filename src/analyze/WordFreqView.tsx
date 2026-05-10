@@ -79,6 +79,11 @@ export function WordFreqView({
           <table className="analyze-table">
             <thead><tr><th>Term</th><th>Count</th><th>In excerpts</th></tr></thead>
             <tbody>
+              {truncated.length === 0 && (
+                <tr>
+                  <td colSpan={3}>No terms yet. Code more passages, or broaden the active filters.</td>
+                </tr>
+              )}
               {truncated.map((row) => (
                 <tr key={row.word} onClick={() => onWordSelect?.(row.word)} style={{ cursor: 'pointer' }}>
                   <td>{row.word}</td>

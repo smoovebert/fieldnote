@@ -34,6 +34,19 @@ docs/design-system.md
 
 That spec ("Modern QDA System") is the source of truth for the creative direction pass: color tokens, typography (Manrope / Newsreader / Inter), spacing, components, and the three-pane layout. Rollout is phased — read the Rollout Plan section before touching styling code.
 
+### 2026-05-10 Alpha Orientation Pass
+
+Alpha testers need enough in-product orientation to understand the workflow without a separate walkthrough. A compact reusable `ModeOrientation` strip now appears in the main work surfaces:
+
+- **Organize** explains importing, folders, source memos, and case assignment.
+- **Code** explains close-reading, multi-code selections, quick coding, new codes, and PDF page anchoring.
+- **Refine** explains the second-pass codebook workflow: rename, define, review excerpts, split, merge, and nest.
+- **Classify** explains cases, attributes, and why they matter for comparison.
+- **Analyze** explains filters, question types, matrix/crosstab comparisons, word frequency, co-occurrence, and sending results to Report.
+- **Report** explains the difference between readable Word/PDF output, raw CSV/XLSX export, and pinned analysis snapshots.
+
+Empty states in Organize, Classify, Analyze, and chart views were also rewritten to tell users what to do next instead of only saying that no data exists.
+
 ## Core Product Correction
 
 Fieldnote should use the full workflow map with MVP depth:

@@ -125,9 +125,9 @@ export function CrosstabsView({
 
       <div className="analyze-view-surface">
         {!attr1Id || !attr2Id ? (
-          <div className="analyze-empty">Pick two attributes to build a crosstab.</div>
+          <div className="analyze-empty">Pick two attributes to compare code counts across attribute combinations.</div>
         ) : !isReady ? (
-          <div className="analyze-empty">No data for the chosen attributes within the active filters.</div>
+          <div className="analyze-empty">No crosstab data for this slice. Add attribute values in Classify, code more excerpts, or broaden the filters.</div>
         ) : (
           <table className="analyze-table crosstab-table">
             <thead>
