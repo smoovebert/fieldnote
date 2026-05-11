@@ -4377,7 +4377,38 @@ textarea {
   }
 
   .app-shell[data-shell="new"] .app-header {
-    grid-template-columns: 232px minmax(0, 1fr) auto auto;
+    grid-template-columns: 232px auto minmax(160px, 220px) auto;
+    gap: var(--s-2);
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes {
+    min-width: 0;
+    justify-self: start;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button span {
+    display: none;
+  }
+
+  .app-shell[data-shell="new"] .hsearch {
+    width: clamp(160px, 18vw, 220px);
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .app-shell[data-shell="new"] .sync-status {
+    width: 166px;
+    flex-basis: 166px;
+  }
+
+  .app-shell[data-shell="new"] .header-tools {
+    gap: var(--s-1);
   }
 
   .app-shell[data-shell="new"] .properties-view {
