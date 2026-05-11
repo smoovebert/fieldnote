@@ -81,6 +81,7 @@ import {
 } from './lib/excerptOperations'
 import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
+import { createId } from './lib/id'
 import { SourcesView } from './components/SourcesView'
 import { AiSettingsPanel } from './components/AiSettingsPanel'
 import { callAi } from './ai/client'
@@ -772,8 +773,8 @@ function App() {
   // RESEARCH_TEMPLATES same as the methodology templates.
 
   // Picker callback — runs the template's seed builder fresh per call so
-  // two new projects from the same template don't collide on code ids
-  // (mkSeed uses Date.now() at call time). The picker closes after the
+  // two new projects from the same template don't collide on code ids.
+  // The picker closes after the
   // call returns regardless of success; if the create failed, the
   // saveStatus banner shows the error and the user can re-open and
   // retry from a clean modal state.
@@ -1492,7 +1493,7 @@ function App() {
       'oklch(0.55 0.04 240)',  // slate
     ]
     return {
-      id: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
+      id: createId('code', name),
       name,
       color: palette[codes.length % palette.length],
       description: 'New research code. Add a short meaning once the pattern becomes clear.',
@@ -1537,7 +1538,7 @@ function App() {
 
       return [
         {
-          id: `excerpt-${Date.now()}`,
+          id: createId('excerpt'),
           codeIds,
           sourceId: activeSource.id,
           sourceTitle: activeSource.title,
@@ -1690,7 +1691,7 @@ function App() {
     }
 
     const newCase: Case = {
-      id: `case-${Date.now()}`,
+      id: createId('case', caseName),
       name: caseName,
       description: '',
       sourceIds: [activeSource.id],
@@ -1706,7 +1707,7 @@ function App() {
       const caseName = source.caseName?.trim() || source.title
       const key = caseName.toLowerCase()
       const existingCase = nextCasesByName.get(key) ?? {
-        id: `case-${slugId(caseName)}-${Date.now()}`,
+        id: createId('case', caseName),
         name: caseName,
         description: '',
         sourceIds: [],
@@ -1767,7 +1768,7 @@ function App() {
       return
     }
 
-    setAttributes((current) => [...current, { id: `attribute-${Date.now()}`, name, valueType: 'text' }])
+    setAttributes((current) => [...current, { id: createId('attribute', name), name, valueType: 'text' }])
     setNewAttributeName('')
   }
 
@@ -1836,7 +1837,7 @@ function App() {
         if (existing) return existing.id
         const cached = freshIds.get(trimmed.toLowerCase())
         if (cached) return cached
-        const id = `attribute-${Date.now()}-${freshIds.size}`
+        const id = createId('attribute', trimmed)
         freshIds.set(trimmed.toLowerCase(), id)
         return id
       }
@@ -1875,7 +1876,7 @@ function App() {
           // demographics spreadsheet before transcripts; the prior
           // behavior silently skipped every row in that flow.
           matchedCase = {
-            id: `case-${Date.now()}-${newCases.length}`,
+            id: createId('case', caseName),
             name: caseName,
             description: '',
             sourceIds: [],
@@ -1938,7 +1939,7 @@ function App() {
   function saveCurrentQuery() {
     const name = queryName.trim() || activeSavedQuery?.name || 'Untitled query'
     const nextQuery: SavedQuery = {
-      id: activeSavedQueryId || `query-${Date.now()}`,
+      id: activeSavedQueryId || createId('query', name),
       name,
       queryType: 'coded_excerpt',
       definition: currentQueryDefinition,
@@ -2358,7 +2359,7 @@ function App() {
       excerpts,
       excerptId,
       selectedText,
-      newExcerptId: `excerpt-${Date.now()}`,
+      newExcerptId: createId('excerpt'),
     })
     if (!result.ok) {
       if (result.reason === 'selection-not-in-text') {
@@ -2384,7 +2385,7 @@ function App() {
       return
     }
     const memo: Memo = {
-      id: `memo-${Date.now()}`,
+      id: createId('memo', 'project'),
       title: 'Project memo',
       linkedType: 'project',
       body,
@@ -2401,7 +2402,7 @@ function App() {
 
     const linkedType: Memo['linkedType'] = activeView === 'code' || activeView === 'organize' ? 'source' : activeView === 'refine' ? 'code' : 'project'
     const memo: Memo = {
-      id: `memo-${Date.now()}`,
+      id: createId('memo', railMemoTitle),
       title: railMemoTitle,
       linkedType,
       linkedId: linkedType === 'source' ? activeSource.id : linkedType === 'code' ? activeCode.id : undefined,
@@ -2419,7 +2420,7 @@ function App() {
       files.map(async (file, index) => {
         const sourceFile = await readSourceFile(file)
         return {
-          id: `source-${Date.now()}-${index}`,
+          id: createId('source', file.name.replace(/\.[^.]+$/, '') || `import-${index + 1}`),
           title: file.name.replace(/\.[^.]+$/, ''),
           kind: sourceFile.kind,
           folder: 'Internals',

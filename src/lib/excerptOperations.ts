@@ -53,7 +53,7 @@ export type SplitExcerptResult =
  *   (the user selected everything; that's a rename, not a split).
  *
  * `newExcerptId` is provided by the caller so the function stays
- * deterministic for tests. App.tsx generates a Date.now()-based ID.
+ * deterministic for tests.
  */
 export function splitExcerpt({
   excerpts,

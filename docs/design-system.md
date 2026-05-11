@@ -175,6 +175,17 @@ The layout follows a **Fluid Grid** model with fixed utility panels.
 - **Rhythm:** An 8px base grid governs all components, but 4px increments are permitted for tight data-table density.
 - **Margins:** Large 40px margins are used in the central reader to prevent text lines from becoming too long, maintaining an optimal 65-75 characters per line for the Newsreader font.
 
+### Responsive Shell Rules
+
+Header responsiveness is intentionally decoupled from body responsiveness:
+
+- **1460px and below:** the top mode navigation may compact to icon-only while the three-pane body stays intact. This preserves room for project search, save status, and account controls.
+- **1121px-1460px:** keep the body in full desktop mode; only simplify the header if needed.
+- **1024px-1120px:** the inspector/right rail may drop below the center workspace. When it does, it must remain left-aligned to the center work column, not the left sidebar, and it must have its own bounded scrollable height.
+- **Below 1024px:** do not attempt a cramped mobile layout yet. Show the wider-screen gate.
+
+The right rail should not collapse at 1260px. That breakpoint is too large for normal desktop browser windows and makes the app feel broken before the workspace is truly constrained.
+
 ## Elevation & Depth
 To maintain a clean and flat aesthetic, this design system avoids heavy drop shadows.
 - **Tonal Layering:** Depth is primarily conveyed through subtle background color shifts. The main canvas is the lightest (`#FFFFFF`), while sidebars use a soft grey (`#F8F9FA`).
@@ -191,6 +202,7 @@ The shape language is **Soft**. A 0.25rem (4px) corner radius is the standard fo
 - **Data Tables:** Border-less design. Use subtle zebra-striping only on hover to help the eye track across long rows of metadata.
 - **Input Fields:** Minimalist style—only a bottom border in the default state, moving to a full teal outline on focus to minimize the "boxiness" of the forms.
 - **Collapsible Panels:** Used for "Folders" and "Code Books." Use a chevron icon that rotates 90 degrees; labels should use `label-caps` for clear categorization.
+- **Error Recovery Screens:** Full-screen fallback surfaces should be calm, plain, and actionable: Fieldnote label, one short title, one reassuring paragraph about cloud/browser recovery, and a single primary reload action. Do not show a blank page or stack trace to end users.
 
 ---
 

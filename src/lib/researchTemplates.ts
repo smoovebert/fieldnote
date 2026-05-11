@@ -10,6 +10,7 @@
 
 import type { Code, Memo, ProjectData } from './types'
 import { defaultProject } from './defaults'
+import { createId } from './id'
 
 export type ResearchTemplate = {
   id: string
@@ -37,13 +38,9 @@ const PALETTE = [
   'oklch(0.55 0.04 240)', // slate
 ] as const
 
-function slug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-}
-
 // Builds a fully-formed Code from a parent + child shape. Ids are
-// generated at template-pick time (via Date.now() in mkSeed below) so
-// two new projects from the same template don't collide.
+// generated at template-pick time so two new projects from the same
+// template don't collide.
 function code(name: string, color: string, description: string, parentId?: string): Code {
   return {
     id: '', // filled by mkSeed
@@ -66,12 +63,11 @@ type Outline = Array<{
 // the codebook visually groups by theme. Code memos (when present)
 // link to the parent's id via Memo.linkedType: 'code'.
 function mkSeed(outline: Outline): ProjectData {
-  const now = Date.now()
   const codes: Code[] = []
   const memos: Memo[] = []
   outline.forEach((group, parentIndex) => {
     const color = PALETTE[parentIndex % PALETTE.length]
-    const parentId = `${slug(group.parent)}-${now + parentIndex * 100}`
+    const parentId = createId('code', group.parent)
     codes.push({
       ...code(group.parent, color, group.parentDescription),
       id: parentId,
@@ -88,7 +84,7 @@ function mkSeed(outline: Outline): ProjectData {
     group.children.forEach((child, childIndex) => {
       codes.push({
         ...code(child.name, color, child.description, parentId),
-        id: `${slug(child.name)}-${now + parentIndex * 100 + childIndex + 1}`,
+        id: createId('code', `${group.parent}-${child.name}-${childIndex + 1}`),
       })
     })
   })
