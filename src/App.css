@@ -2695,7 +2695,7 @@ textarea {
   line-height: 1.45;
 }
 
-@media (max-width: 1260px) {
+@media (max-width: 1120px) {
   .app-shell {
     grid-template-columns: 300px minmax(420px, 1fr);
   }
@@ -4361,11 +4361,56 @@ textarea {
   }
 }
 
+/* Header compaction is separate from the body-layout breakpoint. The
+   app can still afford three columns here, but the top rail cannot fit
+   seven labeled modes + search + save status without collision. */
+@media (min-width: 1281px) and (max-width: 1460px) {
+  .app-shell[data-shell="new"] .app-header {
+    grid-template-columns: 232px auto minmax(190px, 260px) auto;
+    gap: var(--s-2);
+  }
+}
+
+@media (min-width: 1121px) and (max-width: 1280px) {
+  .app-shell[data-shell="new"] .app-header {
+    grid-template-columns: 200px auto minmax(180px, 240px) auto;
+    gap: var(--s-2);
+  }
+}
+
+@media (min-width: 1121px) and (max-width: 1460px) {
+  .app-shell[data-shell="new"] .app-header-modes {
+    min-width: 0;
+    justify-self: start;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button span {
+    display: none;
+  }
+
+  .app-shell[data-shell="new"] .hsearch {
+    width: clamp(180px, 18vw, 260px);
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .app-shell[data-shell="new"] .sync-status {
+    width: 176px;
+    flex-basis: 176px;
+  }
+}
+
 /* Narrow desktop: the inspector drops below the workspace, but stays
    aligned to the middle work column. The older breakpoint made the
    rail span the full app width, which visually attached it to the
    left sidebar and let long code lists stretch the page. */
-@media (min-width: 1024px) and (max-width: 1260px) {
+@media (min-width: 1024px) and (max-width: 1120px) {
   .app-shell[data-shell="new"] {
     grid-template-columns: 232px minmax(0, 1fr);
     grid-template-rows: 68px minmax(0, 1fr) clamp(180px, 32vh, 320px);
