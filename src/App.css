@@ -4361,6 +4361,50 @@ textarea {
   }
 }
 
+/* Narrow desktop: the inspector drops below the workspace, but stays
+   aligned to the middle work column. The older breakpoint made the
+   rail span the full app width, which visually attached it to the
+   left sidebar and let long code lists stretch the page. */
+@media (min-width: 1024px) and (max-width: 1260px) {
+  .app-shell[data-shell="new"] {
+    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-rows: 68px minmax(0, 1fr) clamp(180px, 32vh, 320px);
+  }
+
+  .app-shell[data-shell="new"][data-view="classify"] {
+    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-rows: 68px minmax(0, 1fr);
+  }
+
+  .app-shell[data-shell="new"] .app-header {
+    grid-template-columns: 232px minmax(0, 1fr) auto auto;
+  }
+
+  .app-shell[data-shell="new"] .properties-view {
+    grid-column: 2;
+    grid-row: 3;
+    display: block;
+    min-height: 0;
+    max-height: clamp(180px, 32vh, 320px);
+    overflow-y: auto;
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .app-shell[data-shell="new"] .properties-view #codes {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    max-height: clamp(180px, 32vh, 320px);
+    overflow: hidden;
+  }
+
+  .app-shell[data-shell="new"] .properties-view #codes .code-picker {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: var(--s-1);
+  }
+}
+
 .app-shell[data-shell="new"] .app-header .app-header-left {
   display: flex;
   align-items: center;
