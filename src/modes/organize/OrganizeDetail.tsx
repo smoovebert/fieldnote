@@ -34,7 +34,7 @@ export function OrganizeDetail(props: Props) {
         title="Organize the material before analysis"
         body="Bring in transcripts, notes, PDFs, and spreadsheets. Use folders, source memos, and case assignments to keep context attached before close-reading in Code."
         points={[
-          { label: 'Start small', detail: 'One or two sources is enough to begin alpha testing.' },
+          { label: 'Start small', detail: 'One or two sources is enough to begin the workflow.' },
           { label: 'Preserve context', detail: 'Use source memos for interview notes, provenance, or cleanup reminders.' },
           { label: 'Prepare comparisons', detail: 'Assign sources to cases when the source belongs to a participant, site, or document group.' },
         ]}
