@@ -82,6 +82,10 @@ import {
 import { deleteCase as libDeleteCase } from './lib/caseOperations'
 import { deleteSource as libDeleteSource } from './lib/sourceOperations'
 import { createId } from './lib/id'
+import { parseCsv } from './lib/csv'
+import { readSourceFile } from './lib/sourceImport'
+import { buildAttributeImport } from './lib/attributeImport'
+import { downloadRows, type RowExportFormat } from './lib/downloadRows'
 import { SourcesView } from './components/SourcesView'
 import { AiSettingsPanel } from './components/AiSettingsPanel'
 import { callAi } from './ai/client'
@@ -327,48 +331,6 @@ function slugId(value: string, fallback = 'item') {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || fallback
 }
 
-/**
- * Minimal RFC 4180-style CSV parser. Handles quoted fields, embedded commas,
- * embedded newlines, and "" escapes. Returns an array of rows (each a string[]).
- */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = []
-  let cell = ''
-  let row: string[] = []
-  let inQuotes = false
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i]
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { cell += '"'; i += 1 }
-        else { inQuotes = false }
-      } else {
-        cell += ch
-      }
-      continue
-    }
-    if (ch === '"') { inQuotes = true; continue }
-    if (ch === ',') { row.push(cell); cell = ''; continue }
-    if (ch === '\r') continue
-    if (ch === '\n') {
-      row.push(cell)
-      rows.push(row)
-      row = []
-      cell = ''
-      continue
-    }
-    cell += ch
-  }
-  if (cell !== '' || row.length > 0) {
-    row.push(cell)
-    rows.push(row)
-  }
-  return rows.filter((r) => r.some((c) => c.trim() !== ''))
-}
-
-
-
-
 // buildCodeTree moved to src/lib/codeTree.ts
 // descendantCodeIds moved to src/lib/codeOperations.ts
 
@@ -376,79 +338,6 @@ function errorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message
   return fallback
-}
-
-/**
- * Render a small slice of HTML to plain text that preserves block structure.
- * Headings get a bare line, bullets become "• item", tables become tab-
- * separated rows, and inline marks (bold/italic/links) flatten cleanly.
- * Implemented via a detached DOM + innerText so we don't reinvent rendering
- * rules. Input HTML is sanitized via DOMPurify before parsing.
- */
-async function structuredTextFromHtml(html: string): Promise<string> {
-  const DOMPurify = (await import('dompurify')).default
-  const safe = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
-  const root = document.createElement('div')
-  // safe HTML is already cleaned by DOMPurify; assign via DOMParser to keep
-  // structure without a re-eval.
-  const parsed = new DOMParser().parseFromString(`<div>${safe}</div>`, 'text/html')
-  const inner = parsed.body.firstChild
-  if (inner) root.appendChild(inner)
-
-  root.querySelectorAll('ul > li').forEach((li) => {
-    li.insertBefore(document.createTextNode('• '), li.firstChild)
-  })
-  root.querySelectorAll('ol > li').forEach((li, index) => {
-    li.insertBefore(document.createTextNode(`${index + 1}. `), li.firstChild)
-  })
-
-  // innerText respects display: block boundaries with newlines, but a detached
-  // element isn't laid out — append transiently off-screen to read it.
-  document.body.appendChild(root)
-  root.style.position = 'fixed'
-  root.style.left = '-99999px'
-  root.style.top = '0'
-  root.style.whiteSpace = 'pre-wrap'
-  const text = root.innerText
-  document.body.removeChild(root)
-  return text.replace(/\n{3,}/g, '\n\n').trim()
-}
-
-async function readSourceFile(file: File): Promise<Pick<Source, 'content' | 'kind'>> {
-  const lowered = file.name.toLowerCase()
-  if (lowered.endsWith('.docx')) {
-    const mammoth = await import('mammoth/mammoth.browser')
-    const html = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() })
-    const content = await structuredTextFromHtml(html.value)
-    return { content, kind: 'Transcript' }
-  }
-
-  if (lowered.endsWith('.pdf')) {
-    const pdfjs = await import('pdfjs-dist')
-    // The default workerSrc points at a node-style URL that doesn't resolve in
-    // bundled browsers. Vite + ?url gives us a stable asset URL.
-    const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
-    const data = new Uint8Array(await file.arrayBuffer())
-    const doc = await pdfjs.getDocument({ data }).promise
-    const pages: string[] = []
-    for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
-      const page = await doc.getPage(pageNum)
-      const content = await page.getTextContent()
-      const text = content.items
-        .map((item) => ('str' in item ? item.str : ''))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-      pages.push(`--- Page ${pageNum} ---\n\n${text}`)
-    }
-    return { content: pages.join('\n\n'), kind: 'Document' }
-  }
-
-  return {
-    content: await file.text(),
-    kind: lowered.endsWith('.csv') ? 'Document' : 'Transcript',
-  }
 }
 
 function App() {
@@ -464,7 +353,7 @@ function App() {
   const [description, setDescription] = useState('')
   const [projectRows, setProjectRows] = useState<ProjectRow[]>([])
   const [isCreatingProject, setIsCreatingProject] = useState(false)
-  const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv')
+  const [exportFormat, setExportFormat] = useState<RowExportFormat>('csv')
   const [reportIncludes, setReportIncludes] = useState<ReportIncludes>(DEFAULT_REPORT_INCLUDES)
   const [querySnapshots, setQuerySnapshots] = useState<QueryResultSnapshot[]>([])
   const [activeView, setActiveView] = useState<WorkspaceView>('overview')
@@ -1818,113 +1707,16 @@ function App() {
       return
     }
 
-    {
-      if (rows.length < 2) {
-        setSelectionHint('File needs a header row plus at least one case row.')
-        return
-      }
-      const header = rows[0]
-      const attrNames = header.slice(1).map((h) => h.trim()).filter(Boolean)
-      if (attrNames.length === 0) {
-        setSelectionHint('CSV needs at least one attribute column after the case-name column.')
-        return
-      }
-
-      const findOrCreateAttribute = (currentAttrs: Attribute[], name: string, freshIds: Map<string, string>) => {
-        const trimmed = name.trim()
-        if (!trimmed) return null
-        const existing = currentAttrs.find((a) => a.name.toLowerCase() === trimmed.toLowerCase())
-        if (existing) return existing.id
-        const cached = freshIds.get(trimmed.toLowerCase())
-        if (cached) return cached
-        const id = createId('attribute', trimmed)
-        freshIds.set(trimmed.toLowerCase(), id)
-        return id
-      }
-
-      const newAttrIds = new Map<string, string>()
-      const attrIdByHeaderIndex: Array<string | null> = attrNames.map((name) =>
-        findOrCreateAttribute(attributes, name, newAttrIds),
-      )
-
-      const newAttrs: Attribute[] = []
-      newAttrIds.forEach((id, lowerName) => {
-        const original = attrNames.find((n) => n.toLowerCase() === lowerName)!
-        newAttrs.push({ id, name: original, valueType: 'text' })
-      })
-
-      let updated = 0
-      let skippedNoName = 0
-      const updatesByPair = new Map<string, string>() // `${caseId}::${attributeId}` -> value
-      const newCases: Case[] = []
-      // Working snapshot the loop reads from — includes both pre-existing
-      // cases and any cases we create during this import so duplicate
-      // rows for the same name resolve to the same generated case.
-      const caseLookup = [...cases]
-
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i]
-        const caseName = row[0]?.trim()
-        if (!caseName) {
-          skippedNoName += 1
-          continue
-        }
-        let matchedCase = caseLookup.find((c) => c.name.trim().toLowerCase() === caseName.toLowerCase())
-        if (!matchedCase) {
-          // Auto-create the case so the row's attributes actually
-          // land somewhere. Researchers commonly import the
-          // demographics spreadsheet before transcripts; the prior
-          // behavior silently skipped every row in that flow.
-          matchedCase = {
-            id: createId('case', caseName),
-            name: caseName,
-            description: '',
-            sourceIds: [],
-          }
-          newCases.push(matchedCase)
-          caseLookup.push(matchedCase)
-        }
-        for (let col = 0; col < attrNames.length; col++) {
-          const attrId = attrIdByHeaderIndex[col]
-          if (!attrId) continue
-          const value = (row[col + 1] ?? '').trim()
-          if (!value) continue
-          updatesByPair.set(`${matchedCase.id}::${attrId}`, value)
-          updated += 1
-        }
-      }
-
-      if (newAttrs.length) {
-        setAttributes((current) => [...current, ...newAttrs])
-      }
-      if (newCases.length) {
-        setCases((current) => [...current, ...newCases])
-      }
-      if (updatesByPair.size) {
-        setAttributeValues((current) => {
-          const next = current.map((v) => {
-            const key = `${v.caseId}::${v.attributeId}`
-            if (updatesByPair.has(key)) {
-              const value = updatesByPair.get(key)!
-              updatesByPair.delete(key)
-              return { ...v, value }
-            }
-            return v
-          })
-          updatesByPair.forEach((value, key) => {
-            const [caseId, attributeId] = key.split('::')
-            next.push({ caseId, attributeId, value })
-          })
-          return next
-        })
-      }
-
-      const parts: string[] = [`Imported ${updated} attribute value${updated === 1 ? '' : 's'}`]
-      if (newAttrs.length) parts.push(`created ${newAttrs.length} new attribute${newAttrs.length === 1 ? '' : 's'}`)
-      if (newCases.length) parts.push(`created ${newCases.length} new case${newCases.length === 1 ? '' : 's'}`)
-      if (skippedNoName > 0) parts.push(`skipped ${skippedNoName} row${skippedNoName === 1 ? '' : 's'} with no name`)
-      setSelectionHint(parts.join(', ') + '.')
+    const result = buildAttributeImport({ rows, attributes, cases, attributeValues, createId })
+    if (!result.ok) {
+      setSelectionHint(result.message)
+      return
     }
+
+    setAttributes(result.attributes)
+    setCases(result.cases)
+    setAttributeValues(result.attributeValues)
+    setSelectionHint(result.summary)
   }
 
   function applyQueryDefinition(definition: QueryDefinition) {
@@ -2670,25 +2462,6 @@ function App() {
     }
   }
 
-  function downloadCsv(rows: string[][], filename: string) {
-    const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
-  async function downloadXlsx(rows: string[][], filename: string, sheetName = 'Sheet1') {
-    const XLSX = await import('xlsx')
-    const sheet = XLSX.utils.aoa_to_sheet(rows)
-    const book = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(book, sheet, sheetName.slice(0, 31))
-    XLSX.writeFile(book, filename)
-  }
-
   async function importProjectBackup(file: File) {
     if (!session?.user) return
     let parsed: unknown
@@ -2772,11 +2545,7 @@ function App() {
   }
 
   function downloadInFormat(rows: string[][], baseName: string, sheetName?: string) {
-    if (exportFormat === 'xlsx') {
-      void downloadXlsx(rows, `${baseName}.xlsx`, sheetName ?? 'Sheet1')
-    } else {
-      downloadCsv(rows, `${baseName}.csv`)
-    }
+    downloadRows(rows, baseName, exportFormat, sheetName)
   }
 
   if (!session) {

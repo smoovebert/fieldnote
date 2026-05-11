@@ -64,6 +64,9 @@ The first audit cleanup pass addressed two low-risk reliability items before dee
 
 - Added a top-level React error boundary around `App`. If a render exception slips through, Fieldnote now shows a reloadable recovery screen instead of a blank page. This directly closes the lesson from the Blank-template crashes noted below.
 - Added a shared `createId(prefix, readableSeed?)` helper backed by `crypto.randomUUID()` and moved new project-created IDs away from `Date.now()` for codes, excerpts, cases, attributes, saved queries, memos, imported sources, and research-template seed codes.
+- Extracted import parsing helpers out of `App.tsx`: CSV parsing now lives in `src/lib/csv.ts`, source-file reading/extraction now lives in `src/lib/sourceImport.ts`, and parser coverage was added for quoted commas, escaped quotes, embedded newlines, and blank rows.
+- Extracted attribute spreadsheet import transformation into `src/lib/attributeImport.ts` with tests for validation, new case/attribute creation, existing value updates, and skipped blank case rows.
+- Extracted CSV/XLSX row download helpers into `src/lib/downloadRows.ts` with CSV escaping coverage.
 
 Still open from the audit: `App.tsx` remains the orchestration bottleneck, `App.css` still contains legacy/new shell rules in one cascade, and strict TypeScript should be introduced gradually by folder.
 
