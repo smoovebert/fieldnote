@@ -67,6 +67,10 @@ The first audit cleanup pass addressed two low-risk reliability items before dee
 - Extracted import parsing helpers out of `App.tsx`: CSV parsing now lives in `src/lib/csv.ts`, source-file reading/extraction now lives in `src/lib/sourceImport.ts`, and parser coverage was added for quoted commas, escaped quotes, embedded newlines, and blank rows.
 - Extracted attribute spreadsheet import transformation into `src/lib/attributeImport.ts` with tests for validation, new case/attribute creation, existing value updates, and skipped blank case rows.
 - Extracted CSV/XLSX row download helpers into `src/lib/downloadRows.ts` with CSV escaping coverage.
+- Extracted raw export row builders into `src/lib/exportRows.ts` with coverage for coded excerpts, case sheets, and coded-excerpt snapshots. `App.tsx` now delegates spreadsheet shape construction instead of building every export inline.
+- Replaced AI response casts in `App.tsx` with small runtime guards in `src/ai/responseGuards.ts`, so malformed AI JSON returns a user-facing error instead of throwing during render/handler execution.
+- Extracted analysis snapshot builders into `src/analyze/snapshotBuilders.ts` with coverage for coded excerpts, frequency limits, and crosstab table snapshots.
+- Extracted Analyze derived-result calculations into `src/analyze/derivedResults.ts`: query filtering, matching cases, matrix columns/results, word frequency, co-occurrence rows, and view adapter rows now live outside `App.tsx` with test coverage.
 
 Still open from the audit: `App.tsx` remains the orchestration bottleneck, `App.css` still contains legacy/new shell rules in one cascade, and strict TypeScript should be introduced gradually by folder.
 

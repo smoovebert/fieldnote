@@ -2,17 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import {
   BarChart3,
-  BookOpenText,
   Download,
   FileText,
   Folders,
-  Grid3x3,
   Highlighter,
   LayoutDashboard,
   ListTree,
   MessageSquareText,
   Plus,
-  Rows3,
   Search,
   Tags,
   X,
@@ -28,12 +25,26 @@ import {
   type AnalyzePanel,
   type AnalyzeViewState,
 } from './analyze/analyzeViewState'
-import { WordFreqView, type WordFreqRow } from './analyze/WordFreqView'
-import { CooccurrenceView, type CooccurPair } from './analyze/CooccurrenceView'
-import { MatrixView, type MatrixCellInput } from './analyze/MatrixView'
-import { CrosstabsView } from './analyze/CrosstabsView'
+import { AnalyzeDetail } from './analyze/AnalyzeDetail'
 import { buildCrosstab, crosstabCsvRows, type CrosstabResult } from './analyze/crosstabs'
-import { excerptMatchesAttributeFilters } from './analyze/excerptFilters'
+import {
+  buildCoOccurrenceRows,
+  buildMatrixColumns,
+  buildMatrixResults as buildDerivedMatrixResults,
+  buildWordFrequencyRows,
+  coOccurrenceRowsToPairs,
+  filterAnalyzeExcerpts,
+  matchingCasesForExcerpts,
+  matrixResultsToCells,
+  type MatrixColumnMode,
+} from './analyze/derivedResults'
+import {
+  buildCodedExcerptSnapshot,
+  buildCooccurrenceSnapshot,
+  buildCrosstabSnapshot,
+  buildFrequencySnapshot,
+  buildMatrixSnapshot,
+} from './analyze/snapshotBuilders'
 import {
   normalizeQueryDefinition,
   type AttributeFilter,
@@ -48,8 +59,7 @@ import { ResearchTemplatePicker } from './components/ResearchTemplatePicker'
 import type { ResearchTemplate } from './lib/researchTemplates'
 import { OverviewInspector } from './modes/overview/OverviewInspector'
 import { AccountDeletePanel } from './components/AccountDeletePanel'
-import { ProfileMenu } from './components/ProfileMenu'
-import { HeaderSearch } from './components/HeaderSearch'
+import { AppHeader } from './components/AppHeader'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { ReportInspector } from './modes/report/ReportInspector'
 import { ReportSidebar } from './modes/report/ReportSidebar'
@@ -67,10 +77,8 @@ import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { OrganizeInspector } from './modes/organize/OrganizeInspector'
 import { buildPageHighlights, findExcerptInBody, wrapHighlightedTranscript } from './modes/code/transcript'
 import { isPdfSource, parseSourcePages } from './lib/sourcePages'
-import { formatExcerptCitation } from './lib/excerptCitation'
 import { CodeDetail } from './modes/code/CodeDetail'
 import { CodePickerPanel } from './components/CodePickerPanel'
-import { ModeOrientation } from './components/ModeOrientation'
 import { ReferenceList } from './ReferenceList'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
@@ -86,9 +94,27 @@ import { parseCsv } from './lib/csv'
 import { readSourceFile } from './lib/sourceImport'
 import { buildAttributeImport } from './lib/attributeImport'
 import { downloadRows, type RowExportFormat } from './lib/downloadRows'
+import {
+  analyzeExcerptRows,
+  caseExcerptRows,
+  caseSheetRows,
+  codedExcerptsRows,
+  codebookRows,
+  coOccurrenceRows as coOccurrenceExportRows,
+  matrixRows as matrixExportRows,
+  memoRows,
+  snapshotRows,
+  wordFrequencyRows as wordFrequencyExportRows,
+} from './lib/exportRows'
 import { SourcesView } from './components/SourcesView'
 import { AiSettingsPanel } from './components/AiSettingsPanel'
 import { callAi } from './ai/client'
+import {
+  parseDraftDescriptionResponse,
+  parseDraftMemoResponse,
+  parseSuggestCodesResponse,
+  parseSummarizeSourceResponse,
+} from './ai/responseGuards'
 import { loadAiSettings } from './lib/aiSettings'
 import { BACKUP_MIME, backupFilename, buildBackup, validateBackup } from './lib/backup'
 import { deleteRecoverySnapshot, isLocalAheadOfRemote, readRecoverySnapshot } from './lib/localRecovery'
@@ -110,26 +136,6 @@ import './App.css'
 
 type WorkspaceView = 'overview' | 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 // AnalyzePanel moved to src/analyze/analyzeViewState.ts
-type MatrixColumnMode = 'case' | 'attribute'
-
-type MatrixColumn = {
-  id: string
-  label: string
-  caseIds: string[]
-}
-
-type WordFrequencyRow = {
-  word: string
-  count: number
-  excerptCount: number
-}
-
-type CoOccurrenceRow = {
-  key: string
-  codes: Code[]
-  count: number
-  excerpts: Excerpt[]
-}
 
 type LineNumberingMode = 'paragraph' | 'fixed-width'
 
@@ -218,57 +224,6 @@ const initialAttributes: Attribute[] = [
 const initialAttributeValues: AttributeValue[] = []
 
 const initialSavedQueries: SavedQuery[] = []
-
-const stopWords = new Set([
-  'about',
-  'after',
-  'again',
-  'also',
-  'because',
-  'been',
-  'being',
-  'could',
-  'did',
-  'does',
-  'doing',
-  'for',
-  'from',
-  'had',
-  'has',
-  'have',
-  'her',
-  'him',
-  'his',
-  'how',
-  'into',
-  'just',
-  'like',
-  'not',
-  'now',
-  'our',
-  'out',
-  'she',
-  'that',
-  'the',
-  'their',
-  'them',
-  'then',
-  'there',
-  'they',
-  'this',
-  'was',
-  'were',
-  'what',
-  'when',
-  'where',
-  'which',
-  'who',
-  'why',
-  'with',
-  'would',
-  'you',
-  'your',
-])
 
 const initialMemos: Memo[] = [
   {
@@ -457,17 +412,11 @@ function App() {
   const caseGridTemplate = `minmax(170px, 1fr) minmax(160px, 1fr) ${attributes
     .map(() => 'minmax(120px, 0.75fr)')
     .join(' ')} minmax(160px, 1fr) 36px`
-  const sourceById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources])
   const codeById = useMemo(() => new Map(codes.map((code) => [code.id, code])), [codes])
   const sortedCodes = useMemo(() => buildCodeTree(codes), [codes])
   const activeCodeParent = activeCode.parentCodeId ? codeById.get(activeCode.parentCodeId) : undefined
   const activeCodeChildren = codes.filter((code) => code.parentCodeId === activeCode.id)
   const parentCodeOptions = sortedCodes.filter((code) => code.id !== activeCode.id && !descendantCodeIds(codes, activeCode.id).includes(code.id))
-  const caseBySourceId = useMemo(() => {
-    const map = new Map<string, Case>()
-    cases.forEach((item) => item.sourceIds.forEach((sourceId) => map.set(sourceId, item)))
-    return map
-  }, [cases])
   const attributeValuesByAttribute = useMemo(() => {
     const map = new Map<string, string[]>()
     for (const attributeValue of attributeValues) {
@@ -887,48 +836,23 @@ function App() {
   }, [activeView, codeExcerpts, codes, excerpts, searchTerm, sourceExcerpts])
 
   const analyzeResults = useMemo(() => {
-    const term = queryText.trim().toLowerCase()
-
-    return excerpts.filter((excerpt) => {
-      const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id))
-      const source = sourceById.get(excerpt.sourceId)
-      const linkedCase = caseBySourceId.get(excerpt.sourceId)
-      const haystack = [
-        excerpt.text,
-        excerpt.note,
-        excerpt.sourceTitle,
-        source?.folder ?? '',
-        linkedCase?.name ?? '',
-        linkedCase?.description ?? '',
-        ...excerptCodes.map((code) => code.name),
-        ...excerptCodes.map((code) => code.description),
-      ]
-        .join(' ')
-        .toLowerCase()
-
-      if (term && !haystack.includes(term)) return false
-      if (queryCodeId && !excerpt.codeIds.includes(queryCodeId)) return false
-      // Additional codes are AND-combined with the primary code so the
-      // user can ask "excerpts coded with A AND B AND C" — used by the
-      // co-occurrence pair drill-down to land on the actual intersection.
-      for (const extra of queryAdditionalCodeIds) {
-        if (!excerpt.codeIds.includes(extra)) return false
-      }
-      if (queryCaseId && linkedCase?.id !== queryCaseId) return false
-
-      if (!excerptMatchesAttributeFilters(queryAttributes, linkedCase?.id, attributeValues)) return false
-
-      return true
+    return filterAnalyzeExcerpts({
+      excerpts,
+      codes,
+      sources,
+      cases,
+      attributeValues,
+      text: queryText,
+      codeId: queryCodeId,
+      additionalCodeIds: queryAdditionalCodeIds,
+      caseId: queryCaseId,
+      attributes: queryAttributes,
     })
-  }, [attributeValues, caseBySourceId, codes, excerpts, queryAdditionalCodeIds, queryAttributes, queryCaseId, queryCodeId, queryText, sourceById])
+  }, [attributeValues, cases, codes, excerpts, queryAdditionalCodeIds, queryAttributes, queryCaseId, queryCodeId, queryText, sources])
 
   const analyzeMatchingCases = useMemo(() => {
-    const matchingCases = analyzeResults.flatMap((excerpt) => {
-      const linkedCase = caseBySourceId.get(excerpt.sourceId)
-      return linkedCase ? [linkedCase] : []
-    })
-    return Array.from(new Map(matchingCases.map((item) => [item.id, item])).values())
-  }, [analyzeResults, caseBySourceId])
+    return matchingCasesForExcerpts(analyzeResults, cases)
+  }, [analyzeResults, cases])
 
   const activeMatrixAttribute = attributes.find((attribute) => attribute.id === matrixAttributeId) ?? attributes[0]
   const matrixRows = useMemo(() => {
@@ -938,126 +862,31 @@ function App() {
     }
     return sortedCodes
   }, [codes, queryCodeId, sortedCodes])
-  const matrixColumns = useMemo<MatrixColumn[]>(() => {
-    if (matrixColumnMode === 'case') {
-      return cases.map((item) => ({
-        id: item.id,
-        label: item.name,
-        caseIds: [item.id],
-      }))
-    }
-
-    if (!activeMatrixAttribute) return []
-
-    const valueGroups = new Map<string, string[]>()
-    attributeValues.forEach((attributeValue) => {
-      if (attributeValue.attributeId !== activeMatrixAttribute.id) return
-      const value = attributeValue.value.trim()
-      if (!value) return
-      valueGroups.set(value, [...(valueGroups.get(value) ?? []), attributeValue.caseId])
+  const matrixColumns = useMemo(() => {
+    return buildMatrixColumns({
+      mode: matrixColumnMode,
+      cases,
+      activeAttribute: activeMatrixAttribute,
+      attributeValues,
     })
-
-    return Array.from(valueGroups.entries()).map(([value, caseIds]) => ({
-      id: `${activeMatrixAttribute.id}:${value}`,
-      label: value,
-      caseIds,
-    }))
   }, [activeMatrixAttribute, attributeValues, cases, matrixColumnMode])
   const matrixResults = useMemo(() => {
-    const caseIdBySourceId = new Map<string, string>()
-    cases.forEach((item) => item.sourceIds.forEach((sourceId) => caseIdBySourceId.set(sourceId, item.id)))
-
-    return matrixRows.map((code) => ({
-      code,
-      cells: matrixColumns.map((column) => {
-        const columnCaseIds = new Set(column.caseIds)
-        const matches = analyzeResults.filter((excerpt) => {
-          const linkedCaseId = caseIdBySourceId.get(excerpt.sourceId)
-          return excerpt.codeIds.includes(code.id) && Boolean(linkedCaseId && columnCaseIds.has(linkedCaseId))
-        })
-
-        return { column, excerpts: matches }
-      }),
-    }))
+    return buildDerivedMatrixResults({
+      rows: matrixRows,
+      columns: matrixColumns,
+      cases,
+      excerpts: analyzeResults,
+    })
   }, [analyzeResults, cases, matrixColumns, matrixRows])
   const matrixTotalReferences = matrixResults.reduce((total, row) => total + row.cells.reduce((rowTotal, cell) => rowTotal + cell.excerpts.length, 0), 0)
-  const wordFrequencyRows = useMemo<WordFrequencyRow[]>(() => {
-    const counts = new Map<string, { count: number; excerptIds: Set<string> }>()
-
-    analyzeResults.forEach((excerpt) => {
-      const words = excerpt.text.toLowerCase().match(/[a-z][a-z'-]{2,}/g) ?? []
-      words.forEach((rawWord) => {
-        const word = rawWord.replace(/^'+|'+$/g, '')
-        if (word.length < 3 || stopWords.has(word)) return
-        const current = counts.get(word) ?? { count: 0, excerptIds: new Set<string>() }
-        current.count += 1
-        current.excerptIds.add(excerpt.id)
-        counts.set(word, current)
-      })
-    })
-
-    return Array.from(counts.entries())
-      .map(([word, value]) => ({ word, count: value.count, excerptCount: value.excerptIds.size }))
-      .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word))
-      .slice(0, 60)
-  }, [analyzeResults])
-  const coOccurrenceRows = useMemo<CoOccurrenceRow[]>(() => {
-    const pairMap = new Map<string, CoOccurrenceRow>()
-
-    analyzeResults.forEach((excerpt) => {
-      const excerptCodes = excerpt.codeIds
-        .map((codeId) => codeById.get(codeId))
-        .filter((code): code is Code => Boolean(code))
-        .sort((a, b) => a.name.localeCompare(b.name))
-
-      excerptCodes.forEach((firstCode, firstIndex) => {
-        excerptCodes.slice(firstIndex + 1).forEach((secondCode) => {
-          const ids = [firstCode.id, secondCode.id].sort()
-          const key = ids.join('__')
-          const existing = pairMap.get(key) ?? { key, codes: [firstCode, secondCode], count: 0, excerpts: [] }
-          existing.count += 1
-          existing.excerpts = [...existing.excerpts, excerpt]
-          pairMap.set(key, existing)
-        })
-      })
-    })
-
-    return Array.from(pairMap.values()).sort((a, b) => b.count - a.count || a.codes.map((code) => code.name).join(' + ').localeCompare(b.codes.map((code) => code.name).join(' + ')))
-  }, [analyzeResults, codeById])
-  const wordFrequencyViewRows = useMemo<WordFreqRow[]>(
+  const wordFrequencyRows = useMemo(() => buildWordFrequencyRows(analyzeResults), [analyzeResults])
+  const coOccurrenceRows = useMemo(() => buildCoOccurrenceRows(analyzeResults, codes), [analyzeResults, codes])
+  const wordFrequencyViewRows = useMemo(
     () => wordFrequencyRows.map((row) => ({ word: row.word, count: row.count, excerptCount: row.excerptCount })),
     [wordFrequencyRows],
   )
-  const cooccurrencePairs = useMemo<CooccurPair[]>(
-    () =>
-      coOccurrenceRows.flatMap((row) => {
-        const [a, b] = row.codes
-        if (!a || !b) return []
-        return [{
-          codeAId: a.id,
-          codeAName: a.name,
-          codeBId: b.id,
-          codeBName: b.name,
-          count: row.count,
-          sampleExcerpt: row.excerpts[0]?.text,
-        }]
-      }),
-    [coOccurrenceRows],
-  )
-  const matrixCellInputs = useMemo<MatrixCellInput[]>(
-    () =>
-      matrixResults.flatMap((row) =>
-        row.cells.map((cell) => ({
-          rowId: row.code.id,
-          rowLabel: row.code.name,
-          colId: cell.column.id,
-          colLabel: cell.column.label,
-          count: cell.excerpts.length,
-          sampleExcerpt: cell.excerpts[0]?.text,
-        })),
-      ),
-    [matrixResults],
-  )
+  const cooccurrencePairs = useMemo(() => coOccurrenceRowsToPairs(coOccurrenceRows), [coOccurrenceRows])
+  const matrixCellInputs = useMemo(() => matrixResultsToCells(matrixResults), [matrixResults])
 
   const crosstabResult = useMemo<CrosstabResult | null>(() => {
     const { attr1Id, attr2Id, topNRows, topNCols } = analyzeView.crosstab
@@ -1470,8 +1299,9 @@ function App() {
   async function handleSuggestCodes(selectedText: string) {
     const result = await callAi({ kind: 'suggest_codes', inputText: selectedText, projectId: projectId ?? null })
     if (!result.ok) return { ok: false as const, message: result.message }
-    const response = result.response as { suggestions: Array<{ name: string; description: string }> }
-    return { ok: true as const, suggestions: response.suggestions }
+    const parsed = parseSuggestCodesResponse(result.response)
+    if (!parsed.ok) return { ok: false as const, message: parsed.message }
+    return { ok: true as const, suggestions: parsed.response.suggestions }
   }
 
   async function handleDraftDescription(codeName: string, references: Array<{ sourceTitle: string; text: string }>) {
@@ -1479,16 +1309,18 @@ function App() {
     const inputText = `Code name: ${codeName}\n\nExcerpts:\n${refLines}`
     const result = await callAi({ kind: 'draft_description', inputText, projectId: projectId ?? null })
     if (!result.ok) return { ok: false as const, message: result.message }
-    const response = result.response as { description: string }
-    return { ok: true as const, description: response.description }
+    const parsed = parseDraftDescriptionResponse(result.response)
+    if (!parsed.ok) return { ok: false as const, message: parsed.message }
+    return { ok: true as const, description: parsed.response.description }
   }
 
   async function handleSummarizeSource(source: { title: string; content: string }) {
     const inputText = `Source: ${source.title}\n\n${source.content}`
     const result = await callAi({ kind: 'summarize_source', inputText, projectId: projectId ?? null })
     if (!result.ok) return { ok: false as const, message: result.message }
-    const response = result.response as { summary: string }
-    return { ok: true as const, summary: response.summary }
+    const parsed = parseSummarizeSourceResponse(result.response)
+    if (!parsed.ok) return { ok: false as const, message: parsed.message }
+    return { ok: true as const, summary: parsed.response.summary }
   }
 
   async function handleDraftProjectMemo() {
@@ -1510,8 +1342,9 @@ function App() {
     const inputText = lines.join('\n')
     const result = await callAi({ kind: 'draft_memo', inputText, projectId: projectId ?? null })
     if (!result.ok) return { ok: false as const, message: result.message }
-    const response = result.response as { memo: string }
-    return { ok: true as const, memo: response.memo }
+    const parsed = parseDraftMemoResponse(result.response)
+    if (!parsed.ok) return { ok: false as const, message: parsed.message }
+    return { ok: true as const, memo: parsed.response.memo }
   }
 
   function updateSource(sourceId: string, patch: Partial<Source>) {
@@ -1821,83 +1654,29 @@ function App() {
     return snapshot
   }
 
-  // Per-panel snapshot builders — each maps the live, computed analysis
-  // state into the immutable shape stored in the snapshot. Captured
-  // values are point-in-time; later code/case/attribute renames or
-  // deletes won't drift the snapshot.
   function buildCodedExcerptResults(): SnapshotResults {
-    return {
-      kind: 'coded_excerpt',
-      excerpts: analyzeResults.map((excerpt) => ({
-        id: excerpt.id,
-        sourceId: excerpt.sourceId,
-        sourceTitle: excerpt.sourceTitle,
-        codeIds: excerpt.codeIds,
-        text: excerpt.text,
-        note: excerpt.note,
-        ...(excerpt.pageNumber !== undefined ? { pageNumber: excerpt.pageNumber } : {}),
-      })),
-    }
+    return buildCodedExcerptSnapshot(analyzeResults)
   }
+
   function buildMatrixResults(): SnapshotResults {
-    return {
-      kind: 'matrix',
+    return buildMatrixSnapshot({
       columnMode: matrixColumnMode,
       attributeName: matrixColumnMode === 'attribute' ? activeMatrixAttribute?.name ?? null : null,
-      colLabels: matrixColumns.map((c) => c.label),
-      rows: matrixResults.map((row) => ({
-        codeName: row.code.name,
-        counts: row.cells.map((cell) => cell.excerpts.length),
-      })),
-    }
+      columns: matrixColumns,
+      rows: matrixResults,
+    })
   }
+
   function buildFrequencyResults(): SnapshotResults {
-    return {
-      kind: 'frequency',
-      topN: analyzeView.wordFreq.topN,
-      rows: wordFrequencyRows.slice(0, analyzeView.wordFreq.topN).map((r) => ({ word: r.word, count: r.count, excerptCount: r.excerptCount })),
-    }
+    return buildFrequencySnapshot(wordFrequencyRows, analyzeView.wordFreq.topN)
   }
+
   function buildCooccurrenceResults(): SnapshotResults {
-    return {
-      kind: 'cooccurrence',
-      topN: analyzeView.cooccur.topN,
-      pairs: cooccurrencePairs.slice(0, analyzeView.cooccur.topN).map((p) => ({
-        codeAName: p.codeAName,
-        codeBName: p.codeBName,
-        count: p.count,
-      })),
-    }
+    return buildCooccurrenceSnapshot(cooccurrencePairs, analyzeView.cooccur.topN)
   }
+
   function buildCrosstabResults(): SnapshotResults | null {
-    if (!crosstabResult) return null
-    const attr1Name = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
-    const attr2Name = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
-    // Cells live in a dense flat array keyed by (rowId, col1, col2).
-    // Pre-bucket by rowId so the per-row mapping below is O(cols).
-    const cellsByRow = new Map<string, Map<string, number>>()
-    for (const cell of crosstabResult.cells) {
-      let rowMap = cellsByRow.get(cell.rowId)
-      if (!rowMap) {
-        rowMap = new Map<string, number>()
-        cellsByRow.set(cell.rowId, rowMap)
-      }
-      rowMap.set(`${cell.col1Value}${cell.col2Value}`, cell.count)
-    }
-    return {
-      kind: 'crosstab',
-      attr1Name,
-      attr2Name,
-      percentMode: analyzeView.crosstab.percentMode,
-      colLabels: crosstabResult.cols.map((col) => `${col.col1} × ${col.col2}`),
-      rows: crosstabResult.rows.map((row) => {
-        const rowMap = cellsByRow.get(row.id) ?? new Map<string, number>()
-        return {
-          codeName: row.label,
-          counts: crosstabResult.cols.map((col) => rowMap.get(`${col.col1}${col.col2}`) ?? 0),
-        }
-      }),
-    }
+    return buildCrosstabSnapshot({ result: crosstabResult, attributes, view: analyzeView.crosstab })
   }
 
   async function captureQuerySnapshot() {
@@ -2037,42 +1816,7 @@ function App() {
       ? (savedQueries.find((q) => q.id === snap.queryId)?.name ?? 'Saved query')
       : 'Analysis'
     const dateLabel = new Date(snap.capturedAt).toISOString().slice(0, 10)
-    let rows: string[][] = []
-    if (snap.results.kind === 'coded_excerpt') {
-      rows = [
-        ['Project', 'Saved query', 'Snapshot label', 'Captured at', 'Source', 'Page', 'Codes', 'Excerpt', 'Note'],
-        ...snap.results.excerpts.map((excerpt) => {
-          const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
-          return [
-            projectTitle,
-            queryName,
-            snap.label,
-            snap.capturedAt,
-            excerpt.sourceTitle,
-            excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
-            excerptCodes.map((code) => code.name).join('; '),
-            excerpt.text,
-            excerpt.note,
-          ]
-        }),
-      ]
-    } else if (snap.results.kind === 'matrix' || snap.results.kind === 'crosstab') {
-      const r = snap.results
-      rows = [
-        ['Code', ...r.colLabels],
-        ...r.rows.map((row) => [row.codeName, ...row.counts.map(String)]),
-      ]
-    } else if (snap.results.kind === 'frequency') {
-      rows = [
-        ['Word', 'Count', 'Excerpts'],
-        ...snap.results.rows.map((r) => [r.word, String(r.count), String(r.excerptCount)]),
-      ]
-    } else if (snap.results.kind === 'cooccurrence') {
-      rows = [
-        ['Code A', 'Code B', 'Count'],
-        ...snap.results.pairs.map((p) => [p.codeAName, p.codeBName, String(p.count)]),
-      ]
-    }
+    const rows = snapshotRows({ projectTitle, queryName, snapshot: snap, codes })
     downloadInFormat(rows, `fieldnote-snapshot-${slugId(queryName)}-${dateLabel}`, 'Snapshot')
   }
 
@@ -2237,25 +1981,7 @@ function App() {
   function exportCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Source', 'Page', 'Source folder', 'Case', 'Codes', 'Code descriptions', 'Excerpt', 'Note'],
-      ...excerpts.map((excerpt) => {
-        const source = sources.find((item) => item.id === excerpt.sourceId)
-        const linkedCase = caseBySourceId.get(excerpt.sourceId)
-        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
-        return [
-          projectTitle,
-          excerpt.sourceTitle,
-          excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
-          source?.folder ?? '',
-          linkedCase?.name ?? source?.caseName ?? '',
-          excerptCodes.map((code) => code.name).join('; '),
-          excerptCodes.map((code) => code.description).join('; '),
-          excerpt.text,
-          excerpt.note,
-        ]
-      }),
-    ]
+    const rows = codedExcerptsRows({ projectTitle, excerpts, sources, cases, codes })
 
     downloadInFormat(rows, 'fieldnote-coded-excerpts', 'Coded excerpts')
   }
@@ -2263,19 +1989,7 @@ function App() {
   function exportCaseSheetCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Case', 'Sources', 'Notes', ...attributes.map((attribute) => attribute.name)],
-      ...cases.map((item) => {
-        const linkedSources = sources.filter((source) => item.sourceIds.includes(source.id))
-        return [
-          projectTitle,
-          item.name,
-          linkedSources.map((source) => source.title).join('; '),
-          item.description,
-          ...attributes.map((attribute) => attributeValues.find((value) => value.caseId === item.id && value.attributeId === attribute.id)?.value ?? ''),
-        ]
-      }),
-    ]
+    const rows = caseSheetRows({ projectTitle, cases, sources, attributes, attributeValues })
 
     downloadInFormat(rows, 'fieldnote-case-sheet', 'Case sheet')
   }
@@ -2283,25 +1997,7 @@ function App() {
   function exportCaseExcerptCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Case', 'Source', 'Page', 'Codes', 'Excerpt', 'Note', ...attributes.map((attribute) => attribute.name)],
-      ...excerpts.map((excerpt) => {
-        const linkedCase = caseBySourceId.get(excerpt.sourceId)
-        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
-        return [
-          projectTitle,
-          linkedCase?.name ?? '',
-          excerpt.sourceTitle,
-          excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
-          excerptCodes.map((code) => code.name).join('; '),
-          excerpt.text,
-          excerpt.note,
-          ...attributes.map((attribute) =>
-            linkedCase ? attributeValues.find((value) => value.caseId === linkedCase.id && value.attributeId === attribute.id)?.value ?? '' : ''
-          ),
-        ]
-      }),
-    ]
+    const rows = caseExcerptRows({ projectTitle, excerpts, cases, codes, attributes, attributeValues })
 
     downloadInFormat(rows, 'fieldnote-coded-excerpts-by-case', 'Excerpts by case')
   }
@@ -2309,23 +2005,7 @@ function App() {
   function exportAnalyzeCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Source', 'Page', 'Case', 'Codes', 'Excerpt', 'Note', 'Active filters'],
-      ...analyzeResults.map((excerpt) => {
-        const linkedCase = caseBySourceId.get(excerpt.sourceId)
-        const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
-        return [
-          projectTitle,
-          excerpt.sourceTitle,
-          excerpt.pageNumber !== undefined ? String(excerpt.pageNumber) : '',
-          linkedCase?.name ?? '',
-          excerptCodes.map((code) => code.name).join('; '),
-          excerpt.text,
-          excerpt.note,
-          activeQueryFilters.join('; '),
-        ]
-      }),
-    ]
+    const rows = analyzeExcerptRows({ projectTitle, excerpts: analyzeResults, cases, codes, activeFilters: activeQueryFilters })
 
     downloadInFormat(rows, 'fieldnote-query-results', 'Query results')
   }
@@ -2334,21 +2014,7 @@ function App() {
     event.preventDefault()
 
     const columnType = matrixColumnMode === 'case' ? 'Case' : activeMatrixAttribute?.name ?? 'Attribute'
-    const rows = [
-      ['Project', 'Row code', 'Column type', 'Column', 'Count', 'Excerpt sources', 'Excerpts', 'Active filters'],
-      ...matrixResults.flatMap((row) =>
-        row.cells.map((cell) => [
-          projectTitle,
-          row.code.name,
-          columnType,
-          cell.column.label,
-          String(cell.excerpts.length),
-          cell.excerpts.map((excerpt) => excerpt.sourceTitle).join('; '),
-          cell.excerpts.map((excerpt) => excerpt.text).join(' | '),
-          activeQueryFilters.join('; '),
-        ])
-      ),
-    ]
+    const rows = matrixExportRows({ projectTitle, rows: matrixResults, columnType, activeFilters: activeQueryFilters })
 
     downloadInFormat(rows, 'fieldnote-matrix-coding', 'Matrix coding')
   }
@@ -2356,10 +2022,7 @@ function App() {
   function exportWordFrequencyCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Word', 'Count', 'Excerpt count', 'Active filters'],
-      ...wordFrequencyRows.map((row) => [projectTitle, row.word, String(row.count), String(row.excerptCount), activeQueryFilters.join('; ')]),
-    ]
+    const rows = wordFrequencyExportRows({ projectTitle, rows: wordFrequencyRows, activeFilters: activeQueryFilters })
 
     downloadInFormat(rows, 'fieldnote-word-frequency', 'Word frequency')
   }
@@ -2367,20 +2030,17 @@ function App() {
   function exportCoOccurrenceCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Code 1', 'Code 2', 'Count', 'Excerpt sources', 'Excerpts', 'Active filters'],
-      ...coOccurrenceRows.map((row) => [
-        projectTitle,
-        row.codes[0]?.name ?? '',
-        row.codes[1]?.name ?? '',
-        String(row.count),
-        row.excerpts.map((excerpt) => excerpt.sourceTitle).join('; '),
-        row.excerpts.map((excerpt) => excerpt.text).join(' | '),
-        activeQueryFilters.join('; '),
-      ]),
-    ]
+    const rows = coOccurrenceExportRows({ projectTitle, rows: coOccurrenceRows, activeFilters: activeQueryFilters })
 
     downloadInFormat(rows, 'fieldnote-code-cooccurrence', 'Co-occurrence')
+  }
+
+  function exportCrosstabCsv() {
+    if (!crosstabResult) return
+    const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
+    const a2 = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
+    const rows = crosstabCsvRows(crosstabResult, a1, a2)
+    downloadInFormat(rows, 'fieldnote-crosstabs', 'Crosstabs')
   }
 
   function exportActiveAnalysisCsv(event: MouseEvent<HTMLButtonElement>) {
@@ -2398,11 +2058,7 @@ function App() {
     }
     if (analyzePanel === 'crosstab') {
       event.preventDefault()
-      if (!crosstabResult) return
-      const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
-      const a2 = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
-      const rows = crosstabCsvRows(crosstabResult, a1, a2)
-      downloadInFormat(rows, 'fieldnote-crosstabs', 'Crosstabs')
+      exportCrosstabCsv()
       return
     }
     exportAnalyzeCsv(event)
@@ -2411,13 +2067,7 @@ function App() {
   function exportCodebookCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Parent code', 'Code', 'Description', 'Excerpts', 'Example excerpt'],
-      ...sortedCodes.map((code) => {
-        const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(code.id))
-        return [projectTitle, code.parentCodeId ? codeById.get(code.parentCodeId)?.name ?? '' : '', code.name, code.description, String(references.length), references[0]?.text ?? '']
-      }),
-    ]
+    const rows = codebookRows({ projectTitle, sortedCodes, excerpts })
 
     downloadInFormat(rows, 'fieldnote-codebook', 'Codebook')
   }
@@ -2425,19 +2075,7 @@ function App() {
   function exportMemosCsv(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
 
-    const rows = [
-      ['Project', 'Memo title', 'Linked type', 'Linked item', 'Memo body'],
-      ...memos.map((memo) => {
-        const linkedItem =
-          memo.linkedType === 'source'
-            ? sources.find((source) => source.id === memo.linkedId)?.title
-            : memo.linkedType === 'code'
-              ? codes.find((code) => code.id === memo.linkedId)?.name
-              : projectTitle
-
-        return [projectTitle, memo.title, memo.linkedType, linkedItem ?? '', memo.body]
-      }),
-    ]
+    const rows = memoRows({ projectTitle, memos, sources, codes })
 
     downloadInFormat(rows, 'fieldnote-memos', 'Memos')
   }
@@ -2561,125 +2199,25 @@ function App() {
       </div>
     </div>
     <main className="app-shell" data-shell="new" data-view={activeView}>
-      <header className="app-header">
-        <div className="app-header-left">
-          <div className="brand-block">
-            <div className="brand-mark">F</div>
-            <div>
-              <p className="eyebrow">Qualitative workspace</p>
-              <h1>Fieldnote</h1>
-            </div>
-          </div>
-
-        </div>
-
-        <nav className="app-header-modes" aria-label="Research modes">
-          {modeItems.map((mode) => {
-            const Icon = mode.icon
-            const isDisabled = !projectId && mode.id !== 'overview'
-            return (
-              <button
-                key={mode.id}
-                className={activeView === mode.id ? 'active' : ''}
-                type="button"
-                title={`${mode.label} — ${mode.description}`}
-                disabled={isDisabled}
-                onClick={() => selectView(mode.id)}
-              >
-                <Icon size={15} aria-hidden="true" />
-                <span>{mode.label}</span>
-              </button>
-            )
-          })}
-        </nav>
-
-        {projectId && (
-          <HeaderSearch
-            sources={sources}
-            codes={codes}
-            excerpts={excerpts}
-            cases={cases}
-            memos={memos}
-            onOpenSource={(id) => { selectActiveSource(id); setActiveView('code') }}
-            onOpenCode={(id) => { setActiveCodeId(id); setActiveView('refine') }}
-            onOpenCase={(id) => {
-              const targetCase = cases.find((c) => c.id === id)
-              if (targetCase?.sourceIds[0]) selectActiveSource(targetCase.sourceIds[0])
-              setActiveView('classify')
-            }}
-            onOpenMemo={(id) => { setActiveMemoId(id) }}
-            onOpenExcerpt={(sourceId) => { selectActiveSource(sourceId); setActiveView('code') }}
-          />
-        )}
-
-        <div className="header-tools">
-          {(() => {
-            // Three-state status pill: colored dot on the left, status
-            // text on the right. The container is a fixed width so the
-            // surrounding header (mode tabs etc.) never shifts when the
-            // message length changes; the text itself ellipses inside
-            // that box when it's too long.
-            const isError = /save failed|could not|error|invalid/i.test(saveStatus)
-            const isWorking = !isError && saveStatus.endsWith('...')
-            const tone = isError ? 'error' : isWorking ? 'saving' : 'ok'
-            return (
-              <div
-                className={`sync-status sync-status--${tone}`}
-                role="status"
-                aria-live="polite"
-                title={saveStatus}
-              >
-                <span className={`sync-dot sync-dot--${tone}`} aria-hidden="true" />
-                <span className="sync-status-text">{saveStatus}</span>
-              </div>
-            )
-          })()}
-          {session?.user?.email && (() => {
-            // Prefill the feedback mailto with as much context as we
-            // can derive client-side. Mirrors the four-things template
-            // in docs/alpha-feedback.md so the user only has to fill
-            // 'what you were trying to do / what happened' — the rest
-            // (where they were, browser, project) is auto-stamped.
-            const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
-            const url = typeof window !== 'undefined' ? window.location.href : 'unknown'
-            const subject = `Fieldnote alpha — ${activeView}`
-            const body = [
-              "Pick whichever section fits and delete the other:",
-              '',
-              '— Bug report —',
-              'What I was trying to do:',
-              '',
-              'What I expected to happen:',
-              '',
-              'What actually happened:',
-              '',
-              '',
-              '— Feature request / idea —',
-              'What would help:',
-              '',
-              'Why it matters / where it would fit:',
-              '',
-              '',
-              '— context (auto-filled, edit if any of this is wrong) —',
-              `Mode: ${activeView}`,
-              `Project: ${projectId ?? '(no project loaded)'}`,
-              `URL: ${url}`,
-              `Browser: ${ua}`,
-              `Account: ${session.user.email}`,
-            ].join('\n')
-            return (
-              <ProfileMenu
-                accountEmail={session.user.email}
-                feedbackSubject={subject}
-                feedbackBody={body}
-                onOpenAiSettings={() => setAiSettingsOpen(true)}
-                onOpenAccountDelete={() => setAccountDeleteOpen(true)}
-                onSignOut={signOut}
-              />
-            )
-          })()}
-        </div>
-      </header>
+      <AppHeader
+        activeView={activeView}
+        projectId={projectId}
+        saveStatus={saveStatus}
+        accountEmail={session.user.email}
+        modeItems={modeItems}
+        sources={sources}
+        codes={codes}
+        excerpts={excerpts}
+        cases={cases}
+        memos={memos}
+        onSelectView={selectView}
+        onSelectSource={selectActiveSource}
+        onSelectCode={setActiveCodeId}
+        onSelectMemo={setActiveMemoId}
+        onOpenAiSettings={() => setAiSettingsOpen(true)}
+        onOpenAccountDelete={() => setAccountDeleteOpen(true)}
+        onSignOut={signOut}
+      />
 
       <aside
         className="workspace-sidebar"
@@ -2953,338 +2491,55 @@ function App() {
         )}
 
         {projectId && activeView === 'analyze' && (
-          <article className="detail-card analyze-surface">
-            <div className="analyze-tabbar">
-              <div className="analyze-tabs" role="tablist" aria-label="Analyze views">
-                <button className={analyzePanel === 'query' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('query')}>
-                  <Search size={15} aria-hidden="true" />
-                  Query results
-                </button>
-                <button className={analyzePanel === 'matrix' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('matrix')}>
-                  <Rows3 size={15} aria-hidden="true" />
-                  Matrix coding
-                </button>
-                <button className={analyzePanel === 'frequency' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('frequency')}>
-                  <BookOpenText size={15} aria-hidden="true" />
-                  Word frequency
-                </button>
-                <button className={analyzePanel === 'cooccurrence' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('cooccurrence')}>
-                  <ListTree size={15} aria-hidden="true" />
-                  Co-occurrence
-                </button>
-                <button className={analyzePanel === 'crosstab' ? 'active' : ''} type="button" onClick={() => setAnalyzePanel('crosstab')}>
-                  <Grid3x3 size={15} aria-hidden="true" />
-                  Crosstabs
-                </button>
-              </div>
-              <span className="reference-count">{analyzePanelCount}</span>
-            </div>
-
-            <ModeOrientation
-              kicker="Analysis pass"
-              title="Ask structured questions of the coded evidence"
-              body="Use the filters to narrow the slice of data, then switch views depending on the kind of question. Send useful results to Report so they become part of the audit trail."
-              points={[
-                { label: 'Find excerpts', detail: 'Retrieve the exact coded passages behind a theme.' },
-                { label: 'Compare groups', detail: 'Use matrix and crosstabs to compare codes by cases or attributes.' },
-                { label: 'Trace patterns', detail: 'Use word frequency and co-occurrence to spot language and theme relationships.' },
-              ]}
-            />
-
-            <div className="query-builder">
-              <label className="property-field">
-                <span>Text</span>
-                <input value={queryText} placeholder="Search excerpt text, notes, sources, cases" onChange={(event) => setQueryText(event.target.value)} />
-              </label>
-              <label className="property-field">
-                <span>Code</span>
-                <select value={queryCodeId} onChange={(event) => setQueryCodeId(event.target.value)}>
-                  <option value="">Any code</option>
-                  {sortedCodes.map((code) => (
-                    <option key={code.id} value={code.id}>
-                      {'-'.repeat(code.depth)} {code.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="property-field also-coded-with">
-                <span>Also coded with</span>
-                <div className="also-coded-with-chips">
-                  {queryAdditionalCodeIds.length === 0 && (
-                    <small className="also-coded-with-empty">None — add codes to require excerpts coded with all of them.</small>
-                  )}
-                  {queryAdditionalCodeIds.map((id) => {
-                    const code = codes.find((c) => c.id === id)
-                    return (
-                      <span key={id} className="also-coded-with-chip">
-                        {code?.name ?? 'Unknown code'}
-                        <button
-                          type="button"
-                          aria-label={`Remove ${code?.name ?? 'code'} from filter`}
-                          onClick={() => setQueryAdditionalCodeIds((current) => current.filter((c) => c !== id))}
-                        >×</button>
-                      </span>
-                    )
-                  })}
-                </div>
-                <select
-                  value=""
-                  onChange={(event) => {
-                    const next = event.target.value
-                    if (!next) return
-                    setQueryAdditionalCodeIds((current) => current.includes(next) || next === queryCodeId ? current : [...current, next])
-                  }}
-                >
-                  <option value="">+ Add code (AND)</option>
-                  {sortedCodes
-                    .filter((c) => c.id !== queryCodeId && !queryAdditionalCodeIds.includes(c.id))
-                    .map((code) => (
-                      <option key={code.id} value={code.id}>{'-'.repeat(code.depth)} {code.name}</option>
-                    ))}
-                </select>
-              </div>
-              <label className="property-field">
-                <span>Case</span>
-                <select value={queryCaseId} onChange={(event) => setQueryCaseId(event.target.value)}>
-                  <option value="">Any case</option>
-                  {cases.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="property-field property-field-stack">
-                <span>Attributes</span>
-                {queryAttributes.length === 0 && (
-                  <div className="attribute-filter-empty">No attribute filters.</div>
-                )}
-                {queryAttributes.map((row, index) => {
-                  const usedElsewhere = new Set(
-                    queryAttributes.filter((_, i) => i !== index).map((r) => r.attributeId).filter(Boolean),
-                  )
-                  const valueOptions = valuesForAttribute(row.attributeId)
-                  return (
-                    <div key={index} className="attribute-filter-row">
-                      <select
-                        value={row.attributeId}
-                        onChange={(event) => {
-                          const nextId = event.target.value
-                          setQueryAttributes((current) =>
-                            current.map((r, i) => (i === index ? { attributeId: nextId, value: '' } : r)),
-                          )
-                        }}
-                      >
-                        <option value="">— pick attribute —</option>
-                        {attributes
-                          .filter((a) => a.id === row.attributeId || !usedElsewhere.has(a.id))
-                          .map((a) => (
-                            <option key={a.id} value={a.id}>{a.name}</option>
-                          ))}
-                      </select>
-                      <select
-                        value={row.value}
-                        disabled={!row.attributeId}
-                        onChange={(event) => {
-                          const nextValue = event.target.value
-                          setQueryAttributes((current) =>
-                            current.map((r, i) => (i === index ? { ...r, value: nextValue } : r)),
-                          )
-                        }}
-                      >
-                        <option value="">— pick value —</option>
-                        {valueOptions.map((value) => (
-                          <option key={value} value={value}>{value}</option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="attribute-filter-delete"
-                        aria-label="Remove this attribute filter"
-                        onClick={() => {
-                          setQueryAttributes((current) => current.filter((_, i) => i !== index))
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )
-                })}
-                <button
-                  type="button"
-                  className="secondary-button attribute-filter-add"
-                  disabled={queryAttributes.length >= attributes.length}
-                  onClick={() => {
-                    setQueryAttributes((current) => [...current, { attributeId: '', value: '' }])
-                  }}
-                >
-                  + Add attribute filter
-                </button>
-              </div>
-              <button
-                className="secondary-button query-clear"
-                type="button"
-                onClick={clearQueryFilters}
-              >
-                Clear filters
-              </button>
-            </div>
-
-            <div className="query-save-row">
-              <label className="property-field">
-                <span>Saved query name</span>
-                <input value={queryName} placeholder="Name this analytic question" onChange={(event) => setQueryName(event.target.value)} />
-              </label>
-              <button className="secondary-button" type="button" onClick={saveCurrentQuery}>
-                <Plus size={16} aria-hidden="true" />
-                {activeSavedQuery ? 'Update query' : 'Save query'}
-              </button>
-              {activeSavedQuery && analyzePanel === 'query' && (
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => void captureQuerySnapshot()}
-                  title="Pin the current results as a point-in-time snapshot"
-                >
-                  Pin result
-                </button>
-              )}
-            </div>
-
-            {analyzePanel === 'query' && (
-              <div className="query-results-table" role="table" aria-label="Analyze query results">
-                <div className="query-result-row query-result-head" role="row">
-                  <span>Source</span>
-                  <span>Case</span>
-                  <span>Codes</span>
-                  <span>Excerpt</span>
-                  <span>Note</span>
-                </div>
-                {analyzeResults.map((excerpt) => {
-                  const linkedCase = caseBySourceId.get(excerpt.sourceId)
-                  const excerptCodes = codes.filter((code) => excerpt.codeIds.includes(code.id))
-
-                  return (
-                    <div key={excerpt.id} className="query-result-row" role="row">
-                      <button type="button" onClick={() => selectActiveSource(excerpt.sourceId)}>
-                        {formatExcerptCitation(excerpt)}
-                      </button>
-                      <span>{linkedCase?.name ?? '-'}</span>
-                      <span>{excerptCodes.map((code) => code.name).join(', ')}</span>
-                      <p>{excerpt.text}</p>
-                      <input value={excerpt.note} placeholder="Add note" onChange={(event) => updateExcerptNote(excerpt.id, event.target.value)} />
-                    </div>
-                  )
-                })}
-                {!analyzeResults.length && (
-                  <div className="empty-table-state">
-                    <strong>No matching excerpts</strong>
-                    <span>Broaden the filters, choose a different code or case, or code more passages first.</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {analyzePanel === 'matrix' && (
-              <>
-                <div className="matrix-toolbar">
-                  <label className="property-field">
-                    <span>Columns</span>
-                    <select value={matrixColumnMode} onChange={(event) => setMatrixColumnMode(event.target.value as MatrixColumnMode)}>
-                      <option value="case">Cases</option>
-                      <option value="attribute">Attribute values</option>
-                    </select>
-                  </label>
-                  {matrixColumnMode === 'attribute' && (
-                    <label className="property-field">
-                      <span>Attribute</span>
-                      <select
-                        value={activeMatrixAttribute?.id ?? ''}
-                        onChange={(event) => setMatrixAttributeId(event.target.value)}
-                      >
-                        {attributes.map((attribute) => (
-                          <option key={attribute.id} value={attribute.id}>
-                            {attribute.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
-                <MatrixView
-                  rowLabels={matrixRows.map((code) => code.name)}
-                  colLabels={matrixColumns.map((column) => column.label)}
-                  cells={matrixCellInputs}
-                  view={analyzeView.matrix.view}
-                  topNRows={analyzeView.matrix.topNRows}
-                  topNCols={analyzeView.matrix.topNCols}
-                  onViewChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, view: next } }))}
-                  onTopNRowsChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, topNRows: next } }))}
-                  onTopNColsChange={(next) => setAnalyzeView((s) => ({ ...s, matrix: { ...s.matrix, topNCols: next } }))}
-                  onCellSelect={handleMatrixCellSelect}
-                  onExportCsv={() => exportMatrixCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
-                  classifyEmptyMessage={
-                    cases.length === 0 && attributes.length === 0
-                      ? 'Matrix needs cases or attribute values — go to Classify mode.'
-                      : undefined
-                  }
-                />
-              </>
-            )}
-
-            {analyzePanel === 'frequency' && (
-              <WordFreqView
-                rows={wordFrequencyViewRows}
-                totalExcerpts={analyzeResults.length}
-                view={analyzeView.wordFreq.view}
-                topN={analyzeView.wordFreq.topN}
-                onViewChange={(next) => setAnalyzeView((s) => ({ ...s, wordFreq: { ...s.wordFreq, view: next } }))}
-                onTopNChange={(next) => setAnalyzeView((s) => ({ ...s, wordFreq: { ...s.wordFreq, topN: next } }))}
-                onWordSelect={handleWordSelect}
-                onExportCsv={() => exportWordFrequencyCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
-              />
-            )}
-
-            {analyzePanel === 'cooccurrence' && (
-              <CooccurrenceView
-                pairs={cooccurrencePairs}
-                view={analyzeView.cooccur.view}
-                topN={analyzeView.cooccur.topN}
-                onViewChange={(next) => setAnalyzeView((s) => ({ ...s, cooccur: { ...s.cooccur, view: next } }))}
-                onTopNChange={(next) => setAnalyzeView((s) => ({ ...s, cooccur: { ...s.cooccur, topN: next } }))}
-                onPairSelect={handlePairSelect}
-                onCodeSelect={handlePairSelect}
-                onExportCsv={() => exportCoOccurrenceCsv({ preventDefault: () => {} } as MouseEvent<HTMLButtonElement>)}
-              />
-            )}
-            {analyzePanel === 'crosstab' && (
-              <div className="analyze-panel">
-                <CrosstabsView
-                  attributes={attributes.map((a) => ({ id: a.id, name: a.name }))}
-                  attr1Id={analyzeView.crosstab.attr1Id}
-                  attr2Id={analyzeView.crosstab.attr2Id}
-                  percentMode={analyzeView.crosstab.percentMode}
-                  topNRows={analyzeView.crosstab.topNRows}
-                  topNCols={analyzeView.crosstab.topNCols}
-                  result={crosstabResult}
-                  onAttr1Change={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, attr1Id: next } }))}
-                  onAttr2Change={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, attr2Id: next } }))}
-                  onPercentModeChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, percentMode: next } }))}
-                  onTopNRowsChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, topNRows: next } }))}
-                  onTopNColsChange={(next) => setAnalyzeView((s) => ({ ...s, crosstab: { ...s.crosstab, topNCols: next } }))}
-                  onCellSelect={handleCrosstabCellSelect}
-                  onExportCsv={() => {
-                    if (!crosstabResult) return
-                    const a1 = attributes.find((a) => a.id === analyzeView.crosstab.attr1Id)?.name ?? 'Attribute 1'
-                    const a2 = attributes.find((a) => a.id === analyzeView.crosstab.attr2Id)?.name ?? 'Attribute 2'
-                    const rows = crosstabCsvRows(crosstabResult, a1, a2)
-                    downloadInFormat(rows, 'fieldnote-crosstabs', 'Crosstabs')
-                  }}
-                />
-              </div>
-            )}
-            <ScrollAffordance />
-          </article>
+          <AnalyzeDetail
+            analyzePanel={analyzePanel}
+            setAnalyzePanel={setAnalyzePanel}
+            analyzePanelCount={analyzePanelCount}
+            queryText={queryText}
+            setQueryText={setQueryText}
+            queryCodeId={queryCodeId}
+            setQueryCodeId={setQueryCodeId}
+            sortedCodes={sortedCodes}
+            queryAdditionalCodeIds={queryAdditionalCodeIds}
+            setQueryAdditionalCodeIds={setQueryAdditionalCodeIds}
+            codes={codes}
+            queryCaseId={queryCaseId}
+            setQueryCaseId={setQueryCaseId}
+            cases={cases}
+            queryAttributes={queryAttributes}
+            setQueryAttributes={setQueryAttributes}
+            attributes={attributes}
+            valuesForAttribute={valuesForAttribute}
+            clearQueryFilters={clearQueryFilters}
+            queryName={queryName}
+            setQueryName={setQueryName}
+            saveCurrentQuery={saveCurrentQuery}
+            activeSavedQuery={activeSavedQuery}
+            captureQuerySnapshot={captureQuerySnapshot}
+            analyzeResults={analyzeResults}
+            updateExcerptNote={updateExcerptNote}
+            selectActiveSource={selectActiveSource}
+            matrixColumnMode={matrixColumnMode}
+            setMatrixColumnMode={setMatrixColumnMode}
+            activeMatrixAttribute={activeMatrixAttribute}
+            setMatrixAttributeId={setMatrixAttributeId}
+            matrixRows={matrixRows}
+            matrixColumns={matrixColumns}
+            matrixCellInputs={matrixCellInputs}
+            analyzeView={analyzeView}
+            setAnalyzeView={setAnalyzeView}
+            handleMatrixCellSelect={handleMatrixCellSelect}
+            exportMatrixCsv={exportMatrixCsv}
+            wordFrequencyViewRows={wordFrequencyViewRows}
+            handleWordSelect={handleWordSelect}
+            exportWordFrequencyCsv={exportWordFrequencyCsv}
+            cooccurrencePairs={cooccurrencePairs}
+            handlePairSelect={handlePairSelect}
+            exportCoOccurrenceCsv={exportCoOccurrenceCsv}
+            crosstabResult={crosstabResult}
+            handleCrosstabCellSelect={handleCrosstabCellSelect}
+            exportCrosstabCsv={exportCrosstabCsv}
+          />
         )}
 
         {projectId && activeView === 'report' && <ReportDetail model={reportModel} />}
