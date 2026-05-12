@@ -74,6 +74,7 @@ The first audit cleanup pass addressed two low-risk reliability items before dee
 - Extracted the Analyze detail surface and top app header into dedicated components. `src/App.tsx` is now under 3,000 lines and mostly acts as state/orchestration glue.
 - Removed the monolithic `src/App.css`. The same cascade now loads through focused stylesheets in `src/styles/`: frame, workspace, new shell, overview, shared components, AI, and overview rail styles.
 - Extracted the right rail/properties surface into `src/components/PropertiesRail.tsx`, keeping Overview/Organize/Code/Refine/Analyze/Report inspector wiring out of `App.tsx`.
+- Extracted the left rail/project-source-object navigation into `src/components/WorkspaceSidebar.tsx`, including the old local ListView implementation.
 
 Still open from the audit: `App.tsx` remains the orchestration bottleneck, the CSS is split but still needs deeper selector cleanup/de-duplication, and strict TypeScript should be introduced gradually by folder.
 

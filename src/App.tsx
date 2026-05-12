@@ -53,23 +53,17 @@ import { applyReportIncludes, buildReport, DEFAULT_REPORT_INCLUDES, type ReportI
 import { exportReportPdf } from './report/exportPdf'
 import { exportReportDocx } from './report/exportDocx'
 import { OverviewMode } from './modes/overview/OverviewMode'
-import { OverviewSidebar } from './modes/overview/OverviewSidebar'
 import { ResearchTemplatePicker } from './components/ResearchTemplatePicker'
 import type { ResearchTemplate } from './lib/researchTemplates'
 import { AccountDeletePanel } from './components/AccountDeletePanel'
 import { AppHeader } from './components/AppHeader'
 import { PropertiesRail } from './components/PropertiesRail'
+import { WorkspaceSidebar } from './components/WorkspaceSidebar'
 import { ReportDetail } from './modes/report/ReportDetail'
-import { ReportSidebar } from './modes/report/ReportSidebar'
-import { ScrollAffordance } from './components/ScrollAffordance'
 import { RefineDetail } from './modes/refine/RefineDetail'
-import { RefineSidebar } from './modes/refine/RefineSidebar'
 import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
-import { ClassifySidebar } from './modes/classify/ClassifySidebar'
-import { AnalyzeSidebar } from './analyze/AnalyzeSidebar'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
-import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
 import { buildPageHighlights, findExcerptInBody, wrapHighlightedTranscript } from './modes/code/transcript'
 import { isPdfSource, parseSourcePages } from './lib/sourcePages'
 import { CodeDetail } from './modes/code/CodeDetail'
@@ -99,7 +93,6 @@ import {
   snapshotRows,
   wordFrequencyRows as wordFrequencyExportRows,
 } from './lib/exportRows'
-import { SourcesView } from './components/SourcesView'
 import { AiSettingsPanel } from './components/AiSettingsPanel'
 import { callAi } from './ai/client'
 import {
@@ -2218,96 +2211,64 @@ function App() {
         onSignOut={signOut}
       />
 
-      <aside
-        className="workspace-sidebar"
-        aria-label="Workspace sidebar"
-      >
-        {activeView === 'overview' && (
-          <OverviewSidebar
-            activeProjectId={projectId}
-            projects={projectRows}
-            isCreatingProject={isCreatingProject}
-            onSelectProject={(project) => void applyProject(project)}
-            onOpenNewProject={() => setTemplatePickerOpen(true)}
-            onDeleteProject={(id) => void deleteProject(id)}
-            onImportBackup={(file) => void importProjectBackup(file)}
-          />
-        )}
-        {activeView === 'organize' && (
-          <OrganizeSidebar
-            activeSources={activeSources}
-            archivedSources={archivedSources}
-            activeSourceId={activeSourceId}
-            onSelectSource={(id) => {
-              selectActiveSource(id)
-            }}
-            importTranscript={importTranscript}
-            onRenameFolder={renameFolder}
-            onDeleteFolder={deleteFolder}
-            onCreateFolder={createFolder}
-            extraFolders={extraFolders}
-          />
-        )}
-
-        {activeView !== 'organize' && activeView !== 'overview' && (
-        <section className="list-view" aria-label="Objects">
-          {activeView === 'report' && (
-            <ReportSidebar
-              reportIncludes={reportIncludes}
-              onReportIncludesChange={setReportIncludes}
-              exportFormat={exportFormat}
-              onExportFormatChange={setExportFormat}
-              exportCsv={exportCsv}
-              exportCodebookCsv={exportCodebookCsv}
-              exportCaseSheetCsv={exportCaseSheetCsv}
-              exportCaseExcerptCsv={exportCaseExcerptCsv}
-              exportAnalyzeCsv={exportAnalyzeCsv}
-              exportMemosCsv={exportMemosCsv}
-            />
-          )}
-          {activeView !== 'report' && (
-            <ListView
-              activeView={activeView}
-              activeSourceId={activeSource.id}
-              activeCodeId={activeCode.id}
-              sources={activeSources}
-              cases={cases}
-              savedQueries={savedQueries}
-              activeSavedQueryId={activeSavedQueryId}
-              analyzePanel={analyzePanel}
-              codes={codes}
-              excerpts={excerpts}
-              onSelectSource={(id) => {
-                selectActiveSource(id)
-                if (activeView === 'classify') return
-                setActiveView('code')
-              }}
-              onSelectCode={(id) => {
-                setActiveCodeId(id)
-                setActiveView('refine')
-              }}
-              onUseCurrentQuery={() => {
-                setAnalyzePanel('query')
-                setActiveSavedQueryId('')
-                setQueryName('')
-              }}
-              onOpenSavedQuery={openSavedQuery}
-              onOpenMatrix={() => setAnalyzePanel('matrix')}
-              onOpenFrequency={() => setAnalyzePanel('frequency')}
-              onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
-              onOpenCrosstab={() => setAnalyzePanel('crosstab')}
-              onReparentCode={updateCodeParent}
-              newCodeName={newCodeName}
-              onNewCodeNameChange={setNewCodeName}
-              onAddCode={addCode}
-              onDeleteCodes={deleteCodes}
-            />
-          )}
-          <ScrollAffordance />
-        </section>
-        )}
-
-      </aside>
+      <WorkspaceSidebar
+        activeView={activeView}
+        projectId={projectId}
+        projectRows={projectRows}
+        isCreatingProject={isCreatingProject}
+        onSelectProject={(project) => void applyProject(project)}
+        onOpenNewProject={() => setTemplatePickerOpen(true)}
+        onDeleteProject={(id) => void deleteProject(id)}
+        onImportBackup={(file) => void importProjectBackup(file)}
+        activeSources={activeSources}
+        archivedSources={archivedSources}
+        activeSourceId={activeSourceId}
+        onSelectSource={(id) => {
+          selectActiveSource(id)
+          if (activeView !== 'classify' && activeView !== 'organize') setActiveView('code')
+        }}
+        importTranscript={importTranscript}
+        onRenameFolder={renameFolder}
+        onDeleteFolder={deleteFolder}
+        onCreateFolder={createFolder}
+        extraFolders={extraFolders}
+        reportIncludes={reportIncludes}
+        onReportIncludesChange={setReportIncludes}
+        exportFormat={exportFormat}
+        onExportFormatChange={setExportFormat}
+        exportCsv={exportCsv}
+        exportCodebookCsv={exportCodebookCsv}
+        exportCaseSheetCsv={exportCaseSheetCsv}
+        exportCaseExcerptCsv={exportCaseExcerptCsv}
+        exportAnalyzeCsv={exportAnalyzeCsv}
+        exportMemosCsv={exportMemosCsv}
+        activeCodeId={activeCode.id}
+        cases={cases}
+        savedQueries={savedQueries}
+        activeSavedQueryId={activeSavedQueryId}
+        analyzePanel={analyzePanel}
+        codes={codes}
+        excerpts={excerpts}
+        onSelectCode={(id) => {
+          setActiveCodeId(id)
+          setActiveView('refine')
+        }}
+        onUseCurrentQuery={() => {
+          setAnalyzePanel('query')
+          setActiveSavedQueryId('')
+          setQueryName('')
+        }}
+        onOpenSavedQuery={openSavedQuery}
+        onOpenMatrix={() => setAnalyzePanel('matrix')}
+        onOpenFrequency={() => setAnalyzePanel('frequency')}
+        onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
+        onOpenCrosstab={() => setAnalyzePanel('crosstab')}
+        onReparentCode={updateCodeParent}
+        newCodeName={newCodeName}
+        onNewCodeNameChange={setNewCodeName}
+        onAddCode={addCode}
+        onDeleteCodes={deleteCodes}
+      />
 
       <section className="detail-view" id="sources">
         <header className="detail-toolbar">
@@ -2745,113 +2706,6 @@ function ProjectSettingsModal({
         </section>
       </div>
     </div>
-  )
-}
-
-function ListView({
-  activeView,
-  activeSourceId,
-  activeCodeId,
-  sources,
-  cases,
-  savedQueries,
-  activeSavedQueryId,
-  analyzePanel,
-  codes,
-  excerpts,
-  onSelectSource,
-  onSelectCode,
-  onUseCurrentQuery,
-  onOpenSavedQuery,
-  onOpenMatrix,
-  onOpenFrequency,
-  onOpenCoOccurrence,
-  onOpenCrosstab,
-  onReparentCode,
-  newCodeName,
-  onNewCodeNameChange,
-  onAddCode,
-  onDeleteCodes,
-}: {
-  activeView: WorkspaceView
-  activeSourceId: string
-  activeCodeId: string
-  sources: Source[]
-  cases: Case[]
-  savedQueries: SavedQuery[]
-  activeSavedQueryId: string
-  analyzePanel: AnalyzePanel
-  codes: Code[]
-  excerpts: Excerpt[]
-  onSelectSource: (id: string) => void
-  onSelectCode: (id: string) => void
-  onUseCurrentQuery: () => void
-  onOpenSavedQuery: (query: SavedQuery) => void
-  onOpenMatrix: () => void
-  onOpenFrequency: () => void
-  onOpenCoOccurrence: () => void
-  onOpenCrosstab: () => void
-  onReparentCode: (codeId: string, parentCodeId: string) => void
-  newCodeName: string
-  onNewCodeNameChange: (next: string) => void
-  onDeleteCodes: (codeIds: string[]) => void
-  onAddCode: () => void
-}) {
-  return (
-    <>
-      <div className="pane-title">
-        <FileText size={16} aria-hidden="true" />
-        <span>{activeView === 'code' ? 'Sources' : activeView === 'refine' ? 'Codebook' : activeView === 'classify' ? 'Classifications' : activeView === 'analyze' ? 'Questions' : 'Exports'}</span>
-      </div>
-      {activeView === 'code' && (
-        <SourcesView
-          sources={sources}
-          activeSourceId={activeSourceId}
-          onSelectSource={onSelectSource}
-        />
-      )}
-      {activeView === 'refine' && (
-        <RefineSidebar
-          codes={codes}
-          excerpts={excerpts}
-          activeCodeId={activeCodeId}
-          onSelectCode={onSelectCode}
-          onReparentCode={onReparentCode}
-          newCodeName={newCodeName}
-          onNewCodeNameChange={onNewCodeNameChange}
-          onAddCode={onAddCode}
-          onDeleteCodes={onDeleteCodes}
-        />
-      )}
-      {activeView === 'classify' && (
-        <ClassifySidebar
-          cases={cases}
-          sources={sources}
-          activeSourceId={activeSourceId}
-          onSelectSource={onSelectSource}
-        />
-      )}
-      {activeView === 'analyze' && (
-        <AnalyzeSidebar
-          analyzePanel={analyzePanel}
-          savedQueries={savedQueries}
-          activeSavedQueryId={activeSavedQueryId}
-          onUseCurrentQuery={onUseCurrentQuery}
-          onOpenSavedQuery={onOpenSavedQuery}
-          onOpenMatrix={onOpenMatrix}
-          onOpenFrequency={onOpenFrequency}
-          onOpenCoOccurrence={onOpenCoOccurrence}
-          onOpenCrosstab={onOpenCrosstab}
-        />
-      )}
-      {activeView === 'report' && (
-        <article className="empty-list-state">
-          <Download size={20} aria-hidden="true" />
-          <strong>Exports are in the Report panel</strong>
-          <span>Use the center workspace to download coded excerpts or the codebook.</span>
-        </article>
-      )}
-    </>
   )
 }
 
