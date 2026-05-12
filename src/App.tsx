@@ -8,7 +8,6 @@ import {
   Highlighter,
   LayoutDashboard,
   ListTree,
-  MessageSquareText,
   Plus,
   Search,
   Tags,
@@ -57,29 +56,23 @@ import { OverviewMode } from './modes/overview/OverviewMode'
 import { OverviewSidebar } from './modes/overview/OverviewSidebar'
 import { ResearchTemplatePicker } from './components/ResearchTemplatePicker'
 import type { ResearchTemplate } from './lib/researchTemplates'
-import { OverviewInspector } from './modes/overview/OverviewInspector'
 import { AccountDeletePanel } from './components/AccountDeletePanel'
 import { AppHeader } from './components/AppHeader'
+import { PropertiesRail } from './components/PropertiesRail'
 import { ReportDetail } from './modes/report/ReportDetail'
-import { ReportInspector } from './modes/report/ReportInspector'
 import { ReportSidebar } from './modes/report/ReportSidebar'
 import { ScrollAffordance } from './components/ScrollAffordance'
 import { RefineDetail } from './modes/refine/RefineDetail'
-import { RefineInspector } from './modes/refine/RefineInspector'
 import { RefineSidebar } from './modes/refine/RefineSidebar'
 import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
 import { ClassifySidebar } from './modes/classify/ClassifySidebar'
 import { AnalyzeSidebar } from './analyze/AnalyzeSidebar'
-import { AnalyzeInspector } from './analyze/AnalyzeInspector'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
 import { OrganizeSidebar } from './modes/organize/OrganizeSidebar'
-import { OrganizeInspector } from './modes/organize/OrganizeInspector'
 import { buildPageHighlights, findExcerptInBody, wrapHighlightedTranscript } from './modes/code/transcript'
 import { isPdfSource, parseSourcePages } from './lib/sourcePages'
 import { CodeDetail } from './modes/code/CodeDetail'
-import { CodePickerPanel } from './components/CodePickerPanel'
-import { ReferenceList } from './ReferenceList'
 import { Landing } from './Landing'
 import { deleteCode as libDeleteCode, descendantCodeIds, mergeCodeInto as libMergeCodeInto } from './lib/codeOperations'
 import {
@@ -2551,122 +2544,74 @@ function App() {
         {projectId && activeView === 'report' && <ReportDetail model={reportModel} />}
       </section>
 
-      {activeView !== 'classify' && <aside className="properties-view">
-        {activeView === 'overview' && (
-          <OverviewInspector
-            lineNumberingMode={lineNumberingMode}
-            lineNumberingWidth={lineNumberingWidth}
-            onOpenProjectSettings={() => setSettingsOpen(true)}
-          />
-        )}
-        {activeView === 'organize' && (
-          <OrganizeInspector
-            key={activeSource.id}
-            activeSource={activeSource}
-            sourceFolders={sourceFolders}
-            cases={cases}
-            sourceExcerpts={sourceExcerpts}
-            activeSourceWords={activeSourceWords}
-            activeSourceMemo={activeSourceMemo}
-            updateSource={updateSource}
-            assignSourceToCase={assignSourceToCase}
-            createCaseFromSource={createCaseFromSource}
-            setActiveView={setActiveView}
-            archiveActiveSource={archiveActiveSource}
-            restoreActiveSource={restoreActiveSource}
-            deleteActiveSource={deleteActiveSource}
-            onSummarizeSource={handleSummarizeSource}
-            isHostedAi={isHostedAi}
-            onOpenAiSettings={() => setAiSettingsOpen(true)}
-          />
-        )}
-
-        {activeView === 'code' && (
-          <CodePickerPanel
-            variant="code"
-            sortedCodes={sortedCodes}
-            excerpts={excerpts}
-            selectedCodeIds={selectedCodeIds}
-            activeCodeId={activeCode.id}
-            newCodeName={newCodeName}
-            onSelectCode={setActiveCodeId}
-            onToggleSelectedCode={toggleSelectedCode}
-            onNewCodeNameChange={setNewCodeName}
-            onAddCode={addCode}
-          />
-        )}
-        {activeView === 'refine' && (
-          <RefineInspector
-            activeCode={activeCode}
-            codes={codes}
-            allExcerpts={excerpts}
-            codeExcerpts={codeExcerpts}
-            parentCodeOptions={parentCodeOptions}
-            activeCodeParent={activeCodeParent}
-            activeCodeChildren={activeCodeChildren}
-            updateCode={updateCode}
-            updateCodeParent={updateCodeParent}
-            mergeActiveCodeIntoTarget={mergeActiveCodeIntoTarget}
-            deleteActiveCode={deleteActiveCode}
-            onSelectCode={(id) => setActiveCodeId(id)}
-            onDraftDescription={handleDraftDescription}
-            isHostedAi={isHostedAi}
-            onOpenAiSettings={() => setAiSettingsOpen(true)}
-          />
-        )}
-
-        {(activeView === 'organize' || activeView === 'code' || activeView === 'refine') && (
-          <section className="panel" id="memo">
-            <div className="panel-heading">
-              <MessageSquareText size={18} aria-hidden="true" />
-              <h2>{railMemoTitle}</h2>
-            </div>
-            <textarea value={contextualMemo?.body ?? ''} placeholder={`Add notes for ${railMemoTitle.toLowerCase()}`} onChange={(event) => updateRailMemo(event.target.value)} aria-label={railMemoTitle} />
-            {railMemo && projectMemo && railMemo.id !== projectMemo.id && <p className="memo-link-note">Linked to this {railMemo.linkedType}.</p>}
-          </section>
-        )}
-
-        {activeView === 'analyze' && (
-          <AnalyzeInspector
-            analyzePanel={analyzePanel}
-            analyzeResults={analyzeResults}
-            analyzeMatchingCases={analyzeMatchingCases}
-            activeQueryFilters={activeQueryFilters}
-            activeSavedQuery={activeSavedQuery ?? null}
-            querySnapshots={querySnapshots}
-            exportFormat={exportFormat}
-            onDeleteSavedQuery={deleteSavedQuery}
-            onDownloadSnapshotCsv={downloadSnapshotCsv}
-            onDeleteSnapshot={(id) => void deleteQuerySnapshot(id)}
-            onUpdateSnapshotNote={(id, note) => void updateSnapshotNote(id, note)}
-            onUpdateSnapshotInclude={(id, include) => void updateSnapshotInclude(id, include)}
-            onSendActiveAnalysisToReport={() => void sendActiveAnalysisToReport()}
-            onExportActiveAnalysisCsv={exportActiveAnalysisCsv}
-          />
-        )}
-
-        {activeView === 'report' && (
-          <ReportInspector
-            projectTitle={projectTitle}
-            sourceCount={activeSources.length}
-            codeCount={codes.length}
-            excerptCount={excerpts.length}
-            caseCount={cases.length}
-            attributeCount={attributes.length}
-          />
-        )}
-
-        {activeView === 'code' && (
-          <section className="panel">
-          <div className="panel-heading">
-            <Highlighter size={18} aria-hidden="true" />
-            <h2>Excerpts</h2>
-          </div>
-          <ReferenceList excerpts={visibleExcerpts} codes={codes} onNoteChange={updateExcerptNote} onDelete={deleteExcerpt} onRemoveCode={removeCodeFromExcerpt} compact />
-          </section>
-        )}
-        <ScrollAffordance />
-      </aside>}
+      <PropertiesRail
+        activeView={activeView}
+        lineNumberingMode={lineNumberingMode}
+        lineNumberingWidth={lineNumberingWidth}
+        onOpenProjectSettings={() => setSettingsOpen(true)}
+        activeSource={activeSource}
+        sourceFolders={sourceFolders}
+        cases={cases}
+        sourceExcerpts={sourceExcerpts}
+        activeSourceWords={activeSourceWords}
+        activeSourceMemo={activeSourceMemo}
+        updateSource={updateSource}
+        assignSourceToCase={assignSourceToCase}
+        createCaseFromSource={createCaseFromSource}
+        setActiveView={setActiveView}
+        archiveActiveSource={archiveActiveSource}
+        restoreActiveSource={restoreActiveSource}
+        deleteActiveSource={deleteActiveSource}
+        onSummarizeSource={handleSummarizeSource}
+        isHostedAi={isHostedAi}
+        onOpenAiSettings={() => setAiSettingsOpen(true)}
+        sortedCodes={sortedCodes}
+        excerpts={excerpts}
+        selectedCodeIds={selectedCodeIds}
+        activeCode={activeCode}
+        newCodeName={newCodeName}
+        onSelectCode={setActiveCodeId}
+        onToggleSelectedCode={toggleSelectedCode}
+        onNewCodeNameChange={setNewCodeName}
+        onAddCode={addCode}
+        allExcerpts={excerpts}
+        codeExcerpts={codeExcerpts}
+        parentCodeOptions={parentCodeOptions}
+        activeCodeParent={activeCodeParent}
+        activeCodeChildren={activeCodeChildren}
+        updateCode={updateCode}
+        updateCodeParent={updateCodeParent}
+        mergeActiveCodeIntoTarget={mergeActiveCodeIntoTarget}
+        deleteActiveCode={deleteActiveCode}
+        onDraftDescription={handleDraftDescription}
+        railMemoTitle={railMemoTitle}
+        contextualMemo={contextualMemo}
+        railMemo={railMemo}
+        projectMemo={projectMemo}
+        updateRailMemo={updateRailMemo}
+        analyzePanel={analyzePanel}
+        analyzeResults={analyzeResults}
+        analyzeMatchingCases={analyzeMatchingCases}
+        activeQueryFilters={activeQueryFilters}
+        activeSavedQuery={activeSavedQuery ?? null}
+        querySnapshots={querySnapshots}
+        exportFormat={exportFormat}
+        onDeleteSavedQuery={deleteSavedQuery}
+        onDownloadSnapshotCsv={downloadSnapshotCsv}
+        onDeleteSnapshot={(id) => void deleteQuerySnapshot(id)}
+        onUpdateSnapshotNote={(id, note) => void updateSnapshotNote(id, note)}
+        onUpdateSnapshotInclude={(id, include) => void updateSnapshotInclude(id, include)}
+        onSendActiveAnalysisToReport={() => void sendActiveAnalysisToReport()}
+        onExportActiveAnalysisCsv={exportActiveAnalysisCsv}
+        projectTitle={projectTitle}
+        activeSources={activeSources}
+        codes={codes}
+        attributes={attributes}
+        visibleExcerpts={visibleExcerpts}
+        onUpdateExcerptNote={updateExcerptNote}
+        onDeleteExcerpt={deleteExcerpt}
+        onRemoveCodeFromExcerpt={removeCodeFromExcerpt}
+      />
     </main>
     {settingsOpen && (
       <ProjectSettingsModal
