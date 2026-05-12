@@ -132,7 +132,13 @@ import type {
   SnapshotResults,
   Source,
 } from './lib/types'
-import './App.css'
+import './styles/app-frame.css'
+import './styles/app-workspace.css'
+import './styles/app-new-shell.css'
+import './styles/app-overview.css'
+import './styles/app-components.css'
+import './styles/app-ai.css'
+import './styles/app-overview-rails.css'
 
 type WorkspaceView = 'overview' | 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 // AnalyzePanel moved to src/analyze/analyzeViewState.ts

@@ -1,0 +1,1408 @@
+/* ============================================================
+   Phase 3a — Shell + Sidebar — scoped under [data-shell="new"]
+   Detail-view and properties-view internals stay on legacy
+   styling until Phase 3b/3c land.
+   ============================================================ */
+
+.app-shell[data-shell="new"] {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11", "calt";
+  letter-spacing: -0.005em;
+}
+
+/* ----- Sidebar shell ------------------------------------------------- */
+.app-shell[data-shell="new"] .workspace-sidebar {
+  background: var(--shell);
+  color: var(--shell-ink);
+  width: 232px;
+  min-width: 232px;
+  border-right: 1px solid var(--shell-rule);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-3);
+  transition: width 180ms ease, min-width 180ms ease;
+  overflow: hidden;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed {
+  width: 56px;
+  min-width: 56px;
+  padding: var(--s-4) var(--s-2);
+}
+
+/* ----- Brand block --------------------------------------------------- */
+.app-shell[data-shell="new"] .sidebar-brand {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-1) var(--s-3);
+  transition: opacity 120ms ease 60ms;
+}
+
+.app-shell[data-shell="new"] .sidebar-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app-shell[data-shell="new"] .sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-shell[data-shell="new"] .sidebar-eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-ink-3);
+  font-size: 9.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .sidebar-wordmark {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--shell-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .sidebar-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  margin-top: var(--s-1);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-3);
+  border: 0;
+  cursor: pointer;
+  font: var(--t-ui-sm);
+  text-align: left;
+}
+
+.app-shell[data-shell="new"] .sidebar-collapse-toggle:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-brand {
+  grid-template-columns: 32px;
+  justify-content: center;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-brand-text {
+  display: none;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-collapse-toggle {
+  justify-content: center;
+  padding: var(--s-2) 0;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-collapse-label {
+  display: none;
+}
+
+
+/* ----- Mode list ----------------------------------------------------- */
+.app-shell[data-shell="new"] .mode-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  border: 0;
+  border-left: 2px solid transparent;
+  font: var(--t-ui);
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+}
+
+.app-shell[data-shell="new"] .mode-switcher button:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button.active {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  border-left-color: var(--c-cyan);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button .mode-icon {
+  color: var(--shell-ink-3);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button.active .mode-icon {
+  color: var(--c-cyan);
+}
+
+.app-shell[data-shell="new"] .mode-switcher button .mode-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .mode-switcher button .mode-badge {
+  font: var(--t-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--shell-deep);
+  color: var(--shell-ink-3);
+  font-size: 9px;
+}
+
+.app-shell[data-shell="new"] .mode-switcher button.active .mode-badge {
+  background: oklch(0 0 0 / 0.25);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button {
+  grid-template-columns: 16px;
+  justify-content: center;
+  padding: var(--s-2) 0;
+  border-left: 0;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button.active {
+  background: var(--shell-deep);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button .mode-label,
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .mode-switcher button .mode-badge {
+  display: none;
+}
+
+/* ----- Folder pane (Organize) and ListView container ----------------- */
+.app-shell[data-shell="new"] .folder-pane,
+.app-shell[data-shell="new"] .list-view {
+  background: transparent;
+  color: var(--shell-ink-2);
+}
+
+.app-shell[data-shell="new"] .folder-pane .pane-title {
+  color: var(--shell-ink-3);
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: var(--s-3) var(--s-2) var(--s-1);
+}
+
+.app-shell[data-shell="new"] .folder-pane .folder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  border: 0;
+  font: var(--t-ui-sm);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.app-shell[data-shell="new"] .folder-pane .folder-row:hover,
+.app-shell[data-shell="new"] .folder-pane .folder-row.active {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .folder-pane .folder-row > span {
+  margin-left: auto;
+  color: var(--shell-ink-3);
+  font: var(--t-meta);
+}
+
+.app-shell[data-shell="new"] .folder-pane .new-folder-row {
+  padding: var(--s-2) var(--s-2);
+}
+
+.app-shell[data-shell="new"] .folder-pane .new-folder-row input {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  border: 1px solid var(--shell-rule);
+  border-radius: var(--r-1);
+  padding: var(--s-1) var(--s-2);
+  font: var(--t-ui-sm);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .folder-pane,
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .list-view {
+  display: none;
+}
+
+/* ----- Account / sign-out ------------------------------------------- */
+.app-shell[data-shell="new"] .sidebar-account {
+  margin-top: auto;
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--shell-rule);
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  font: var(--t-ui-sm);
+  color: var(--shell-ink-2);
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box span {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  background: transparent;
+  border: 0;
+  color: var(--shell-ink-3);
+  cursor: pointer;
+  font: var(--t-ui-sm);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-1);
+}
+
+.app-shell[data-shell="new"] .sidebar-account .user-box button:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-account .user-box span {
+  display: none;
+}
+
+.app-shell[data-shell="new"] .workspace-sidebar.is-collapsed .sidebar-account .user-box {
+  justify-content: center;
+}
+
+/* ============================================================
+   Phase 3b — Reader / Detail-View — scoped under [data-shell="new"]
+   Other modes' interior content (Organize/Refine/Classify/Analyze/
+   Report) keeps its current styling until Phase 3d.
+   ============================================================ */
+
+/* ----- Detail-view shell (shared across all modes) ------------------ */
+.app-shell[data-shell="new"] .detail-view {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.app-shell[data-shell="new"] .detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+/* T7 eyebrow above the page title — 10.5/1.2 sans 600, 0.10em up,
+   --ink-3. Spec: "DETAIL VIEW" / "RESEARCH REPORT" etc. */
+.app-shell[data-shell="new"] .detail-toolbar .eyebrow {
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 4px;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .search-box {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  background: var(--paper);
+  color: var(--ink-3);
+  min-width: 220px;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .search-box input {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--t-ui-sm);
+  outline: none;
+  width: 100%;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .toolbar-code-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-3);
+  background: var(--action);
+  color: var(--action-ink);
+  border: 0;
+  cursor: pointer;
+  font: var(--t-ui);
+  font-weight: 500;
+}
+
+.app-shell[data-shell="new"] .detail-toolbar .toolbar-code-action:hover {
+  box-shadow: var(--shadow-pop);
+}
+
+/* ----- Code-mode active-codes-bar ---------------------------------- */
+.app-shell[data-shell="new"] .active-codes-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-3) var(--s-5);
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.app-shell[data-shell="new"] .active-codes-bar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-shell[data-shell="new"] .active-codes-title {
+  font: var(--t-title);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.app-shell[data-shell="new"] .active-codes-hint {
+  font: var(--t-ui-sm);
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.app-shell[data-shell="new"] .active-codes-bar .quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font: var(--t-ui-sm);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.app-shell[data-shell="new"] .active-codes-bar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  flex-shrink: 0;
+}
+
+/* ----- Reader column ------------------------------------------------ */
+/* Container-query unit `cqi` (= 1% of inline size) lets the transcript
+   font scale to fit the column. With --reader-fit-chars set to the
+   user's lineNumberingWidth, an N-source-char numbered line always
+   spans roughly the full container width: 40-char numbering reads as
+   big copy, 200-char as small dense copy. The 1.85 multiplier is the
+   empirical em-to-ch ratio for Newsreader's body face; clamp() floors
+   the size at 12px (narrow panes) and caps at 28px (ultrawide). The
+   --reader-measure cap is gone — the font itself is now the cap. */
+.app-shell[data-shell="new"] .reader-column {
+  container-type: inline-size;
+  margin: 0 auto;
+  padding: var(--reader-pad-y) var(--reader-pad-x);
+  background: var(--paper);
+  overflow-y: auto;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript {
+  overflow: visible;
+}
+
+.app-shell[data-shell="new"] .reader-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--rule-soft);
+  margin-bottom: var(--s-5);
+  color: var(--ink-3);
+  font: var(--t-meta);
+}
+
+.app-shell[data-shell="new"] .reader-meta-strip > span[aria-hidden="true"] {
+  color: var(--ink-4);
+}
+
+/* ----- Transcript -------------------------------------------------- */
+/* Transcript reader — spec recipe:
+   line text = Newsreader 16.5 / 1.75 in --ink;
+   line number = T8 mono in --ink-4 (lighter than the body); 32px
+   gutter; 1.7 line-height on the gutter so each number sits on
+   the same baseline as its line. */
+.app-shell[data-shell="new"] .reader-column .transcript {
+  font-family: var(--font-reader);
+  /* Container-query-driven sizing: an N-source-char line fills the
+     container at the chosen font-size. 100cqi = full inline size of
+     reader-column. 1.85 = empirical em→ch ratio for Newsreader's
+     body face. Clamp guards against extreme panes. */
+  font-size: clamp(12px, calc(100cqi / var(--reader-fit-chars, 80) * 1.85), 28px);
+  line-height: 1.75;
+  color: var(--ink);
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript-line {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: var(--s-3);
+  align-items: baseline;
+  margin-bottom: var(--s-3);
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript-line .line-number {
+  font: var(--t-t8);
+  line-height: 1.7;
+  color: var(--ink-4);
+  text-align: right;
+  user-select: none;
+}
+
+.app-shell[data-shell="new"] .reader-column .transcript-line .line-text {
+  font: inherit;
+  color: inherit;
+}
+
+/* ----- PDF page-card reader (PDF sources only) -------------------- */
+.app-shell[data-shell="new"] .reader-column .transcript.pdf-pages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+.app-shell[data-shell="new"] .reader-column .pdf-page {
+  border: 1px solid var(--rule-soft);
+  border-radius: 6px;
+  background: var(--paper);
+  padding: var(--s-4) var(--s-5);
+}
+.app-shell[data-shell="new"] .reader-column .pdf-page-header {
+  font: var(--t-meta);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s-3);
+  user-select: none;
+}
+.app-shell[data-shell="new"] .reader-column .pdf-page-body {
+  font: inherit;
+  color: inherit;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+.app-shell[data-shell="new"] .reader-column .pdf-page-empty {
+  margin: 0;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+/* ----- Marker highlights ------------------------------------------ */
+.app-shell[data-shell="new"] .reader-column .multi-code-mark {
+  /* `background` is inlined via markBackground() — single-color or gradient bands. */
+  color: inherit;
+  padding: 1px 2px;
+  margin: 0 -2px;
+  border-radius: 1px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  border: 0;
+  box-shadow: none;
+}
+
+/* ----- Quick code menu --------------------------------------------- */
+.app-shell[data-shell="new"] .quick-code-menu {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-pop);
+  color: var(--ink);
+  padding: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .quick-code-menu input,
+.app-shell[data-shell="new"] .quick-code-menu select,
+.app-shell[data-shell="new"] .quick-code-menu textarea {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  border-radius: var(--r-2);
+  padding: var(--s-1) var(--s-2);
+  font: var(--t-ui-sm);
+}
+
+/* ============================================================
+   Phase 3c — Inspector / Right Rail — scoped under [data-shell="new"]
+   ============================================================ */
+
+/* ----- Properties-view shell --------------------------------------- */
+.app-shell[data-shell="new"] .properties-view {
+  background: var(--paper);
+  color: var(--ink);
+  border-left: 1px solid var(--rule);
+}
+
+.app-shell[data-shell="new"] .properties-view .panel {
+  padding: var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+  background: transparent;
+}
+
+.app-shell[data-shell="new"] .properties-view .panel:last-child {
+  border-bottom: 0;
+}
+
+.app-shell[data-shell="new"] .properties-view .panel-heading {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  color: var(--ink-3);
+}
+
+.app-shell[data-shell="new"] .properties-view .panel-heading svg {
+  color: var(--ink-3);
+}
+
+.app-shell[data-shell="new"] .properties-view .panel-heading h2 {
+  /* T7: 10.5/1.2 sans 600, 0.10em up, --ink-3. */
+  font: var(--t-t7);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+/* ----- Active Codes / Codebook picker ------------------------------ */
+.app-shell[data-shell="new"] .properties-view .code-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--s-3);
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: var(--t-ui);
+  color: var(--ink);
+  position: relative;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button:hover {
+  background: var(--pane-deep);
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button.selected {
+  background: var(--pane);
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  display: inline-block;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+  width: auto;
+  height: auto;
+  border-radius: 0;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-refs {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  text-align: right;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker .code-pick-child {
+  color: var(--ink-4);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button.selected::before {
+  content: "✓";
+  position: absolute;
+  right: var(--s-3);
+  color: var(--action);
+  font-size: 11px;
+}
+
+.app-shell[data-shell="new"] .properties-view .code-picker button.selected .code-pick-refs {
+  visibility: hidden;
+}
+
+/* ----- New-code field --------------------------------------------- */
+.app-shell[data-shell="new"] .properties-view .new-code {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-2);
+  align-items: center;
+  margin-top: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code input {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  color: var(--ink);
+  font: var(--t-ui-sm);
+  padding: var(--s-2) var(--s-3);
+  height: 32px;
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code input:focus {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 2px var(--action-soft);
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code button.icon-button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  background: var(--action);
+  color: var(--action-ink);
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.app-shell[data-shell="new"] .properties-view .new-code button.icon-button:hover {
+  box-shadow: var(--shadow-pop);
+}
+
+/* ----- Memo textarea ---------------------------------------------- */
+.app-shell[data-shell="new"] .properties-view #memo textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: var(--s-3);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  font: var(--t-ui);
+  color: var(--ink);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.app-shell[data-shell="new"] .properties-view #memo textarea:focus {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 2px var(--action-soft);
+}
+
+.app-shell[data-shell="new"] .properties-view .memo-link-note {
+  margin-top: var(--s-2);
+  font: var(--t-meta);
+  color: var(--ink-3);
+}
+
+/* ============================================================
+   Phase 3 — Project Home — scoped under [data-shell="new"]
+   The pre-app screen that lists research projects.
+   ============================================================ */
+
+.project-home-shell[data-shell="new"] {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11", "calt";
+  letter-spacing: -0.005em;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header {
+  background: var(--shell);
+  color: var(--shell-ink);
+  border-bottom: 1px solid var(--shell-rule);
+  padding: var(--s-3) var(--s-5);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .brand-block {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-ink-3);
+  font-size: 9.5px;
+  margin: 0 0 2px;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header h1 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--shell-ink);
+  margin: 0;
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .header-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .sync-box {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: 99px;
+  background: var(--shell-deep);
+  color: var(--shell-ink-2);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .user-box {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: 99px;
+  background: var(--shell-deep);
+  color: var(--shell-ink-2);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .user-box button {
+  background: transparent;
+  border: 0;
+  color: var(--shell-ink-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-home-header .user-box button:hover {
+  color: var(--shell-ink);
+}
+
+/* ----- Content area ------------------------------------------------ */
+.project-home-shell[data-shell="new"] .project-home {
+  background: var(--paper);
+  padding: var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-5);
+  align-items: end;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: var(--s-5) var(--s-6);
+  box-shadow: none;
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading .eyebrow {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-size: 10px;
+  margin: 0 0 var(--s-1);
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading h2 {
+  font-family: var(--font-reader);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--ink);
+  margin: 0 0 var(--s-2);
+}
+
+.project-home-shell[data-shell="new"] .project-home-heading p {
+  font: var(--t-ui);
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 56ch;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row input {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  color: var(--ink);
+  font: var(--t-ui-sm);
+  padding: var(--s-2) var(--s-3);
+  height: 36px;
+  min-width: 220px;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row input:focus {
+  outline: none;
+  border-color: var(--action);
+  box-shadow: 0 0 0 2px var(--action-soft);
+}
+
+.project-home-shell[data-shell="new"] .new-project-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-4);
+  height: 36px;
+  border-radius: var(--r-2);
+  background: var(--action);
+  color: var(--action-ink);
+  border: 0;
+  cursor: pointer;
+  font: var(--t-ui);
+  font-weight: 500;
+}
+
+.project-home-shell[data-shell="new"] .new-project-row button:hover {
+  box-shadow: var(--shadow-pop);
+}
+
+.project-home-shell[data-shell="new"] .new-project-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ----- Project list card ------------------------------------------- */
+.project-home-shell[data-shell="new"] .project-list-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-3);
+  padding: 0;
+  box-shadow: none;
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading h2 {
+  font: var(--t-ui-lg);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading button {
+  font: var(--t-ui-sm);
+  color: var(--ink-2);
+  background: var(--pane);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: var(--s-1) var(--s-3);
+  cursor: pointer;
+}
+
+.project-home-shell[data-shell="new"] .project-list-heading button:hover {
+  background: var(--pane-deep);
+}
+
+.project-home-shell[data-shell="new"] .project-row {
+  padding: var(--s-3) var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+  background: transparent;
+}
+
+.project-home-shell[data-shell="new"] .project-row:last-child {
+  border-bottom: 0;
+}
+
+.project-home-shell[data-shell="new"] .project-row.project-row-head {
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-size: 10px;
+  background: transparent;
+}
+
+.project-home-shell[data-shell="new"] .project-row strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.project-home-shell[data-shell="new"] .project-row small,
+.project-home-shell[data-shell="new"] .project-row .project-row-action {
+  color: var(--ink-3);
+  font: var(--t-ui-sm);
+}
+
+.project-home-shell[data-shell="new"] .project-row .project-row-action {
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.project-home-shell[data-shell="new"] .project-row .project-row-action:hover {
+  color: var(--ink);
+}
+
+/* ============================================================
+   Phase 3 — Top nav (replaces sidebar mode list)
+   ============================================================ */
+
+.app-shell[data-shell="new"] .app-header {
+  grid-column: 1 / -1;
+  background: var(--shell);
+  color: var(--shell-ink);
+  border-bottom: 1px solid var(--shell-rule);
+  display: grid;
+  /* Mirrors the body grid's left-rail width so the modes nav and the
+     middle work area share a vertical edge. The 4 columns are:
+       brand block (= left-rail width) | modes nav | search | header-tools */
+  grid-template-columns: 232px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0 var(--s-4) 0 0;
+  min-height: 0;
+  height: auto;
+}
+
+@media (max-width: 1280px) {
+  .app-shell[data-shell="new"] .app-header {
+    grid-template-columns: 200px minmax(0, 1fr) auto auto;
+  }
+}
+
+/* Header compaction is separate from the body-layout breakpoint. The
+   app can still afford three columns here, but the top rail cannot fit
+   seven labeled modes + search + save status without collision. */
+@media (min-width: 1281px) and (max-width: 1460px) {
+  .app-shell[data-shell="new"] .app-header {
+    grid-template-columns: 232px auto minmax(190px, 260px) auto;
+    gap: var(--s-2);
+  }
+}
+
+@media (min-width: 1121px) and (max-width: 1280px) {
+  .app-shell[data-shell="new"] .app-header {
+    grid-template-columns: 200px auto minmax(180px, 240px) auto;
+    gap: var(--s-2);
+  }
+}
+
+@media (min-width: 1121px) and (max-width: 1460px) {
+  .app-shell[data-shell="new"] .app-header-modes {
+    min-width: 0;
+    justify-self: start;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button span {
+    display: none;
+  }
+
+  .app-shell[data-shell="new"] .hsearch {
+    width: clamp(180px, 18vw, 260px);
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .app-shell[data-shell="new"] .sync-status {
+    width: 176px;
+    flex-basis: 176px;
+  }
+}
+
+/* Narrow desktop: the inspector drops below the workspace, but stays
+   aligned to the middle work column. The older breakpoint made the
+   rail span the full app width, which visually attached it to the
+   left sidebar and let long code lists stretch the page. */
+@media (min-width: 1024px) and (max-width: 1120px) {
+  .app-shell[data-shell="new"] {
+    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-rows: 68px minmax(0, 1fr) clamp(180px, 32vh, 320px);
+  }
+
+  .app-shell[data-shell="new"][data-view="classify"] {
+    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-rows: 68px minmax(0, 1fr);
+  }
+
+  .app-shell[data-shell="new"] .app-header {
+    grid-template-columns: 232px auto minmax(160px, 220px) auto;
+    gap: var(--s-2);
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes {
+    min-width: 0;
+    justify-self: start;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .app-shell[data-shell="new"] .app-header-modes button span {
+    display: none;
+  }
+
+  .app-shell[data-shell="new"] .hsearch {
+    width: clamp(160px, 18vw, 220px);
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .app-shell[data-shell="new"] .sync-status {
+    width: 166px;
+    flex-basis: 166px;
+  }
+
+  .app-shell[data-shell="new"] .header-tools {
+    gap: var(--s-1);
+  }
+
+  .app-shell[data-shell="new"] .properties-view {
+    grid-column: 2;
+    grid-row: 3;
+    display: block;
+    min-height: 0;
+    max-height: clamp(180px, 32vh, 320px);
+    overflow-y: auto;
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .app-shell[data-shell="new"] .properties-view #codes {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    max-height: clamp(180px, 32vh, 320px);
+    overflow: hidden;
+  }
+
+  .app-shell[data-shell="new"] .properties-view #codes .code-picker {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: var(--s-1);
+  }
+}
+
+.app-shell[data-shell="new"] .app-header .app-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+/* Top-nav brand block — spec recipe:
+   eyebrow ('QUALITATIVE WORKSPACE', 9.5px sans 600 0.14em up
+   --shell-ink-3) above brand line ('Fieldnote', 16px sans 500
+   -0.01em --shell-ink). The two-line label stands alone — no
+   "F" mark glyph. */
+.app-shell[data-shell="new"] .app-header .brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0 var(--s-5);
+  height: 100%;
+  border-radius: 0;
+  color: var(--shell-ink);
+  text-align: left;
+}
+
+.app-shell[data-shell="new"] .app-header .brand-block:hover {
+  background: var(--shell-deep);
+}
+
+/* The "F" mark is intentionally hidden under the new brand recipe
+   per the design handoff. Kept in the DOM in case other shells use
+   it (e.g. the old project-home header). */
+.app-shell[data-shell="new"] .app-header .brand-mark {
+  display: none;
+}
+
+.app-shell[data-shell="new"] .app-header .brand-block .eyebrow {
+  font: 600 9.5px/1.1 var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-ink-3);
+  margin: 0 0 2px;
+}
+
+.app-shell[data-shell="new"] .app-header .brand-block h1 {
+  font: 500 16px/1.1 var(--font-ui);
+  letter-spacing: -0.01em;
+  color: var(--shell-ink);
+  margin: 0;
+}
+
+.app-shell[data-shell="new"] .app-header .app-header-project {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  background: var(--shell-deep);
+  color: var(--shell-ink-2);
+  border: 1px solid var(--shell-rule);
+  border-radius: 99px;
+  font: var(--t-ui-sm);
+  cursor: pointer;
+}
+
+.app-shell[data-shell="new"] .app-header .app-header-project:hover {
+  background: oklch(0.24 0.012 235);
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .app-header .project-chevron {
+  color: var(--shell-ink-3);
+}
+
+/* Mode tabs */
+.app-shell[data-shell="new"] .app-header-modes {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* Modes start at the left edge of the middle work column. */
+  justify-self: start;
+}
+
+/* Top-nav tabs — spec recipe:
+   inline-flex / 6px gap / 0 12px padding / 32px height / 6px radius.
+   Default: 13px sans 500 in --shell-ink-2; icon in --shell-ink-3.
+   Hover: text → --shell-active. Active: subtle white-translucent
+   bg (rgba 0.08), text + icon → --shell-active. */
+.app-shell[data-shell="new"] .app-header-modes button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--shell-ink-2);
+  cursor: pointer;
+  font: 500 13px/1 var(--font-ui);
+}
+
+.app-shell[data-shell="new"] .app-header-modes button:hover {
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .app-header-modes button.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--shell-ink);
+  box-shadow: none;
+}
+
+.app-shell[data-shell="new"] .app-header-modes button svg {
+  color: var(--shell-ink-3);
+  stroke-width: 1.4;
+}
+
+.app-shell[data-shell="new"] .app-header-modes button:hover svg {
+  color: var(--shell-ink);
+}
+
+.app-shell[data-shell="new"] .app-header-modes button.active svg {
+  color: var(--shell-ink);
+}
+
+/* Right-side tools — sync indicator, settings, sign-out */
+.app-shell[data-shell="new"] .app-header .header-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.app-shell[data-shell="new"] .app-header .toolbar-status,
+.app-shell[data-shell="new"] .app-header .sync-box {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border-radius: 99px;
+  background: var(--shell-deep);
+  color: var(--shell-ink-3);
+  font: var(--t-ui-sm);
+  border: 0;
+  /* Fixed footprint so the status text length doesn't bump the mode tabs
+     when the message changes between Saving... / Saved / errors. */
+  width: 180px;
+  flex: 0 0 180px;
+  overflow: hidden;
+}
+
+.app-shell[data-shell="new"] .app-header .toolbar-status span,
+.app-shell[data-shell="new"] .app-header .sync-box span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-shell[data-shell="new"] .app-header .header-icon-button {
+  background: transparent;
+  border: 1px solid var(--shell-rule);
+  border-radius: var(--r-2);
+  color: var(--shell-ink-3);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.app-shell[data-shell="new"] .app-header .header-icon-button:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+
+/* Report-mode Raw-data sidebar list */
+.app-shell[data-shell="new"] .raw-data-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3) var(--s-3) var(--s-2);
+}
+
+.app-shell[data-shell="new"] .raw-data-heading {
+  color: var(--shell-ink-3);
+  font: var(--t-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 10px;
+  margin: 0 0 var(--s-2);
+  padding: 0 var(--s-2);
+}
+
+.app-shell[data-shell="new"] .raw-data-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--shell-ink-2);
+  border: 0;
+  font: var(--t-ui-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.app-shell[data-shell="new"] .raw-data-row:hover {
+  background: var(--shell-deep);
+  color: var(--shell-ink);
+}
+

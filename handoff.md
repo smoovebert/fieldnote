@@ -71,8 +71,10 @@ The first audit cleanup pass addressed two low-risk reliability items before dee
 - Replaced AI response casts in `App.tsx` with small runtime guards in `src/ai/responseGuards.ts`, so malformed AI JSON returns a user-facing error instead of throwing during render/handler execution.
 - Extracted analysis snapshot builders into `src/analyze/snapshotBuilders.ts` with coverage for coded excerpts, frequency limits, and crosstab table snapshots.
 - Extracted Analyze derived-result calculations into `src/analyze/derivedResults.ts`: query filtering, matching cases, matrix columns/results, word frequency, co-occurrence rows, and view adapter rows now live outside `App.tsx` with test coverage.
+- Extracted the Analyze detail surface and top app header into dedicated components. `src/App.tsx` is now under 3,000 lines and mostly acts as state/orchestration glue.
+- Removed the monolithic `src/App.css`. The same cascade now loads through focused stylesheets in `src/styles/`: frame, workspace, new shell, overview, shared components, AI, and overview rail styles.
 
-Still open from the audit: `App.tsx` remains the orchestration bottleneck, `App.css` still contains legacy/new shell rules in one cascade, and strict TypeScript should be introduced gradually by folder.
+Still open from the audit: `App.tsx` remains the orchestration bottleneck, the CSS is split but still needs deeper selector cleanup/de-duplication, and strict TypeScript should be introduced gradually by folder.
 
 ## Core Product Correction
 
