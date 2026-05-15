@@ -19,12 +19,12 @@ import './Landing.css'
 type AuthMode = 'sign-in' | 'sign-up'
 
 const STAGES: Array<{ num: string; name: string; desc: string }> = [
-  { num: '01', name: 'Organize',  desc: 'Bring transcripts, field notes, and documents into folders. Tag them with attributes.' },
-  { num: '02', name: 'Code',      desc: 'Read closely. Highlight passages. Apply codes — including overlapping ones — without losing context.' },
-  { num: '03', name: 'Refine',    desc: 'Merge, split, rename, recolor. Codebooks should evolve as your understanding does.' },
-  { num: '04', name: 'Classify',  desc: "Build cases for each participant. Add cohort, role, and any attributes you'll group by later." },
-  { num: '05', name: 'Analyze',   desc: 'Query results, matrices, word frequency, code co-occurrence, crosstabs — answers to real questions.' },
-  { num: '06', name: 'Report',    desc: 'Compose an editorial report and export to PDF, Word, or raw CSV/XLSX.' },
+  { num: '01', name: 'Organize',  desc: 'Import transcripts, field notes, PDFs, and spreadsheets. Keep folders, memos, and attributes together.' },
+  { num: '02', name: 'Code',      desc: 'Select passages, apply one or more codes, and keep line numbers visible while you read.' },
+  { num: '03', name: 'Refine',    desc: 'Rename, merge, split, nest, and document codes as the analysis changes.' },
+  { num: '04', name: 'Classify',  desc: 'Create cases for participants, sites, or groups. Add the attributes you will compare later.' },
+  { num: '05', name: 'Analyze',   desc: 'Filter excerpts, run matrices and crosstabs, and check word frequency or code co-occurrence.' },
+  { num: '06', name: 'Report',    desc: 'Assemble findings, excerpts, memos, and charts. Export PDF, Word, CSV, or XLSX.' },
 ]
 
 const VS_ENTERPRISE: string[] = [
@@ -37,28 +37,28 @@ const VS_ENTERPRISE: string[] = [
 
 const VS_FIELDNOTE: string[] = [
   'Web-based. Auto-saves to cloud with local recovery and downloadable backups.',
-  'Six modes mapped to actual research stages — no menu archaeology.',
-  'Editorial PDF, Word, CSV, and XLSX exports that read like work products.',
+  'Six modes in order: organize, code, refine, classify, analyze, report.',
+  'PDF, Word, CSV, and XLSX exports for reports, codebooks, cases, and excerpts.',
   'AI assist built in: suggested codes, draft descriptions, summaries, and project memos.',
 ]
 
 const FEATURES: Array<{ num: string; eyebrow: string; h3: string; body: string; tags: string[] }> = [
   {
     num: '01', eyebrow: 'For interviews',
-    h3: "Read like it's a transcript.",
-    body: "Multiple sources, fixed-width line numbering, multi-code selections, source memos, code memos, and project memos — the things you actually need when you're in the work.",
+    h3: 'Work from the transcript.',
+    body: 'Line-numbered readers, overlapping codes, source memos, code memos, and project memos stay close to the material you are reading.',
     tags: ['Line numbers', 'Multi-code', 'Memos', 'Reader view'],
   },
   {
     num: '02', eyebrow: 'For comparison',
-    h3: 'Compare what they said.',
-    body: "Cases, participant attributes, saved queries, matrix coding, crosstabs, word frequency, and code co-occurrence — every comparison you'd run in NVivo, in a workspace that won't fight you.",
+    h3: 'Compare sources and cases.',
+    body: 'Cases, participant attributes, saved queries, matrices, crosstabs, word frequency, and code co-occurrence live in the same project.',
     tags: ['Saved queries', 'Matrix', 'Crosstab', 'Co-occurrence'],
   },
   {
     num: '03', eyebrow: 'For evidence',
-    h3: 'Get evidence out cleanly.',
-    body: 'Editorial PDF reports, Word documents, coded-excerpt CSVs, codebook CSVs, case sheets, memos, charts, and XLSX workbooks. Exports that read like work products.',
+    h3: 'Export usable evidence.',
+    body: 'Build PDF reports, Word documents, coded-excerpt CSVs, codebook CSVs, case sheets, memos, charts, and XLSX workbooks.',
     tags: ['PDF', 'Word', 'CSV', 'XLSX'],
   },
 ]
@@ -129,7 +129,7 @@ const ROADMAP: Array<{ horizon: string; title: string; body: string; items: stri
   {
     horizon: 'Media depth',
     title: 'Audio, video, images, and linked transcripts.',
-    body: 'Bring more kinds of field material into the same coding and memoing workflow.',
+    body: 'Add common field materials to the same coding and memoing space.',
     items: ['Speaker-labeled transcription', 'Transcript-linked playback', 'Image region coding'],
   },
   {
@@ -141,7 +141,7 @@ const ROADMAP: Array<{ horizon: string; title: string; body: string; items: stri
   {
     horizon: 'Visual analysis',
     title: 'Maps and charts that explain the evidence.',
-    body: 'Move from query tables into visual structures that help researchers see patterns.',
+    body: 'Turn query results into charts and maps that can travel into reports.',
     items: ['Hierarchy charts', 'Concept maps', 'Relationship maps'],
   },
   {
@@ -182,14 +182,14 @@ export function Landing() {
             <p className="landing-eyebrow">Modern QDA for interview work</p>
             <h1 id="hero-h1" className="landing-hero-h1">
               <span className="landing-hero-lead">
-                Read it.<br />Code it.<br />Defend it.
+                Read closely.<br />Code carefully.<br />Report clearly.
               </span>
               <span className="landing-hero-cont">
-                A qualitative workspace for researchers who actually do the work.
+                A web-based QDA workspace for interview-centered research.
               </span>
             </h1>
             <p className="landing-hero-sub">
-              Import transcripts and PDFs, code overlapping passages, refine your codebook, compare cases and attributes, and export evidence — without the institutional software tax.
+              Import transcripts and PDFs, code the same passage more than one way, refine your codebook, compare cases and attributes, and export the evidence you need.
             </p>
             <div className="landing-cta-row">
               <button type="button" className="landing-btn landing-btn-primary" onClick={() => openAuth('sign-up')}>
@@ -286,7 +286,7 @@ export function Landing() {
               One calm workspace,<br /><em>source to report.</em>
             </h2>
             <p className="landing-loop-sub">
-              Six modes that map to how qualitative work actually moves — not how decades-old enterprise software organizes its menus.
+              Organize sources, code passages, refine the codebook, classify cases, analyze patterns, and prepare a report.
             </p>
           </div>
           <ol className="landing-loop-stages">
@@ -307,7 +307,7 @@ export function Landing() {
         <div className="landing-vs-inner">
           <p className="landing-eyebrow">Why Fieldnote</p>
           <h2 id="vs-h2" className="landing-vs-h2">
-            Built for researchers, <em>not procurement.</em>
+            Made for small research teams, <em>not procurement cycles.</em>
           </h2>
           <div className="landing-vs-card">
             <div className="landing-vs-col">
@@ -319,7 +319,7 @@ export function Landing() {
             </div>
             <div className="landing-vs-col is-fn">
               <p className="landing-vs-col-eyebrow">Fieldnote</p>
-              <h3 className="landing-vs-col-name is-fn">A workspace, not a vendor</h3>
+              <h3 className="landing-vs-col-name is-fn">Browser-based QDA</h3>
               <ul className="landing-vs-list">
                 {VS_FIELDNOTE.map((item) => <li key={item}>{item}</li>)}
               </ul>
@@ -386,7 +386,7 @@ export function Landing() {
               Your research stays yours.
             </h2>
             <p>
-              Fieldnote is designed around recoverable work, clear exports, optional AI, and plain-language privacy controls.
+              Fieldnote keeps backups, exports, AI settings, and account controls visible instead of burying them in admin screens.
             </p>
           </div>
           <div className="landing-trust-grid">
@@ -415,7 +415,7 @@ export function Landing() {
               Next, Fieldnote expands beyond text.
             </h2>
             <p>
-              The next releases extend the same research loop into richer sources, collaborative coding, visual exploration, and source-grounded AI.
+              The next releases add richer source types, shared coding, visual analysis, and source-grounded AI.
             </p>
           </div>
           <div className="landing-roadmap-grid">
@@ -436,7 +436,7 @@ export function Landing() {
       <section className="landing-cta">
         <div className="landing-cta-inner">
           <h2 className="landing-cta-h2">
-            Calm. Practical.<br /><em>Built for the work.</em>
+            Bring a transcript.<br /><em>Leave with evidence.</em>
           </h2>
           <div className="landing-cta-actions">
             <button type="button" className="landing-btn landing-btn-primary on-dark" onClick={() => openAuth('sign-up')}>
