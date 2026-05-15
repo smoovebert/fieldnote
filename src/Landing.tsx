@@ -6,13 +6,13 @@
 // app's token vocabulary.
 //
 // Notably absent from the spec's "scrappy / self-hosted / open source"
-// framing: this alpha doesn't ship a self-host path that a non-
-// developer could realistically follow, so the marketing copy here
+// framing: the current hosted build doesn't ship a self-host path
+// that a non-developer could realistically follow, so the marketing copy here
 // avoids "free", "open source", "self-host", and the GitHub link.
 // When a real self-host story exists, those claims can come back.
 
 import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { AuthModal } from './AuthModal'
 import './Landing.css'
 
@@ -63,6 +63,41 @@ const FEATURES: Array<{ num: string; eyebrow: string; h3: string; body: string; 
   },
 ]
 
+const CAPABILITIES: Array<{ group: string; items: string[] }> = [
+  {
+    group: 'Sources',
+    items: ['TXT/MD/CSV import', 'DOCX interviews', 'PDF page coding', 'Folders + archive'],
+  },
+  {
+    group: 'Coding',
+    items: ['Overlapping codes', 'Nested code tree', 'Drag to nest/root', 'Excerpt notes'],
+  },
+  {
+    group: 'Refinement',
+    items: ['Merge codes', 'Split codes', 'Duplicate review', 'Orphan cleanup'],
+  },
+  {
+    group: 'Cases',
+    items: ['Participants/cases', 'Attributes', 'Spreadsheet import', 'Case sheets'],
+  },
+  {
+    group: 'Analyze',
+    items: ['Filtered excerpts', 'Matrix coding', 'Crosstabs', 'Word + co-occurrence'],
+  },
+  {
+    group: 'Outputs',
+    items: ['PDF reports', 'Word reports', 'CSV/XLSX exports', 'Project backups'],
+  },
+  {
+    group: 'AI assist',
+    items: ['Suggest codes', 'Draft descriptions', 'Source summaries', 'Project memo drafts'],
+  },
+  {
+    group: 'Safety',
+    items: ['Cloud autosave', 'Local recovery', 'Download backup', 'AI consent + BYOK'],
+  },
+]
+
 export function Landing() {
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode>('sign-in')
@@ -81,15 +116,15 @@ export function Landing() {
         </div>
         <nav className="landing-nav-links">
           <a className="landing-nav-link" href="#workflow">Workflow</a>
-          <a className="landing-nav-link" href="#features">Outputs</a>
+          <a className="landing-nav-link" href="#features">Features</a>
           <button type="button" className="landing-nav-link" onClick={() => openAuth('sign-in')}>Sign in</button>
         </nav>
       </header>
 
       <section className="landing-hero" aria-labelledby="hero-h1">
-        <div className="landing-hero-grid">
+        <div className="landing-hero-inner">
           <div className="landing-hero-copy">
-            <p className="landing-eyebrow on-dark">Modern QDA for interview work</p>
+            <p className="landing-eyebrow">Modern QDA for interview work</p>
             <h1 id="hero-h1" className="landing-hero-h1">
               <span className="landing-hero-lead">
                 Read it.<br />Code it.<br />Defend it.
@@ -99,21 +134,21 @@ export function Landing() {
               </span>
             </h1>
             <p className="landing-hero-sub">
-              Import transcripts, code passages, refine themes, compare participants, and export evidence — without the institutional software tax.
+              Import transcripts and PDFs, code overlapping passages, refine your codebook, compare cases and attributes, and export evidence — without the institutional software tax.
             </p>
             <div className="landing-cta-row">
-              <button type="button" className="landing-btn landing-btn-primary on-dark" onClick={() => openAuth('sign-up')}>
+              <button type="button" className="landing-btn landing-btn-primary" onClick={() => openAuth('sign-up')}>
                 Start a project
                 <ArrowRight size={17} aria-hidden="true" />
               </button>
-              <button type="button" className="landing-btn landing-btn-ghost on-dark" onClick={() => openAuth('sign-in')}>
+              <button type="button" className="landing-btn landing-btn-ghost" onClick={() => openAuth('sign-in')}>
                 Sign in
               </button>
             </div>
           </div>
 
           <div className="landing-product-frame" aria-label="Fieldnote product preview">
-            <div className="landing-product-shell">
+            <div className="landing-product-shell landing-product-demo">
               {/* Top nav — dark band, single-line wordmark + the seven
                   horizontal mode tabs + a single status dot. Tighter
                   than the live shell because the hero column gives
@@ -174,8 +209,14 @@ export function Landing() {
                 </p>
                 <p>
                   <span className="landing-mock-line">14</span>
-                  <span><mark>She explained the steps in plain language and wrote down what to bring next time.</mark></span>
+                  <span><mark className="landing-mock-mark">She explained the steps in plain language and wrote down what to bring next time.</mark></span>
                 </p>
+                <div className="landing-mock-selection-menu" aria-hidden="true">
+                  <span className="landing-mock-menu-label">Code selection</span>
+                  <span className="landing-mock-menu-code">Access barriers</span>
+                  <span className="landing-mock-menu-code is-alt">Service navigation</span>
+                  <span className="landing-mock-menu-add">+ New code</span>
+                </div>
               </div>
             </div>
           </div>
@@ -253,6 +294,35 @@ export function Landing() {
         </div>
       </section>
 
+      <section className="landing-capabilities" aria-labelledby="capabilities-h2">
+        <div className="landing-capabilities-inner">
+          <div className="landing-capabilities-head">
+            <p className="landing-eyebrow">Current capabilities</p>
+            <h2 id="capabilities-h2" className="landing-capabilities-h2">
+              Already enough for serious interview-heavy work.
+            </h2>
+            <p>
+              Fieldnote covers the core qualitative loop from importing material to defending findings in a report.
+            </p>
+          </div>
+          <div className="landing-capability-grid">
+            {CAPABILITIES.map((capability) => (
+              <article key={capability.group} className="landing-capability-card">
+                <h3>{capability.group}</h3>
+                <ul>
+                  {capability.items.map((item) => (
+                    <li key={item}>
+                      <CheckCircle2 size={14} aria-hidden="true" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="landing-cta">
         <div className="landing-cta-inner">
           <h2 className="landing-cta-h2">
@@ -272,7 +342,7 @@ export function Landing() {
 
       <footer className="landing-footer">
         <div className="landing-footer-text">
-          <span className="landing-footer-line">Fieldnote — qualitative research software, in alpha.</span>
+          <span className="landing-footer-line">Fieldnote — qualitative research software for close reading, coding, analysis, and reporting.</span>
           <span className="landing-footer-dedication">Made in California. Dedicated to Dr. S Robbins and Birdie Robbins.</span>
         </div>
         <nav className="landing-footer-links" aria-label="Site footer">

@@ -42,7 +42,6 @@
   }
   .app-shell,
   .auth-shell,
-  .landing-root,
   .project-home-shell {
     display: none !important;
   }
