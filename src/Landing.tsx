@@ -98,6 +98,33 @@ const CAPABILITIES: Array<{ group: string; items: string[] }> = [
   },
 ]
 
+const TRUST_CONTROLS: Array<{ title: string; body: string }> = [
+  {
+    title: 'Private by default',
+    body: 'Projects are scoped to your signed-in account in Supabase, with database policies limiting which rows the browser can read.',
+  },
+  {
+    title: 'Autosave plus local recovery',
+    body: 'Changes save to the cloud, and Fieldnote writes a browser recovery snapshot before the network save starts.',
+  },
+  {
+    title: 'Portable backups and exports',
+    body: 'Download a .fieldnote.json project backup, or export reports and raw data as PDF, Word, CSV, and XLSX.',
+  },
+  {
+    title: 'AI stays optional',
+    body: 'Hosted AI asks for consent first. BYOK keys are encrypted, used server-side, and never returned to the browser.',
+  },
+  {
+    title: 'No tracking stack',
+    body: 'No Google Analytics, Segment, Mixpanel, ad pixels, or behavioral tracking scripts on the product.',
+  },
+  {
+    title: 'Delete and leave cleanly',
+    body: 'Delete projects or your account from inside the app. Account deletion removes related project rows server-side.',
+  },
+]
+
 const ROADMAP: Array<{ horizon: string; title: string; body: string; items: string[] }> = [
   {
     horizon: 'Media depth',
@@ -348,6 +375,35 @@ export function Landing() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="landing-trust" aria-labelledby="trust-h2">
+        <div className="landing-trust-inner">
+          <div className="landing-trust-head">
+            <p className="landing-eyebrow on-dark">Data safety</p>
+            <h2 id="trust-h2" className="landing-trust-h2">
+              Your research stays yours.
+            </h2>
+            <p>
+              Fieldnote is designed around recoverable work, clear exports, optional AI, and plain-language privacy controls.
+            </p>
+          </div>
+          <div className="landing-trust-grid">
+            {TRUST_CONTROLS.map((item) => (
+              <article key={item.title} className="landing-trust-card">
+                <CheckCircle2 size={16} aria-hidden="true" />
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <a className="landing-trust-link" href="/privacy-policy.md" target="_blank" rel="noreferrer">
+            Read the full Privacy Policy
+            <ArrowRight size={15} aria-hidden="true" />
+          </a>
         </div>
       </section>
 
