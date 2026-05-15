@@ -1,6 +1,8 @@
 # Aesthetic Foundations + Landing Page — Design
 
-Status: approved 2026-04-29. Ready for implementation plan.
+Status: shipped 2026-04-29; refreshed 2026-05-15.
+
+2026-05-15 note: this spec began as the aesthetic-foundations landing plan, but the shipped public homepage is now a fuller product-positioning page. Treat the "Current landing implementation" section below as the current source of truth; the original phase details are kept for provenance.
 
 ## Goal
 
@@ -56,7 +58,56 @@ Three Google Fonts are loaded via `<link>` tags in `index.html` exactly as the b
 
 `src/main.tsx` adds `import './styles/tokens.css'` between the existing `import './index.css'` and `import App from './App.tsx'`. `App.tsx` itself imports `App.css` separately at line 46, so the load order ends up `index.css → tokens.css → App.css`, ensuring token vars resolve first. Most App.css rules use hard-coded hex values, so they continue to render unchanged; new surfaces using the tokens get the new look.
 
-## Landing page
+## Current landing implementation
+
+The signed-out experience is a confident product homepage for `fieldnoteqda.com`, not an alpha apology page. It should communicate that Fieldnote is already a serious interview-centered QDA workspace while leaving future capabilities in the Roadmap section.
+
+Visible homepage copy intentionally avoids "alpha" language. Alpha status, tester caution, backup expectations, and legal terms remain in the Terms of Service and Privacy Policy, not in the marketing body copy.
+
+### Current structure
+
+`src/Landing.tsx` and `src/Landing.css` now render a multi-section page:
+
+1. **Top nav** — two-line Fieldnote wordmark, links to Workflow / Features / Roadmap, Sign in.
+2. **Hero** — light editorial background, direct category positioning, primary "Start a project" CTA, secondary sign-in CTA, and an animated Fieldnote UI mock inside a dark product stage.
+3. **Research loop** — dark band with the six app modes: Organize, Code, Refine, Classify, Analyze, Report.
+4. **Why Fieldnote** — light comparison card contrasting old enterprise QDA patterns with Fieldnote's web-native workflow.
+5. **What you get** — dark "The boring parts done well" feature band for interview work, comparison work, and evidence export.
+6. **Current capabilities** — light inventory of working product areas across sources, coding, cases, analysis, AI assist, exports, collaboration posture, and safety.
+7. **Data safety** — dark trust band that explains account-scoped projects, autosave plus browser recovery snapshots, portable backups/exports, optional AI, no tracking stack, and account/project deletion.
+8. **Roadmap** — light section for future tracks: media depth, team research, visual analysis, and research intelligence.
+9. **Closing CTA + footer** — dark CTA and footer links to Terms of Service, Privacy Policy, and contact email.
+
+The page alternates light and dark bands after the hero so the lower half has a deliberate rhythm:
+
+```text
+light hero
+dark research loop
+light comparison
+dark feature band
+light current capabilities
+dark data safety
+light roadmap
+dark CTA/footer
+```
+
+### Current visual behavior
+
+- The hero is white/light so the dark product mock has contrast and appears early.
+- The product mock demonstrates the real coding story: transcript line numbers, highlighted selection, contextual code menu, active quick-coding controls, and save status.
+- The mock uses motion, but `prefers-reduced-motion` disables the animation.
+- Section color uses the same shell / paper tokens as the app UI, with accent colors pulled from the product palette.
+- The feature and trust bands use dark shell backgrounds with subtle accent tints, not card-heavy SaaS decoration.
+- Mobile collapses grids to one column and preserves horizontal overflow safety.
+
+### Current messaging rules
+
+- Do say: full-featured, interview-centered, close reading, coding, cases, attributes, analysis, AI assist, exportable evidence, data safety, roadmap.
+- Do not say in homepage body copy: alpha, free, open source, self-host, GitHub, or "serious enough for alpha."
+- Roadmap belongs on the page so people understand trajectory without mistaking future capabilities for shipped features.
+- Safety reassurance belongs on the page because researchers need to trust that their work is recoverable and portable before trying the product.
+
+## Original landing page plan
 
 ### Component layout
 
