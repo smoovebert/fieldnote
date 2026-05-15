@@ -69,7 +69,7 @@ Visible homepage copy intentionally avoids "alpha" language. Alpha status, teste
 `src/Landing.tsx` and `src/Landing.css` now render a multi-section page:
 
 1. **Top nav** — two-line Fieldnote wordmark, links to Workflow / Features / Roadmap, Sign in.
-2. **Hero** — light editorial background, direct category positioning, primary "Start a project" CTA, secondary sign-in CTA, and an animated Fieldnote UI mock inside a dark product stage.
+2. **Hero** — light editorial background, direct category positioning, primary "Request early access" CTA, secondary sign-in CTA, and an animated Fieldnote UI mock inside a dark product stage.
 3. **Research loop** — dark band with the six app modes: Organize, Code, Refine, Classify, Analyze, Report.
 4. **Why Fieldnote** — light comparison card contrasting old enterprise QDA patterns with Fieldnote's web-native workflow.
 5. **What you get** — dark "The boring parts done well" feature band for interview work, comparison work, and evidence export.
@@ -106,6 +106,22 @@ dark CTA/footer
 - Do not say in homepage body copy: alpha, free, open source, self-host, GitHub, or "serious enough for alpha."
 - Roadmap belongs on the page so people understand trajectory without mistaking future capabilities for shipped features.
 - Safety reassurance belongs on the page because researchers need to trust that their work is recoverable and portable before trying the product.
+
+### Current access model
+
+Public access is intentionally gated for the first tester cohorts:
+
+- Landing CTAs say "Request early access" and open the auth modal in signup mode.
+- Sign-in remains available for existing testers.
+- Signup runs through the `early-access-signup` Supabase Edge Function, which checks `public.fieldnote_access_invites` before calling Supabase Auth.
+- A database trigger on `auth.users` is the hard gate: any new auth user insert without an invited/accepted normalized email raises `fieldnote-access-required`, even if someone bypasses the Fieldnote UI.
+- The request-access link is configured by `VITE_FIELDNOTE_ACCESS_FORM_URL`; if missing, it falls back to the contact email.
+- Approved testers are added with:
+
+```sql
+insert into public.fieldnote_access_invites (email, notes)
+values ('researcher@example.edu', 'May 2026 tester cohort');
+```
 
 ## Original landing page plan
 

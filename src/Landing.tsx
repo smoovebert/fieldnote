@@ -193,7 +193,7 @@ export function Landing() {
             </p>
             <div className="landing-cta-row">
               <button type="button" className="landing-btn landing-btn-primary" onClick={() => openAuth('sign-up')}>
-                Start a project
+                Request early access
                 <ArrowRight size={17} aria-hidden="true" />
               </button>
               <button type="button" className="landing-btn landing-btn-ghost" onClick={() => openAuth('sign-in')}>
@@ -440,7 +440,7 @@ export function Landing() {
           </h2>
           <div className="landing-cta-actions">
             <button type="button" className="landing-btn landing-btn-primary on-dark" onClick={() => openAuth('sign-up')}>
-              Start a project
+              Request early access
               <ArrowRight size={17} aria-hidden="true" />
             </button>
             <button type="button" className="landing-btn landing-btn-ghost on-dark" onClick={() => openAuth('sign-in')}>
