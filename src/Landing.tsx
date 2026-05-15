@@ -98,6 +98,33 @@ const CAPABILITIES: Array<{ group: string; items: string[] }> = [
   },
 ]
 
+const ROADMAP: Array<{ horizon: string; title: string; body: string; items: string[] }> = [
+  {
+    horizon: 'Media depth',
+    title: 'Audio, video, images, and linked transcripts.',
+    body: 'Bring more kinds of field material into the same coding and memoing workflow.',
+    items: ['Speaker-labeled transcription', 'Transcript-linked playback', 'Image region coding'],
+  },
+  {
+    horizon: 'Team research',
+    title: 'Collaboration without losing analytic control.',
+    body: 'Support shared projects, reviewer roles, and careful comparison between coders.',
+    items: ['Shared projects', 'Inter-coder reliability', 'Conflict review'],
+  },
+  {
+    horizon: 'Visual analysis',
+    title: 'Maps and charts that explain the evidence.',
+    body: 'Move from query tables into visual structures that help researchers see patterns.',
+    items: ['Hierarchy charts', 'Concept maps', 'Relationship maps'],
+  },
+  {
+    horizon: 'Research intelligence',
+    title: 'Ask questions across the corpus.',
+    body: 'Use source-grounded AI to find passages, summarize patterns, and keep citations attached.',
+    items: ['Ask your data', 'Citation-first answers', 'Cross-project search'],
+  },
+]
+
 export function Landing() {
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode>('sign-in')
@@ -117,6 +144,7 @@ export function Landing() {
         <nav className="landing-nav-links">
           <a className="landing-nav-link" href="#workflow">Workflow</a>
           <a className="landing-nav-link" href="#features">Features</a>
+          <a className="landing-nav-link" href="#roadmap">Roadmap</a>
           <button type="button" className="landing-nav-link" onClick={() => openAuth('sign-in')}>Sign in</button>
         </nav>
       </header>
@@ -299,10 +327,10 @@ export function Landing() {
           <div className="landing-capabilities-head">
             <p className="landing-eyebrow">Current capabilities</p>
             <h2 id="capabilities-h2" className="landing-capabilities-h2">
-              Already enough for serious interview-heavy work.
+              A full-featured QDA workspace for interview-centered research.
             </h2>
             <p>
-              Fieldnote covers the core qualitative loop from importing material to defending findings in a report.
+              Fieldnote brings source management, close coding, codebook refinement, cases, attributes, analysis, AI assist, and exportable evidence into one web workspace.
             </p>
           </div>
           <div className="landing-capability-grid">
@@ -316,6 +344,32 @@ export function Landing() {
                       <span>{item}</span>
                     </li>
                   ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-roadmap" id="roadmap" aria-labelledby="roadmap-h2">
+        <div className="landing-roadmap-inner">
+          <div className="landing-roadmap-head">
+            <p className="landing-eyebrow">Roadmap</p>
+            <h2 id="roadmap-h2" className="landing-roadmap-h2">
+              Next, Fieldnote expands beyond text.
+            </h2>
+            <p>
+              The next releases extend the same research loop into richer sources, collaborative coding, visual exploration, and source-grounded AI.
+            </p>
+          </div>
+          <div className="landing-roadmap-grid">
+            {ROADMAP.map((item) => (
+              <article key={item.horizon} className="landing-roadmap-card">
+                <p className="landing-roadmap-horizon">{item.horizon}</p>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+                <ul>
+                  {item.items.map((detail) => <li key={detail}>{detail}</li>)}
                 </ul>
               </article>
             ))}
