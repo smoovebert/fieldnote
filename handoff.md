@@ -334,8 +334,9 @@ See `data-model-plan.md` for the full future schema, including sources, source f
 
 ### Authentication
 
-- Supabase email/password sign up and sign in.
-- Sign-up requires the user to tick a "I have read and agree to the Fieldnote Alpha Terms of Service" checkbox before the Create-account button enables. Sign-in shows a softer "By signing in, you continue under the Fieldnote Alpha Terms" reminder. Both link to the deployed `/terms-of-service.md` asset.
+- Supabase email/password sign-in plus gated account creation for invited testers.
+- Public landing CTAs open "Request early access"; existing users can still sign in. Account creation goes through the `early-access-signup` Edge Function and requires an invited/accepted email row in `public.fieldnote_access_invites`.
+- Sign-up still requires the user to tick a "I have read and agree to the Fieldnote Alpha Terms of Service" checkbox before the Create-account button enables. Sign-in shows a softer "By signing in, you continue under the Fieldnote Alpha Terms" reminder. Both link to the deployed `/terms-of-service.md` asset.
 - New sign-ups persist `termsAcceptedAt` (ISO timestamp at submit) and `termsVersion` (`'2026-05-02-alpha'`) into Supabase auth metadata so we can audit which version each tester accepted.
 - The terms doc and the privacy doc each live in `docs/` (repo source of truth, linked from README) and are symlinked from `public/` (`public/terms-of-service.md` → `../docs/terms-of-service.md`, same for privacy) so Vite serves them from the deployed bundle's web root. Vite dereferences the symlinks at build time so `dist/` ships plain files. Edit either doc by editing the file in `docs/` only — the in-app link tracks automatically.
 - Each user can have multiple projects.

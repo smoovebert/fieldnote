@@ -61,7 +61,7 @@ The database trigger on `auth.users` blocks new accounts that are not allowliste
 npm run dev
 ```
 
-Then open the local URL Vite prints and sign up or sign in.
+Then open the local URL Vite prints. Existing accounts can sign in; new accounts need an invite row in `fieldnote_access_invites` first.
 
 ## User Manual
 
