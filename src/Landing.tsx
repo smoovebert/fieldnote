@@ -19,12 +19,12 @@ import './Landing.css'
 type AuthMode = 'sign-in' | 'sign-up'
 
 const STAGES: Array<{ num: string; name: string; desc: string }> = [
-  { num: '01', name: 'Organize',  desc: 'Import transcripts, field notes, PDFs, and spreadsheets. Keep folders, memos, and attributes together.' },
-  { num: '02', name: 'Code',      desc: 'Select passages, apply one or more codes, and keep line numbers visible while you read.' },
-  { num: '03', name: 'Refine',    desc: 'Rename, merge, split, nest, and document codes as the analysis changes.' },
-  { num: '04', name: 'Classify',  desc: 'Create cases for participants, sites, or groups. Add the attributes you will compare later.' },
-  { num: '05', name: 'Analyze',   desc: 'Filter excerpts, run matrices and crosstabs, and check word frequency or code co-occurrence.' },
-  { num: '06', name: 'Report',    desc: 'Assemble findings, excerpts, memos, and charts. Export PDF, Word, CSV, or XLSX.' },
+  { num: '01', name: 'Organize',  desc: 'Drop in transcripts, notes, PDFs, and spreadsheets. Keep the project from becoming a desktop folder named final_final_2.' },
+  { num: '02', name: 'Code',      desc: 'Mark the passage, add one code or several, and keep line numbers visible while you read.' },
+  { num: '03', name: 'Refine',    desc: 'Rename, merge, split, nest, and document codes when your first pass turns out to be only a first pass.' },
+  { num: '04', name: 'Classify',  desc: 'Make cases for people, sites, or groups. Add the attributes you will want later, because later always arrives.' },
+  { num: '05', name: 'Analyze',   desc: 'Filter excerpts, run matrices and crosstabs, and check word frequency or code co-occurrence without opening three other apps.' },
+  { num: '06', name: 'Report',    desc: 'Gather findings, excerpts, memos, and charts. Export PDF, Word, CSV, or XLSX.' },
 ]
 
 const VS_ENTERPRISE: string[] = [
@@ -36,65 +36,60 @@ const VS_ENTERPRISE: string[] = [
 ]
 
 const VS_FIELDNOTE: string[] = [
-  'Web-based. Auto-saves to cloud with local recovery and downloadable backups.',
-  'Six modes in order: organize, code, refine, classify, analyze, report.',
-  'PDF, Word, CSV, and XLSX exports for reports, codebooks, cases, and excerpts.',
-  'AI assist built in: suggested codes, draft descriptions, summaries, and project memos.',
+  'Web-based, autosaved, locally recoverable, and backed up when you want a copy in your own hands.',
+  'Six modes in a sane order: organize, code, refine, classify, analyze, report.',
+  'Exports that leave cleanly: PDF, Word, CSV, and XLSX.',
+  'AI assist is there when useful: suggestions, summaries, drafts, and BYOK.',
 ]
 
 const FEATURES: Array<{ num: string; eyebrow: string; h3: string; body: string; tags: string[] }> = [
   {
     num: '01', eyebrow: 'For interviews',
     h3: 'Work from the transcript.',
-    body: 'Line-numbered readers, overlapping codes, source memos, code memos, and project memos stay close to the material you are reading.',
+    body: 'Line numbers, overlapping codes, source memos, code memos, and project notes stay near the thing you are reading.',
     tags: ['Line numbers', 'Multi-code', 'Memos', 'Reader view'],
   },
   {
     num: '02', eyebrow: 'For comparison',
     h3: 'Compare sources and cases.',
-    body: 'Cases, participant attributes, saved queries, matrices, crosstabs, word frequency, and code co-occurrence live in the same project.',
+    body: 'Cases, attributes, saved questions, matrices, crosstabs, word frequency, and co-occurrence all live in the same project.',
     tags: ['Saved queries', 'Matrix', 'Crosstab', 'Co-occurrence'],
   },
   {
     num: '03', eyebrow: 'For evidence',
     h3: 'Export usable evidence.',
-    body: 'Build PDF reports, Word documents, coded-excerpt CSVs, codebook CSVs, case sheets, memos, charts, and XLSX workbooks.',
+    body: 'Make PDF reports, Word docs, coded-excerpt CSVs, codebooks, case sheets, memos, charts, and XLSX workbooks.',
     tags: ['PDF', 'Word', 'CSV', 'XLSX'],
   },
 ]
 
-const CAPABILITIES: Array<{ group: string; items: string[] }> = [
+const ARTIFACTS: Array<{ step: string; title: string; kind: 'source' | 'code' | 'matrix' | 'report' }> = [
+  { step: 'Source', title: 'Interview excerpt', kind: 'source' },
+  { step: 'Code', title: 'Close reading', kind: 'code' },
+  { step: 'Analyze', title: 'Pattern check', kind: 'matrix' },
+  { step: 'Report', title: 'Evidence page', kind: 'report' },
+]
+
+const CAPABILITIES: Array<{ group: string; body: string; items: string[] }> = [
   {
-    group: 'Sources',
-    items: ['TXT/MD/CSV import', 'DOCX interviews', 'PDF page coding', 'Folders + archive'],
+    group: 'Close reading',
+    body: 'Bring the interview materials into one place and keep the context from wandering off.',
+    items: ['TXT/MD/CSV import', 'DOCX interviews', 'PDF page coding', 'Folders, memos, and archive'],
   },
   {
-    group: 'Coding',
-    items: ['Overlapping codes', 'Nested code tree', 'Drag to nest/root', 'Excerpt notes'],
+    group: 'Codebook work',
+    body: 'Code the passage, then admit the codebook needs changing and change it.',
+    items: ['Overlapping codes', 'Nested code tree', 'Drag to nest/root', 'Merge, split, and duplicate review'],
   },
   {
-    group: 'Refinement',
-    items: ['Merge codes', 'Split codes', 'Duplicate review', 'Orphan cleanup'],
+    group: 'Comparison',
+    body: 'Move from marked passages to patterns across people, groups, and attributes.',
+    items: ['Cases and attributes', 'Filtered excerpts', 'Matrix coding', 'Crosstabs and co-occurrence'],
   },
   {
-    group: 'Cases',
-    items: ['Participants/cases', 'Attributes', 'Spreadsheet import', 'Case sheets'],
-  },
-  {
-    group: 'Analyze',
-    items: ['Filtered excerpts', 'Matrix coding', 'Crosstabs', 'Word + co-occurrence'],
-  },
-  {
-    group: 'Outputs',
-    items: ['PDF reports', 'Word reports', 'CSV/XLSX exports', 'Project backups'],
-  },
-  {
-    group: 'AI assist',
-    items: ['Suggest codes', 'Draft descriptions', 'Source summaries', 'Project memo drafts'],
-  },
-  {
-    group: 'Safety',
-    items: ['Cloud autosave', 'Local recovery', 'Download backup', 'AI consent + BYOK'],
+    group: 'Outputs and safety',
+    body: 'Get the work out again. Reports, tables, backups, the whole escape hatch.',
+    items: ['PDF and Word reports', 'CSV/XLSX exports', 'Project backups', 'AI consent and BYOK'],
   },
 ]
 
@@ -179,17 +174,17 @@ export function Landing() {
       <section className="landing-hero" aria-labelledby="hero-h1">
         <div className="landing-hero-inner">
           <div className="landing-hero-copy">
-            <p className="landing-eyebrow">Modern QDA for interview work</p>
+            <p className="landing-eyebrow">QDA for interview work</p>
             <h1 id="hero-h1" className="landing-hero-h1">
               <span className="landing-hero-lead">
-                Read closely.<br />Code carefully.<br />Report clearly.
+                Read the material.<br />Code what matters.<br />Find the pattern.
               </span>
               <span className="landing-hero-cont">
-                A web-based QDA workspace for interview-centered research.
+                A web workspace for transcripts, PDFs, codes, cases, queries, and reports.
               </span>
             </h1>
             <p className="landing-hero-sub">
-              Import transcripts and PDFs, code the same passage more than one way, refine your codebook, compare cases and attributes, and export the evidence you need.
+              Bring in the material, mark what matters, compare the patterns, and get the evidence back out. No license-key ceremony. No desktop-app archaeology.
             </p>
             <div className="landing-cta-row">
               <button type="button" className="landing-btn landing-btn-primary" onClick={() => openAuth('sign-up')}>
@@ -278,15 +273,74 @@ export function Landing() {
         </div>
       </section>
 
+      <section className="landing-evidence" aria-labelledby="evidence-h2">
+        <div className="landing-evidence-inner">
+          <div className="landing-evidence-head">
+            <p className="landing-eyebrow on-dark">Source to report</p>
+            <h2 id="evidence-h2" className="landing-evidence-h2">
+              One quote can become<br /><em>a whole thread.</em>
+            </h2>
+            <p>
+              The excerpt, the code, the comparison, and the report page stay close enough that you can remember why any of it mattered.
+            </p>
+          </div>
+
+          <div className="landing-artifact-track" aria-label="Evidence path from source to report">
+            {ARTIFACTS.map((artifact) => (
+              <article key={artifact.step} className={`landing-artifact landing-artifact-${artifact.kind}`}>
+                <p className="landing-artifact-step">{artifact.step}</p>
+                <h3>{artifact.title}</h3>
+                {artifact.kind === 'source' && (
+                  <div className="landing-artifact-source-body">
+                    <p><span>12</span> The form asked for documents I did not have anymore.</p>
+                    <p><span>13</span> The system was testing whether I would give up.</p>
+                    <p><span>14</span><mark>She explained the steps in plain language.</mark></p>
+                  </div>
+                )}
+                {artifact.kind === 'code' && (
+                  <div className="landing-artifact-code-body">
+                    <span>Access barriers</span>
+                    <span>Service navigation</span>
+                    <span>Plain-language support</span>
+                    <small>memo: participant names the paperwork as the barrier</small>
+                  </div>
+                )}
+                {artifact.kind === 'matrix' && (
+                  <div className="landing-artifact-matrix-body">
+                    <span />
+                    <strong>Caregiver</strong>
+                    <strong>Student</strong>
+                    <b>Access</b>
+                    <em>8</em>
+                    <em>3</em>
+                    <b>Support</b>
+                    <em>5</em>
+                    <em>6</em>
+                  </div>
+                )}
+                {artifact.kind === 'report' && (
+                  <div className="landing-artifact-report-body">
+                    <span />
+                    <strong>Theme: access barriers</strong>
+                    <p>“The form asked for documents I did not have anymore...”</p>
+                    <small>PDF · Word · CSV · XLSX</small>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="landing-loop" id="workflow" aria-labelledby="loop-h2">
         <div className="landing-loop-grid">
           <div className="landing-loop-intro">
             <p className="landing-eyebrow">The research loop</p>
             <h2 id="loop-h2" className="landing-loop-h2">
-              One calm workspace,<br /><em>source to report.</em>
+              The usual research mess,<br /><em>in a sane order.</em>
             </h2>
             <p className="landing-loop-sub">
-              Organize sources, code passages, refine the codebook, classify cases, analyze patterns, and prepare a report.
+              Organize sources, code passages, clean up the codebook, compare patterns, and make the thing you can actually share.
             </p>
           </div>
           <ol className="landing-loop-stages">
@@ -307,7 +361,7 @@ export function Landing() {
         <div className="landing-vs-inner">
           <p className="landing-eyebrow">Why Fieldnote</p>
           <h2 id="vs-h2" className="landing-vs-h2">
-            Made for small research teams, <em>not procurement cycles.</em>
+            Made for people doing the work, <em>not people approving the purchase order.</em>
           </h2>
           <div className="landing-vs-card">
             <div className="landing-vs-col">
@@ -332,7 +386,7 @@ export function Landing() {
         <div className="landing-features-inner">
           <div className="landing-features-intro">
             <p className="landing-eyebrow">What you get</p>
-            <h2 id="features-h2" className="landing-features-h2">The boring parts done well.</h2>
+            <h2 id="features-h2" className="landing-features-h2">The unglamorous parts, handled.</h2>
           </div>
           <div className="landing-features-grid">
             {FEATURES.map((feature) => (
@@ -354,16 +408,19 @@ export function Landing() {
           <div className="landing-capabilities-head">
             <p className="landing-eyebrow">Current capabilities</p>
             <h2 id="capabilities-h2" className="landing-capabilities-h2">
-              A full-featured QDA workspace for interview-centered research.
+              It already does a lot.
             </h2>
             <p>
-              Fieldnote brings source management, close coding, codebook refinement, cases, attributes, analysis, AI assist, and exportable evidence into one web workspace.
+              Import, code, refine, classify, analyze, export. The core interview-work stack is here, with AI assist and backups where they belong: useful, visible, and optional.
             </p>
           </div>
           <div className="landing-capability-grid">
             {CAPABILITIES.map((capability) => (
               <article key={capability.group} className="landing-capability-card">
-                <h3>{capability.group}</h3>
+                <div>
+                  <h3>{capability.group}</h3>
+                  <p>{capability.body}</p>
+                </div>
                 <ul>
                   {capability.items.map((item) => (
                     <li key={item}>
@@ -383,10 +440,10 @@ export function Landing() {
           <div className="landing-trust-head">
             <p className="landing-eyebrow on-dark">Data safety</p>
             <h2 id="trust-h2" className="landing-trust-h2">
-              Your research stays yours.
+              Your work should not feel fragile.
             </h2>
             <p>
-              Fieldnote keeps backups, exports, AI settings, and account controls visible instead of burying them in admin screens.
+              Autosave, local recovery, backups, AI controls, and deletion paths are visible because panic is not a feature.
             </p>
           </div>
           <div className="landing-trust-grid">
@@ -412,10 +469,10 @@ export function Landing() {
           <div className="landing-roadmap-head">
             <p className="landing-eyebrow">Roadmap</p>
             <h2 id="roadmap-h2" className="landing-roadmap-h2">
-              Next, Fieldnote expands beyond text.
+              More materials, same idea.
             </h2>
             <p>
-              The next releases add richer source types, shared coding, visual analysis, and source-grounded AI.
+              Next up: media, teams, maps, and source-grounded AI, without turning the app into a cockpit.
             </p>
           </div>
           <div className="landing-roadmap-grid">
@@ -436,7 +493,7 @@ export function Landing() {
       <section className="landing-cta">
         <div className="landing-cta-inner">
           <h2 className="landing-cta-h2">
-            Bring a transcript.<br /><em>Leave with evidence.</em>
+            Bring a transcript.<br /><em>Get unstuck.</em>
           </h2>
           <div className="landing-cta-actions">
             <button type="button" className="landing-btn landing-btn-primary on-dark" onClick={() => openAuth('sign-up')}>
@@ -452,7 +509,7 @@ export function Landing() {
 
       <footer className="landing-footer">
         <div className="landing-footer-text">
-          <span className="landing-footer-line">Fieldnote — qualitative research software for close reading, coding, analysis, and reporting.</span>
+          <span className="landing-footer-line">Fieldnote — QDA for close reading, coding, analysis, and reports.</span>
           <span className="landing-footer-dedication">Made in California. Dedicated to Dr. S Robbins and Birdie Robbins.</span>
         </div>
         <nav className="landing-footer-links" aria-label="Site footer">
