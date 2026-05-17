@@ -1,6 +1,8 @@
 # Phase 3b — Reader / Detail-View Migration Design
 
-Status: approved 2026-04-29. Ready for implementation plan.
+Status: approved 2026-04-29. Implemented and partially superseded by the 2026-05-16 app-polish pass.
+
+2026-05-16 update: the detail-view shell is no longer only a Code-mode reader migration. The signed-in app now standardizes the top detail title, mode preface strip, and orientation band across modes. Classify, Analyze, and Report use the same serif `T1` detail-toolbar title as project/source/code pages, and the mode preface/orientation bands break out to the full middle work column in older `detail-card` modes.
 
 ## Goal
 
@@ -195,7 +197,7 @@ Manual:
 9. Quick code menu: paper-bg popup with new shadow + rule border. Code chips use new chip style.
 10. Create a new code without specifying color → gets the next bundle palette color in sequence.
 11. Existing codes' colors unchanged; their highlights now use the soft tinted style derived from their stored color.
-12. Other modes (Organize/Refine/Classify/Analyze/Report) — detail-view shell goes paper, but inner content stays on legacy styling. No regressions.
+12. Other modes (Organize/Refine/Classify/Analyze/Report) — detail-view shell goes paper, the top detail title remains serif, and the mode preface/orientation bands stay full-width and height-stable. Inner work content may still receive later polish, but the mode chrome should not jump between modes.
 13. Lint + build + tests clean.
 
 No new unit tests required — pure presentation + a small color-cycling helper that's tested in dev by creating a few codes in sequence.

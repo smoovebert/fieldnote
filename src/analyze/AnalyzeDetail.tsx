@@ -163,11 +163,11 @@ export function AnalyzeDetail({
       />
 
       <div className="query-builder">
-        <label className="property-field">
+        <label className="property-field query-field-text">
           <span>Text</span>
           <input value={queryText} placeholder="Search excerpt text, notes, sources, cases" onChange={(event) => setQueryText(event.target.value)} />
         </label>
-        <label className="property-field">
+        <label className="property-field query-field-code">
           <span>Code</span>
           <select value={queryCodeId} onChange={(event) => setQueryCodeId(event.target.value)}>
             <option value="">Any code</option>
@@ -178,7 +178,7 @@ export function AnalyzeDetail({
             ))}
           </select>
         </label>
-        <div className="property-field also-coded-with">
+        <div className="property-field also-coded-with query-field-also">
           <span>Also coded with</span>
           <div className="also-coded-with-chips">
             {queryAdditionalCodeIds.length === 0 && (
@@ -214,7 +214,7 @@ export function AnalyzeDetail({
               ))}
           </select>
         </div>
-        <label className="property-field">
+        <label className="property-field query-field-case">
           <span>Case</span>
           <select value={queryCaseId} onChange={(event) => setQueryCaseId(event.target.value)}>
             <option value="">Any case</option>
@@ -225,62 +225,73 @@ export function AnalyzeDetail({
             ))}
           </select>
         </label>
-        <div className="property-field property-field-stack">
+        <div className="property-field property-field-stack query-field-attributes">
           <span>Attributes</span>
-          {queryAttributes.length === 0 && (
-            <div className="attribute-filter-empty">No attribute filters.</div>
-          )}
-          {queryAttributes.map((row, index) => {
-            const usedElsewhere = new Set(
-              queryAttributes.filter((_, i) => i !== index).map((r) => r.attributeId).filter(Boolean),
-            )
-            const valueOptions = valuesForAttribute(row.attributeId)
-            return (
-              <div key={index} className="attribute-filter-row">
-                <select
-                  value={row.attributeId}
-                  onChange={(event) => {
-                    const nextId = event.target.value
-                    setQueryAttributes((current) =>
-                      current.map((r, i) => (i === index ? { attributeId: nextId, value: '' } : r)),
-                    )
-                  }}
-                >
-                  <option value="">— pick attribute —</option>
-                  {attributes
-                    .filter((a) => a.id === row.attributeId || !usedElsewhere.has(a.id))
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                </select>
-                <select
-                  value={row.value}
-                  disabled={!row.attributeId}
-                  onChange={(event) => {
-                    const nextValue = event.target.value
-                    setQueryAttributes((current) =>
-                      current.map((r, i) => (i === index ? { ...r, value: nextValue } : r)),
-                    )
-                  }}
-                >
-                  <option value="">— pick value —</option>
-                  {valueOptions.map((value) => (
-                    <option key={value} value={value}>{value}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="attribute-filter-delete"
-                  aria-label="Remove this attribute filter"
-                  onClick={() => {
-                    setQueryAttributes((current) => current.filter((_, i) => i !== index))
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )
-          })}
+          <div className="attribute-filter-control-row">
+            <div className="attribute-filter-list">
+              {queryAttributes.length === 0 && (
+                <div className="attribute-filter-empty">No attribute filters.</div>
+              )}
+              {queryAttributes.map((row, index) => {
+                const usedElsewhere = new Set(
+                  queryAttributes.filter((_, i) => i !== index).map((r) => r.attributeId).filter(Boolean),
+                )
+                const valueOptions = valuesForAttribute(row.attributeId)
+                return (
+                  <div key={index} className="attribute-filter-row">
+                    <select
+                      value={row.attributeId}
+                      onChange={(event) => {
+                        const nextId = event.target.value
+                        setQueryAttributes((current) =>
+                          current.map((r, i) => (i === index ? { attributeId: nextId, value: '' } : r)),
+                        )
+                      }}
+                    >
+                      <option value="">— pick attribute —</option>
+                      {attributes
+                        .filter((a) => a.id === row.attributeId || !usedElsewhere.has(a.id))
+                        .map((a) => (
+                          <option key={a.id} value={a.id}>{a.name}</option>
+                        ))}
+                    </select>
+                    <select
+                      value={row.value}
+                      disabled={!row.attributeId}
+                      onChange={(event) => {
+                        const nextValue = event.target.value
+                        setQueryAttributes((current) =>
+                          current.map((r, i) => (i === index ? { ...r, value: nextValue } : r)),
+                        )
+                      }}
+                    >
+                      <option value="">— pick value —</option>
+                      {valueOptions.map((value) => (
+                        <option key={value} value={value}>{value}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="attribute-filter-delete"
+                      aria-label="Remove this attribute filter"
+                      onClick={() => {
+                        setQueryAttributes((current) => current.filter((_, i) => i !== index))
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            <button
+              className="secondary-button query-clear"
+              type="button"
+              onClick={clearQueryFilters}
+            >
+              Clear filters
+            </button>
+          </div>
           <button
             type="button"
             className="secondary-button attribute-filter-add"
@@ -292,13 +303,6 @@ export function AnalyzeDetail({
             + Add attribute filter
           </button>
         </div>
-        <button
-          className="secondary-button query-clear"
-          type="button"
-          onClick={clearQueryFilters}
-        >
-          Clear filters
-        </button>
       </div>
 
       <div className="query-save-row">

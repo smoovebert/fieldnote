@@ -968,13 +968,14 @@ button {
   text-overflow: ellipsis;
 }
 
-/* Mode-only title — T2 (Inter Tight 22 / 1.2 / 500, -0.012em).
-   Used by Classify, Analyze, and Report — pages with no concrete
-   subject. */
+/* Mode-only title uses the same serif display recipe as editable
+   subject titles so the detail toolbar does not change personality
+   when switching to Classify, Analyze, or Report. */
 .static-detail-title {
   color: var(--ink);
-  font: var(--t-t2);
-  letter-spacing: -0.012em;
+  font: var(--t-t1);
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
   margin: 0;
 }
 
@@ -987,9 +988,10 @@ button {
 }
 
 .detail-card {
+  --detail-card-pad-x: 28px;
   min-height: 0;
   overflow: auto;
-  padding: 26px 28px;
+  padding: 26px var(--detail-card-pad-x);
 }
 
 .detail-kicker {

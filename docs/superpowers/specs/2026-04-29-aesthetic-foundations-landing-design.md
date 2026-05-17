@@ -1,8 +1,8 @@
 # Aesthetic Foundations + Landing Page — Design
 
-Status: shipped 2026-04-29; refreshed 2026-05-15.
+Status: shipped 2026-04-29; refreshed 2026-05-16.
 
-2026-05-15 note: this spec began as the aesthetic-foundations landing plan, but the shipped public homepage is now a fuller product-positioning page. Treat the "Current landing implementation" section below as the current source of truth; the original phase details are kept for provenance.
+2026-05-16 note: this spec began as the aesthetic-foundations landing plan, but the shipped public homepage is now a fuller product-positioning page. It also now records the first signed-in app polish pass so the homepage and app do not drift apart. Treat the "Current landing implementation" and "Current signed-in app polish" sections below as the current source of truth; the original phase details are kept for provenance.
 
 ## Goal
 
@@ -69,23 +69,25 @@ Visible homepage copy intentionally avoids "alpha" language. Alpha status, teste
 `src/Landing.tsx` and `src/Landing.css` now render a multi-section page:
 
 1. **Top nav** — two-line Fieldnote wordmark, links to Workflow / Features / Roadmap, Sign in.
-2. **Hero** — light editorial background, direct category positioning, primary "Request early access" CTA, secondary sign-in CTA, and an animated Fieldnote UI mock inside a dark product stage.
-3. **Research loop** — dark band with the six app modes: Organize, Code, Refine, Classify, Analyze, Report.
-4. **Why Fieldnote** — light comparison card contrasting old enterprise QDA patterns with Fieldnote's web-native workflow.
-5. **What you get** — dark "The boring parts done well" feature band for interview work, comparison work, and evidence export.
-6. **Current capabilities** — light inventory of working product areas across sources, coding, cases, analysis, AI assist, exports, collaboration posture, and safety.
-7. **Data safety** — dark trust band that explains account-scoped projects, autosave plus browser recovery snapshots, portable backups/exports, optional AI, no tracking stack, and account/project deletion.
-8. **Roadmap** — light section for future tracks: media depth, team research, visual analysis, and research intelligence.
-9. **Closing CTA + footer** — dark CTA and footer links to Terms of Service, Privacy Policy, and contact email.
+2. **Hero** — centered serif headline, direct category positioning, primary "Request early access" CTA, secondary sign-in CTA, and an animated Fieldnote UI mock inside a dark product stage.
+3. **Source to report** — dark rounded artifact band showing how an excerpt becomes code chips, a matrix snippet, and a report page.
+4. **Research loop** — dark rounded band with the six app modes: Organize, Code, Refine, Classify, Analyze, Report.
+5. **Why Fieldnote** — light comparison card contrasting old enterprise QDA patterns with Fieldnote's web-native workflow.
+6. **What you get** — dark rounded feature band for interview work, comparison work, and evidence export.
+7. **Current capabilities** — light editorial ledger of working product areas across close reading, codebook work, comparison, outputs, and safety.
+8. **Data safety** — dark rounded trust band that explains account-scoped projects, autosave plus browser recovery snapshots, portable backups/exports, optional AI, no tracking stack, and account/project deletion.
+9. **Roadmap** — light section for future tracks: media depth, team research, visual analysis, and research intelligence.
+10. **Closing CTA + footer** — dark CTA and footer links to Terms of Service, Privacy Policy, and contact email.
 
 The page alternates light and dark bands after the hero so the lower half has a deliberate rhythm:
 
 ```text
 light hero
+dark source-to-report artifact band
 dark research loop
 light comparison
 dark feature band
-light current capabilities
+light current-capabilities ledger
 dark data safety
 light roadmap
 dark CTA/footer
@@ -93,19 +95,34 @@ dark CTA/footer
 
 ### Current visual behavior
 
-- The hero is white/light so the dark product mock has contrast and appears early.
+- The hero is white/light, centered, and editorial so the dark product mock has contrast and appears early.
 - The product mock demonstrates the real coding story: transcript line numbers, highlighted selection, contextual code menu, active quick-coding controls, and save status.
+- The page uses artifact storytelling where possible: transcript excerpt, code chips, matrix/crosstab-like table, and report page preview.
 - The mock uses motion, but `prefers-reduced-motion` disables the animation.
 - Section color uses the same shell / paper tokens as the app UI, with accent colors pulled from the product palette.
-- The feature and trust bands use dark shell backgrounds with subtle accent tints, not card-heavy SaaS decoration.
+- The feature, source-to-report, research-loop, and trust bands use dark shell backgrounds with rounded section containers and subtle accent tints, not card-heavy SaaS decoration.
 - Mobile collapses grids to one column and preserves horizontal overflow safety.
 
 ### Current messaging rules
 
-- Do say: full-featured, interview-centered, close reading, coding, cases, attributes, analysis, AI assist, exportable evidence, data safety, roadmap.
+- Do say: interview-centered, close reading, coding, cases, attributes, analysis, AI assist, exportable evidence, data safety, roadmap.
+- Tone should feel like a useful human-built research tool, not enterprise SaaS. Prefer plain, specific, slightly lively copy over institutional seriousness.
+- Avoid copy that is clever but unclear. The hero should make the product category and workflow legible immediately.
 - Do not say in homepage body copy: alpha, free, open source, self-host, GitHub, or "serious enough for alpha."
+- Do not literally call the product "indie" in the public hero; that reads too plain and self-descriptive.
 - Roadmap belongs on the page so people understand trajectory without mistaking future capabilities for shipped features.
 - Safety reassurance belongs on the page because researchers need to trust that their work is recoverable and portable before trying the product.
+
+### Copy review artifact
+
+A local copy deck for review was generated at:
+
+```text
+output/doc/fieldnote-copy-deck.docx
+output/doc/fieldnote-copy-deck.md
+```
+
+`output/` is ignored. Treat these as local review artifacts that should be regenerated when the public homepage or core in-app orientation copy changes.
 
 ### Current access model
 
@@ -122,6 +139,44 @@ Public access is intentionally gated for the first tester cohorts:
 insert into public.fieldnote_access_invites (email, notes)
 values ('researcher@example.edu', 'May 2026 tester cohort');
 ```
+
+## Current signed-in app polish
+
+The signed-in app should feel like the same product as the landing page, but it remains a working research environment rather than a marketing surface.
+
+### App visual rules
+
+- The global app header uses the dark shell with a thin multicolor accent rail pulled from the product palette.
+- The work area stays light. Dark rounded bands are for the public homepage and occasional trust/feature emphasis, not normal working panels.
+- Detail-toolbar titles are always serif `T1`, including Classify, Analyze, and Report. The eyebrow above them remains sans `T7`.
+- Primary buttons can use the Fieldnote accent gradient sparingly; secondary controls should stay calm and work-like.
+- Tables, query results, source rows, and report snapshots should read like research ledgers or artifacts, not generic SaaS cards.
+- Analyze filter controls should read as a single working band, not scattered form pieces. The filter gradient spans the full middle work column with internal padding, and `Clear filters` sits in the Attributes control row beside attribute chips/add-filter controls.
+
+### Mode band rules
+
+Every signed-in mode should use the same two-band rhythm below the global detail toolbar:
+
+1. **Mode preface strip** — fixed shared rhythm, currently `--mode-preface-height: 78px`. It spans the full middle work column and contains the mode-specific working controls: active codes, source register controls, Analyze tabs, or the Overview project heading.
+2. **Mode orientation band** — also spans the full middle work column. It explains the current pass and uses a two-column copy/points layout.
+
+The content below those bands may be inset, centered, or reader-width depending on the mode. The bands themselves should not jump in width, height, or type treatment when switching modes.
+
+### Implementation touchpoints
+
+- `src/styles/app-new-shell.css` — dark header, shared `--mode-preface-height`, full-width preface strip overrides, shell-level polish.
+- `src/styles/app-workspace.css` — shared `ModeOrientation` treatment, data ledger rows, query/analyze surface polish, detail-card orientation breakout.
+- `src/styles/app-overview.css` — Overview preface/orientation rhythm plus centered content below.
+- `src/styles/app-frame.css` — detail-card padding variable and unified serif `.static-detail-title`.
+- `src/analyze/AnalyzeDetail.tsx` — named query-builder slots so Text, Code, AND filters, Case, Attributes, Clear, saved-query name, and Save query align predictably.
+- `src/styles/app-components.css` — shared header search/sync styling and Overview safety surface.
+- `src/report/ReportPreview.css` — report snapshot artifact styling.
+
+### Open design follow-ups
+
+- Continue app polish mode by mode after this shared-shell cleanup: sidebars, right-rail panels, inspector controls, empty states, and AI surfaces still need the same level of craft.
+- Keep testing intermediate desktop widths. The top rail and right rail have been improved, but app polish should continue to check narrow desktop behavior before commit.
+- Do not let future copy or visual updates reintroduce a split between "homepage personality" and "app utility." The homepage can be more editorial; the app should be calmer, but it should still feel designed.
 
 ## Original landing page plan
 

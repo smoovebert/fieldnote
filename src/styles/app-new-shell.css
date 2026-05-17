@@ -11,6 +11,7 @@
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "ss01", "cv11", "calt";
   letter-spacing: -0.005em;
+  --mode-preface-height: 78px;
 }
 
 /* ----- Sidebar shell ------------------------------------------------- */
@@ -397,12 +398,65 @@
 /* ----- Code-mode active-codes-bar ---------------------------------- */
 .app-shell[data-shell="new"] .active-codes-bar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--s-4);
+  box-sizing: border-box;
+  min-height: var(--mode-preface-height);
   padding: var(--s-3) var(--s-5);
   background: var(--paper);
   border-bottom: 1px solid var(--rule-soft);
+}
+
+/* Shared strip directly above the mode-orientation band. Organize,
+   Refine, Classify, and Analyze live in the older padded detail-card
+   surface, so this pulls their mode prefaces out to the same full
+   work-column width as Code and Report. */
+.app-shell[data-shell="new"] .detail-card > .source-register-heading,
+.app-shell[data-shell="new"] .detail-card > .refine-header,
+.app-shell[data-shell="new"] .detail-card > .analyze-tabbar {
+  box-sizing: border-box;
+  min-height: var(--mode-preface-height);
+  margin:
+    -26px
+    calc(var(--detail-card-pad-x, 28px) * -1)
+    0;
+  padding: 0 var(--detail-card-pad-x, 28px);
+  border-bottom: 1px solid var(--rule-soft);
+  background:
+    linear-gradient(90deg, color-mix(in oklch, var(--c-cyan) 5%, transparent), transparent 44%),
+    var(--paper);
+}
+
+.app-shell[data-shell="new"] .organize-surface,
+.app-shell[data-shell="new"] .refine-surface,
+.app-shell[data-shell="new"] .classify-surface,
+.app-shell[data-shell="new"] .analyze-surface {
+  gap: 0;
+}
+
+.app-shell[data-shell="new"] .detail-card > .analyze-tabbar {
+  align-items: center;
+}
+
+.app-shell[data-shell="new"] .source-register-heading + .mode-orientation,
+.app-shell[data-shell="new"] .refine-header + .mode-orientation,
+.app-shell[data-shell="new"] .analyze-tabbar + .mode-orientation {
+  border-top: 0;
+}
+
+.app-shell[data-shell="new"] .detail-card > .mode-orientation + * {
+  margin-top: 18px;
+}
+
+.app-shell[data-shell="new"] .analyze-surface > .query-builder {
+  box-sizing: border-box;
+  margin-left: calc(var(--detail-card-pad-x, 28px) * -1);
+  margin-right: calc(var(--detail-card-pad-x, 28px) * -1);
+  padding:
+    16px
+    var(--detail-card-pad-x, 28px)
+    18px;
 }
 
 .app-shell[data-shell="new"] .active-codes-bar-text {
@@ -1051,7 +1105,10 @@
 
 .app-shell[data-shell="new"] .app-header {
   grid-column: 1 / -1;
-  background: var(--shell);
+  background:
+    linear-gradient(90deg, var(--c-teal), var(--c-cyan) 22%, var(--c-amber) 48%, var(--c-moss) 72%, var(--c-plum)) top left / 100% 2px no-repeat,
+    radial-gradient(circle at 38% 0%, color-mix(in oklch, var(--c-cyan) 10%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in oklch, var(--shell) 92%, white), var(--shell));
   color: var(--shell-ink);
   border-bottom: 1px solid var(--shell-rule);
   display: grid;
@@ -1220,7 +1277,7 @@
 }
 
 .app-shell[data-shell="new"] .app-header .brand-block:hover {
-  background: var(--shell-deep);
+  background: color-mix(in oklch, var(--shell-deep) 82%, var(--c-teal));
 }
 
 /* The "F" mark is intentionally hidden under the new brand recipe
@@ -1250,7 +1307,7 @@
   align-items: center;
   gap: var(--s-2);
   padding: var(--s-1) var(--s-3);
-  background: var(--shell-deep);
+  background: color-mix(in oklch, var(--shell-deep) 86%, var(--c-teal));
   color: var(--shell-ink-2);
   border: 1px solid var(--shell-rule);
   border-radius: 99px;
@@ -1259,7 +1316,7 @@
 }
 
 .app-shell[data-shell="new"] .app-header .app-header-project:hover {
-  background: oklch(0.24 0.012 235);
+  background: color-mix(in oklch, var(--shell-deep) 72%, var(--c-cyan));
   color: var(--shell-ink);
 }
 
@@ -1293,16 +1350,19 @@
   color: var(--shell-ink-2);
   cursor: pointer;
   font: 500 13px/1 var(--font-ui);
+  position: relative;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
 .app-shell[data-shell="new"] .app-header-modes button:hover {
   color: var(--shell-ink);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .app-shell[data-shell="new"] .app-header-modes button.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklch, var(--c-teal) 16%, transparent);
   color: var(--shell-ink);
-  box-shadow: none;
+  box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--c-cyan) 70%, white);
 }
 
 .app-shell[data-shell="new"] .app-header-modes button svg {
@@ -1332,7 +1392,7 @@
   gap: var(--s-2);
   padding: var(--s-1) var(--s-3);
   border-radius: 99px;
-  background: var(--shell-deep);
+  background: color-mix(in oklch, var(--shell-deep) 84%, var(--c-moss));
   color: var(--shell-ink-3);
   font: var(--t-ui-sm);
   border: 0;
@@ -1353,7 +1413,7 @@
 }
 
 .app-shell[data-shell="new"] .app-header .header-icon-button {
-  background: transparent;
+  background: color-mix(in oklch, var(--shell-deep) 70%, transparent);
   border: 1px solid var(--shell-rule);
   border-radius: var(--r-2);
   color: var(--shell-ink-3);
@@ -1405,4 +1465,3 @@
   background: var(--shell-deep);
   color: var(--shell-ink);
 }
-

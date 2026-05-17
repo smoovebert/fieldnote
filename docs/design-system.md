@@ -110,6 +110,18 @@ spacing:
 > The body of this file is kept for historical reference only and should not
 > drive new styling work.
 
+> **Landing note, 2026-05-16.** The public homepage now intentionally departs
+> from the older "quiet corporate lab" affect. Keep the product UI calm and
+> rigorous, but let the homepage feel more editorial and human: centered serif
+> hero type, dark rounded artifact bands, transcript/code/matrix/report objects,
+> and plain copy that avoids generic SaaS seriousness.
+
+> **Signed-in app polish note, 2026-05-16.** The signed-in shell now borrows
+> more of the homepage's confidence without becoming decorative: dark shell
+> with a thin multicolor accent rail, light work area, serif detail titles,
+> full-width mode preface/orientation bands, and research-artifact surfaces
+> for tables, snapshots, safety, and report output.
+
 ## Brand & Style
 The design system is engineered for the intellectual rigor of qualitative research. It prioritizes a "Zen-like" focus, transforming complex data density into a structured, navigable landscape. The brand personality is scholarly yet technologically advanced—think of it as a digital laboratory where the software recedes to let the researcher's insights take center stage.
 
@@ -136,8 +148,8 @@ Eight tiers, one job per role:
 
 | Tier | Token | Family · Size / LH · Weight | Tracking | Color | Role |
 |---|---|---|---|---|---|
-| **T1** | `--t-t1` | Newsreader · 32 / 1.15 · 500 | -0.018em | `--ink` | Page-defining titles (project, source, code as page subject) |
-| **T2** | `--t-t2` | Inter Tight · 22 / 1.2 · 500 | -0.012em | `--ink` | Page titles when no concrete subject (Analyze, Classify, Report) |
+| **T1** | `--t-t1` | Newsreader · 32 / 1.15 · 500 | -0.018em | `--ink` | Detail-toolbar titles across modes: project, source, code, Classify, Analyze, Report |
+| **T2** | `--t-t2` | Inter Tight · 22 / 1.2 · 500 | -0.012em | `--ink` | Mode-orientation titles and secondary page-level headings |
 | **T3** | `--t-t3` | Inter Tight · 16 / 1.35 · 500 | -0.005em | `--ink` | In-card section heads |
 | **T4** | `--t-t4` | Inter Tight · 14 / 1.4 · 500 | normal | `--ink` | Subheads, code names in lists, properties dd |
 | **T5** | `--t-t5` | Inter Tight · 13.5 / 1.5 · 400 | normal | `--ink-2` | **Body baseline** — paragraphs, descriptions |
@@ -164,7 +176,7 @@ New code should reference `--t-tN` directly.
 ### Rules
 
 1. **One job per role.** T7 is reserved for eyebrows above titles, right-rail panel headings, and table column headers — nowhere else.
-2. **Page titles are serif (T1)** when the page has a concrete subject. T2 sans is the fallback when it doesn't.
+2. **Detail-toolbar titles are serif (T1)** in every mode. Do not switch Classify, Analyze, or Report to sans just because they are mode labels; the top band should not change personality across modes.
 3. **Numbers earn their weight.** KPI numbers use Newsreader at 36px / 500. Inline counts use T8 mono.
 4. **Key/value contrast.** In properties dl: dt = T6 muted, dd = T4 dark. The value is one tier above the label.
 5. **No font-size below 11px. No font-weight below 400.**
@@ -185,6 +197,17 @@ Header responsiveness is intentionally decoupled from body responsiveness:
 - **Below 1024px:** do not attempt a cramped mobile layout yet. Show the wider-screen gate.
 
 The right rail should not collapse at 1260px. That breakpoint is too large for normal desktop browser windows and makes the app feel broken before the workspace is truly constrained.
+
+### Signed-In App Rhythm
+
+The signed-in workspace uses two stacked mode bands beneath the global detail toolbar:
+
+1. **Mode preface strip** — the band immediately above orientation. It has a shared `--mode-preface-height` of 78px and spans the full middle work column. It can contain active codes, source register controls, Analyze tabs, or the mode/project title, but its height and edge alignment should remain stable when switching modes.
+2. **Mode orientation band** — the explanatory band below the preface strip. It also spans the full middle work column. The copy inside can use a constrained grid, but the band itself should not be inset inside cards or padded detail surfaces.
+
+Older `detail-card` modes must allow these two bands to break out to the work-column edges. Code and Report already use the newer `document-panel` pattern; Organize, Refine, Classify, and Analyze should visually match them.
+
+Analyze-specific rule: the query/filter builder uses explicit layout slots (`Text`, `Code`, `Also coded with`, `Case`, `Attributes`, saved-query name). The gradient/filter band should span the full work column with internal padding, and `Clear filters` belongs inside the Attributes control row so it aligns with the active attribute chips and add-filter control.
 
 ## Elevation & Depth
 To maintain a clean and flat aesthetic, this design system avoids heavy drop shadows.
