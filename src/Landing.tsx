@@ -42,27 +42,6 @@ const VS_FIELDNOTE: string[] = [
   'AI assist is there when useful: suggestions, summaries, drafts, and BYOK.',
 ]
 
-const FEATURES: Array<{ num: string; eyebrow: string; h3: string; body: string; tags: string[] }> = [
-  {
-    num: '01', eyebrow: 'For interviews',
-    h3: 'Work from the transcript.',
-    body: 'Line numbers, overlapping codes, source memos, code memos, and project notes stay near the thing you are reading.',
-    tags: ['Line numbers', 'Multi-code', 'Memos', 'Reader view'],
-  },
-  {
-    num: '02', eyebrow: 'For comparison',
-    h3: 'Compare sources and cases.',
-    body: 'Cases, attributes, saved questions, matrices, crosstabs, word frequency, and co-occurrence all live in the same project.',
-    tags: ['Saved queries', 'Matrix', 'Crosstab', 'Co-occurrence'],
-  },
-  {
-    num: '03', eyebrow: 'For evidence',
-    h3: 'Export usable evidence.',
-    body: 'Make PDF reports, Word docs, coded-excerpt CSVs, codebooks, case sheets, memos, charts, and XLSX workbooks.',
-    tags: ['PDF', 'Word', 'CSV', 'XLSX'],
-  },
-]
-
 const ARTIFACTS: Array<{ step: string; title: string; kind: 'source' | 'code' | 'matrix' | 'report' }> = [
   { step: 'Source', title: 'Interview excerpt', kind: 'source' },
   { step: 'Code', title: 'Close reading', kind: 'code' },
@@ -165,7 +144,7 @@ export function Landing() {
         </div>
         <nav className="landing-nav-links">
           <a className="landing-nav-link" href="#workflow">Workflow</a>
-          <a className="landing-nav-link" href="#features">Features</a>
+          <a className="landing-nav-link" href="#capabilities">Capabilities</a>
           <a className="landing-nav-link" href="#roadmap">Roadmap</a>
           <button type="button" className="landing-nav-link" onClick={() => openAuth('sign-in')}>Sign in</button>
         </nav>
@@ -174,10 +153,9 @@ export function Landing() {
       <section className="landing-hero" aria-labelledby="hero-h1">
         <div className="landing-hero-inner">
           <div className="landing-hero-copy">
-            <p className="landing-eyebrow">QDA for interview work</p>
             <h1 id="hero-h1" className="landing-hero-h1">
               <span className="landing-hero-lead">
-                Read the material.<br />Code what matters.<br />Find the pattern.
+                QDA for researchers,<br />not procurement departments.
               </span>
               <span className="landing-hero-cont">
                 A web workspace for transcripts, PDFs, codes, cases, queries, and reports.
@@ -276,7 +254,6 @@ export function Landing() {
       <section className="landing-evidence" aria-labelledby="evidence-h2">
         <div className="landing-evidence-inner">
           <div className="landing-evidence-head">
-            <p className="landing-eyebrow on-dark">Source to report</p>
             <h2 id="evidence-h2" className="landing-evidence-h2">
               One quote can become<br /><em>a whole thread.</em>
             </h2>
@@ -335,7 +312,6 @@ export function Landing() {
       <section className="landing-loop" id="workflow" aria-labelledby="loop-h2">
         <div className="landing-loop-grid">
           <div className="landing-loop-intro">
-            <p className="landing-eyebrow">The research loop</p>
             <h2 id="loop-h2" className="landing-loop-h2">
               The usual research mess,<br /><em>in a sane order.</em>
             </h2>
@@ -359,7 +335,6 @@ export function Landing() {
 
       <section className="landing-vs" aria-labelledby="vs-h2">
         <div className="landing-vs-inner">
-          <p className="landing-eyebrow">Why Fieldnote</p>
           <h2 id="vs-h2" className="landing-vs-h2">
             Made for people doing the work, <em>not people approving the purchase order.</em>
           </h2>
@@ -382,33 +357,11 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="landing-features" id="features" aria-labelledby="features-h2">
-        <div className="landing-features-inner">
-          <div className="landing-features-intro">
-            <p className="landing-eyebrow">What you get</p>
-            <h2 id="features-h2" className="landing-features-h2">The unglamorous parts, handled.</h2>
-          </div>
-          <div className="landing-features-grid">
-            {FEATURES.map((feature) => (
-              <article key={feature.num} className="landing-feature-card">
-                <p className="landing-feature-num">{feature.num} / {feature.eyebrow.toUpperCase()}</p>
-                <h3 className="landing-feature-h3">{feature.h3}</h3>
-                <p className="landing-feature-body">{feature.body}</p>
-                <div className="landing-feature-tags">
-                  {feature.tags.map((tag) => <span key={tag} className="landing-feature-tag">{tag}</span>)}
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-capabilities" aria-labelledby="capabilities-h2">
+      <section className="landing-capabilities" id="capabilities" aria-labelledby="capabilities-h2">
         <div className="landing-capabilities-inner">
           <div className="landing-capabilities-head">
-            <p className="landing-eyebrow">Current capabilities</p>
             <h2 id="capabilities-h2" className="landing-capabilities-h2">
-              It already does a lot.
+              The unglamorous parts, handled.
             </h2>
             <p>
               Import, code, refine, classify, analyze, export. The core interview-work stack is here, with AI assist and backups where they belong: useful, visible, and optional.
@@ -438,7 +391,6 @@ export function Landing() {
       <section className="landing-trust" aria-labelledby="trust-h2">
         <div className="landing-trust-inner">
           <div className="landing-trust-head">
-            <p className="landing-eyebrow on-dark">Data safety</p>
             <h2 id="trust-h2" className="landing-trust-h2">
               Your work should not feel fragile.
             </h2>
@@ -467,7 +419,6 @@ export function Landing() {
       <section className="landing-roadmap" id="roadmap" aria-labelledby="roadmap-h2">
         <div className="landing-roadmap-inner">
           <div className="landing-roadmap-head">
-            <p className="landing-eyebrow">Roadmap</p>
             <h2 id="roadmap-h2" className="landing-roadmap-h2">
               More materials, same idea.
             </h2>
