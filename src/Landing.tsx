@@ -70,7 +70,12 @@ const FLOW_ROWS: {
    numbers + a coded passage, and the Active Codes inspector. */
 function HeroMock() {
   return (
-    <div className="landing-hero-shot" role="img" aria-label="Fieldnote Code view: a coded interview transcript with the Active Codes inspector.">
+    <div
+      className="landing-hero-shot"
+      data-play
+      role="img"
+      aria-label="Fieldnote Code view: a coded interview transcript with the Active Codes inspector."
+    >
       <header className="ln-mtop">
         <div className="ln-mbrand-nm">Fieldnote</div>
         <nav className="ln-mtabs">
@@ -376,9 +381,13 @@ export function Landing() {
     // Reveal-on-enter. Deterministic rect check (survives fast scroll /
     // scrollbar drag / anchor jumps that an IntersectionObserver would skip).
     let pending = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'))
+    // Elements that play a one-shot in-UI animation when scrolled into view.
+    let playPending = Array.from(root.querySelectorAll<HTMLElement>('[data-play]'))
     if (reduce) {
       pending.forEach((el) => el.classList.add('is-in'))
+      playPending.forEach((el) => el.classList.add('is-playing'))
       pending = []
+      playPending = []
     }
 
     // Progress bar + nav condense + restrained hero parallax (rAF-throttled).
@@ -401,6 +410,16 @@ export function Landing() {
           pending = pending.filter((el) => {
             if (el.getBoundingClientRect().top < trigger) {
               el.classList.add('is-in')
+              return false
+            }
+            return true
+          })
+        }
+        if (playPending.length) {
+          const trigger = window.innerHeight * 0.85
+          playPending = playPending.filter((el) => {
+            if (el.getBoundingClientRect().top < trigger) {
+              el.classList.add('is-playing')
               return false
             }
             return true
