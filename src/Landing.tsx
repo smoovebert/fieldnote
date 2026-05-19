@@ -484,21 +484,6 @@ export function Landing() {
 
             <div className="landing-mock-stage">
               <HeroMock />
-              <div className="landing-margin-note" aria-hidden="true">
-                <svg
-                  className="landing-margin-arrow"
-                  viewBox="0 0 80 60"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M 70 8 C 50 14, 28 26, 14 50" />
-                  <path d="M 8 44 L 14 50 L 22 46" />
-                </svg>
-                <div className="landing-margin-text">a coded passage, plain as that</div>
-              </div>
             </div>
           </div>
         </section>
@@ -699,7 +684,7 @@ export function Landing() {
                 className="landing-btn landing-btn-dark-ghost"
                 onClick={() => openAuth('sign-in')}
               >
-                Read the docs
+                Sign in
               </button>
             </div>
           </div>

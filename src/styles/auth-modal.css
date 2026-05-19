@@ -1,0 +1,169 @@
+/* Auth modal — self-contained so it renders correctly on every route
+   (the public Landing page does NOT load app-frame.css). Tokens come
+   from the global :root in index.css / tokens.css, with literal
+   fallbacks so the modal is never unstyled. */
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: color-mix(in oklch, #0b1220 56%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.auth-card {
+  position: relative;
+  width: min(440px, 100%);
+  margin: auto;
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line, #e5eaf2);
+  border-radius: 8px;
+  padding: 28px 24px 24px;
+  background: var(--surface, #ffffff);
+  box-shadow: 0 24px 70px rgba(31, 42, 68, 0.28);
+  font-family: var(--font-ui, system-ui, sans-serif);
+}
+
+.auth-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted, #6f7785);
+  cursor: pointer;
+}
+
+.auth-close:hover {
+  background: var(--soft, #f1f3f7);
+  color: var(--ink, #14161a);
+}
+
+.auth-copy {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-copy h2 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--ink, #14161a);
+}
+
+.auth-copy p,
+.auth-status {
+  margin: 0;
+  color: var(--muted, #6f7785);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.auth-field {
+  display: grid;
+  gap: 7px;
+  color: var(--ink, #14161a);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.auth-field input {
+  height: 40px;
+  border: 1px solid var(--line, #e5eaf2);
+  border-radius: 7px;
+  padding: 0 11px;
+  outline: none;
+  color: var(--ink, #14161a);
+  background: #fbfaf7;
+  font: inherit;
+  font-weight: 400;
+}
+
+.auth-field input:focus {
+  border-color: var(--accent, #2f80ed);
+}
+
+.auth-terms,
+.auth-access-note,
+.auth-terms-note {
+  margin: 0;
+  color: var(--muted, #6f7785);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.auth-access-note {
+  padding: 10px 12px;
+  border: 1px solid var(--rule-soft, var(--line, #e5eaf2));
+  border-radius: 7px;
+  background: var(--pane, var(--soft, #f1f3f7));
+}
+
+.auth-terms {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.auth-terms input {
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  accent-color: var(--accent, #2f80ed);
+}
+
+.auth-terms a,
+.auth-access-note a,
+.auth-terms-note a {
+  color: var(--accent, #2f80ed);
+  font-weight: 720;
+  text-decoration: none;
+}
+
+.auth-terms a:hover,
+.auth-access-note a:hover,
+.auth-terms-note a:hover {
+  text-decoration: underline;
+}
+
+.auth-submit,
+.auth-switch {
+  height: 40px;
+  border-radius: 7px;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 760;
+}
+
+.auth-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #1f2a44;
+  color: white;
+}
+
+.auth-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.auth-switch {
+  background: var(--soft, #f1f3f7);
+  color: var(--ink, #14161a);
+}

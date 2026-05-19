@@ -4,6 +4,7 @@ import type { MouseEvent } from 'react'
 import { LogIn, UserPlus, X } from 'lucide-react'
 import { createEarlyAccessAccount, earlyAccessRequestUrl } from './lib/earlyAccess'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
+import './styles/auth-modal.css'
 
 type AuthMode = 'sign-in' | 'sign-up'
 

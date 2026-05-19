@@ -47,7 +47,6 @@
   --action: oklch(0.50 0.10 200);
   --action-ink: oklch(0.99 0.005 85);
 
-  --font-hand: "Caveat", "Comic Sans MS", cursive;
   --landing-container: 1240px;
 
   min-height: 100vh;
@@ -260,41 +259,15 @@
 }
 .landing-hero .landing-actions { margin-bottom: 80px; }
 
-/* product mock — keep, with a margin annotation outside */
+/* product mock — centered under the hero, with an animated entrance */
 .landing-mock-stage {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr minmax(0, 880px) 1fr;
-  align-items: start;
-  gap: 0;
+  max-width: 880px;
+  margin: 0 auto;
   text-align: left;
-}
-.landing-margin-note {
-  grid-column: 3;
-  position: relative;
-  padding-top: 60px;
-  padding-left: 24px;
-  display: none;
-}
-.landing-margin-arrow {
-  position: absolute;
-  left: -10px;
-  top: 30px;
-  width: 80px;
-  height: 60px;
-  color: var(--c-rose);
-}
-.landing-margin-text {
-  font: 500 24px/1.15 var(--font-hand);
-  color: var(--c-rose);
-  max-width: 18ch;
-}
-@media (min-width: 1280px) {
-  .landing-margin-note { display: block; }
 }
 
 .landing-hero-shot {
-  grid-column: 1 / -1;
   background: #ffffff;
   border: 1px solid var(--rule);
   border-radius: 14px;
@@ -306,9 +279,17 @@
   display: grid;
   grid-template-rows: 38px 1fr;
   height: 520px;
+  animation: landing-hero-rise 0.7s 0.15s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
-@media (min-width: 1280px) {
-  .landing-hero-shot { grid-column: 1 / 3; max-width: 880px; }
+@keyframes landing-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .ln-mtop {
@@ -1118,5 +1099,6 @@
     transition: none;
   }
   .landing-mock-stage { transform: none; }
+  .landing-hero-shot { animation: none; }
   .landing-flow-copy { position: static; top: auto; }
 }
