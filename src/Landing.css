@@ -839,14 +839,6 @@
 }
 .landing-price-desc strong { font-weight: 500; color: var(--ink); }
 
-.landing-proof-foot {
-  margin-top: 32px;
-  font: 500 11px/1 var(--font-mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-
 /* -------- SAFETY (shell, editorial 2-column) -------- */
 .landing-safety {
   background: var(--shell);

@@ -543,7 +543,6 @@ export function Landing() {
               </article>
             </div>
 
-            <p className="landing-proof-foot">No procurement · no sales calls · no license keys</p>
           </div>
         </section>
 
