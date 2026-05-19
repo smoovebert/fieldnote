@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { AuthModal } from './AuthModal'
 import './Landing.css'
@@ -366,8 +366,61 @@ export function Landing() {
     setAuthOpen(true)
   }
 
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('.landing-root')
+    if (!root) return
+    const nav = root.querySelector<HTMLElement>('.landing-nav')
+    const hero = root.querySelector<HTMLElement>('.landing-hero')
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    // Reveal-on-enter. Deterministic rect check (survives fast scroll /
+    // scrollbar drag / anchor jumps that an IntersectionObserver would skip).
+    let pending = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'))
+    if (reduce) {
+      pending.forEach((el) => el.classList.add('is-in'))
+      pending = []
+    }
+
+    // Progress bar + nav condense + restrained hero parallax (rAF-throttled).
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        const y = window.scrollY
+        const docH = document.documentElement.scrollHeight - window.innerHeight
+        const progress = docH > 0 ? Math.min(1, Math.max(0, y / docH)) : 0
+        root.style.setProperty('--landing-progress', String(progress))
+        nav?.classList.toggle('is-scrolled', y > 8)
+        if (!reduce && hero) {
+          const t = Math.min(1, Math.max(0, y / (hero.offsetHeight || 1)))
+          root.style.setProperty('--hero-parallax', `${(t * -28).toFixed(1)}px`)
+        }
+        if (pending.length) {
+          const trigger = window.innerHeight * 0.92
+          pending = pending.filter((el) => {
+            if (el.getBoundingClientRect().top < trigger) {
+              el.classList.add('is-in')
+              return false
+            }
+            return true
+          })
+        }
+      })
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [])
+
   return (
     <div className="landing-root">
+      <div className="landing-progress" aria-hidden="true" />
       <header className="landing-nav">
         <div className="landing-wrap landing-nav-inner">
           <button
@@ -452,7 +505,7 @@ export function Landing() {
 
         <section className="landing-flow" id="workflow">
           <div className="landing-wrap">
-            <div className="landing-flow-top">
+            <div className="landing-flow-top" data-reveal>
               <h2>
                 The usual research mess,{' '}
                 <em>
@@ -484,6 +537,7 @@ export function Landing() {
                   key={row.step}
                   className={`landing-flow-row ${index % 2 === 1 ? 'is-flipped' : ''}`}
                   data-accent={row.accent}
+                  data-reveal
                 >
                   <div className="landing-flow-copy">
                     <span className="landing-flow-step">{row.step}</span>
@@ -503,13 +557,13 @@ export function Landing() {
 
         <section className="landing-proof" id="capabilities">
           <div className="landing-wrap">
-            <div className="landing-proof-head">
+            <div className="landing-proof-head" data-reveal>
               <h2>
                 <span className="landing-roman">A price you don’t have</span> to justify.
               </h2>
             </div>
 
-            <div className="landing-price-list">
+            <div className="landing-price-list" data-reveal>
               <article>
                 <p className="landing-price-when">today.</p>
                 <h3 className="landing-price-num">
@@ -548,7 +602,7 @@ export function Landing() {
 
         <section className="landing-safety">
           <div className="landing-wrap">
-            <div className="landing-section-top">
+            <div className="landing-section-top" data-reveal>
               <h2>
                 Your research is <em>safe with us.</em>
               </h2>
@@ -559,7 +613,7 @@ export function Landing() {
             </div>
             <div className="landing-safety-grid">
               {SAFETY_ITEMS.map(([num, accent, title, body]) => (
-                <article key={title} data-accent={accent}>
+                <article key={title} data-accent={accent} data-reveal>
                   <p>{num}</p>
                   <div>
                     <h3>{title}</h3>
@@ -581,10 +635,10 @@ export function Landing() {
 
         <section className="landing-brief">
           <div className="landing-wrap">
-            <div className="landing-brief-head">
+            <div className="landing-brief-head" data-reveal>
               <h2>Everything else, briefly.</h2>
             </div>
-            <div className="landing-brief-block">
+            <div className="landing-brief-block" data-reveal>
               <h3>Features.</h3>
               <p>Already in the app.</p>
               <table>
@@ -604,7 +658,7 @@ export function Landing() {
                 </tbody>
               </table>
             </div>
-            <div className="landing-brief-block" id="roadmap">
+            <div className="landing-brief-block" id="roadmap" data-reveal>
               <h3>Roadmap.</h3>
               <p>Coming up.</p>
               <table>
@@ -628,7 +682,7 @@ export function Landing() {
         </section>
 
         <section className="landing-cta">
-          <div className="landing-wrap landing-cta-inner">
+          <div className="landing-wrap landing-cta-inner" data-reveal>
             <h2>
               Bring a transcript. <em>Get unstuck.</em>
             </h2>

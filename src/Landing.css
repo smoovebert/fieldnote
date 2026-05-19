@@ -1015,21 +1015,58 @@
 .landing-footer nav a { color: var(--shell-ink-2); }
 .landing-footer nav a:hover { color: var(--shell-ink); }
 
-/* -------- scroll reveal -------- */
-@supports (animation-timeline: view()) {
-  .landing-flow-row,
-  .landing-price-list,
-  .landing-safety-grid,
-  .landing-brief-block,
-  .landing-cta-inner {
-    animation: landing-scroll-reveal both ease-out;
-    animation-timeline: view();
-    animation-range: entry 8% cover 30%;
-  }
+/* -------- scroll effects -------- */
+/* reading-progress bar (zero-width at top, so invisible until scroll) */
+.landing-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 60;
+  background: var(--c-teal);
+  transform: scaleX(var(--landing-progress, 0));
+  transform-origin: 0 50%;
+  pointer-events: none;
 }
-@keyframes landing-scroll-reveal {
-  from { opacity: 0.55; transform: translateY(22px); }
-  to { opacity: 1; transform: translateY(0); }
+
+/* nav condenses once you leave the hero */
+.landing-nav {
+  transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+.landing-nav.is-scrolled {
+  border-bottom-color: var(--rule);
+  background: color-mix(in oklch, var(--paper) 94%, transparent);
+  box-shadow:
+    0 1px 0 oklch(0 0 0 / 0.04),
+    0 10px 24px -20px oklch(0.2 0.05 220 / 0.30);
+}
+
+/* reveal-on-enter — cross-browser via IntersectionObserver -> .is-in */
+.landing-root [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+.landing-root [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* hero product mock — restrained parallax drift as the hero exits */
+.landing-mock-stage {
+  transform: translate3d(0, var(--hero-parallax, 0px), 0);
+  will-change: transform;
+}
+
+/* FLOW: copy pins briefly while its taller mock scrolls past */
+.landing-flow-copy {
+  position: sticky;
+  top: 96px;
+  align-self: start;
 }
 
 /* -------- responsive -------- */
@@ -1047,6 +1084,7 @@
   .landing-flow-row.is-flipped { grid-template-columns: 1fr; gap: 32px; }
   .landing-flow-row.is-flipped .landing-flow-copy,
   .landing-flow-row.is-flipped .landing-flow-shot { order: 0; }
+  .landing-flow-copy { position: static; top: auto; }
   .landing-flow-copy h3 { font-size: 30px; }
   .landing-safety-grid { grid-template-columns: 1fr; }
   .landing-safety-grid article:nth-child(odd),
@@ -1064,6 +1102,8 @@
   .landing-wrap { padding: 0 20px; }
   .landing-hero { padding-top: 56px; }
   .landing-hero h1 { font-size: 44px; }
+  .landing-circled { white-space: normal; padding: 0; }
+  .landing-circled .landing-doodle { display: none; }
   .landing-hero-shot { height: 380px; }
   .landing-nav-links a:nth-child(2),
   .landing-nav-links a:nth-child(3) { display: none; }
@@ -1071,9 +1111,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .landing-circled .landing-doodle path { animation: none; stroke-dashoffset: 0; }
-  .landing-flow-row,
-  .landing-price-list,
-  .landing-safety-grid,
-  .landing-brief-block,
-  .landing-cta-inner { animation: none; }
+  .landing-root [data-reveal],
+  .landing-root [data-reveal].is-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .landing-mock-stage { transform: none; }
+  .landing-flow-copy { position: static; top: auto; }
 }
