@@ -38,3 +38,6 @@ supabase/.temp
 
 # Local-only marketing copy working dir (not part of the repo)
 /UGC_BEHEMOTH AGENCY/
+
+# Playwright MCP scratch output (browser inspection during dev)
+/.playwright-mcp/

@@ -1,129 +1,360 @@
-// src/Landing.tsx
-//
-// Marketing landing page. Mirrors the design handoff at
-// /Users/smoovebert/Downloads/design_handoff_type_hierarchy 2/Fieldnote Landing.html
-// (and the README in the same bundle), translated into the existing
-// app's token vocabulary.
-//
-// Notably absent from the spec's "scrappy / self-hosted / open source"
-// framing: the current hosted build doesn't ship a self-host path
-// that a non-developer could realistically follow, so the marketing copy here
-// avoids "free", "open source", "self-host", and the GitHub link.
-// When a real self-host story exists, those claims can come back.
-
 import { useState } from 'react'
-import { ArrowRight, CheckCircle2 } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { AuthModal } from './AuthModal'
 import './Landing.css'
 
 type AuthMode = 'sign-in' | 'sign-up'
 
-const STAGES: Array<{ num: string; name: string; desc: string }> = [
-  { num: '01', name: 'Organize',  desc: 'Drop in transcripts, notes, PDFs, and spreadsheets. Keep the project from becoming a desktop folder named final_final_2.' },
-  { num: '02', name: 'Code',      desc: 'Mark the passage, add one code or several, and keep line numbers visible while you read.' },
-  { num: '03', name: 'Refine',    desc: 'Rename, merge, split, nest, and document codes when your first pass turns out to be only a first pass.' },
-  { num: '04', name: 'Classify',  desc: 'Make cases for people, sites, or groups. Add the attributes you will want later, because later always arrives.' },
-  { num: '05', name: 'Analyze',   desc: 'Filter excerpts, run matrices and crosstabs, and check word frequency or code co-occurrence without opening three other apps.' },
-  { num: '06', name: 'Report',    desc: 'Gather findings, excerpts, memos, and charts. Export PDF, Word, CSV, or XLSX.' },
-]
+type FlowMode = 'organize' | 'code' | 'refine' | 'classify' | 'analyze' | 'report'
 
-const VS_ENTERPRISE: string[] = [
-  '$1,000+ per seat per year, locked behind sales calls and license keys.',
-  'Desktop apps with file lock-in and brittle sync between machines.',
-  "Decades of accumulated UI — every feature that's ever existed, all visible at once.",
-  'Cloud features bolted on; collaboration is an afterthought.',
-  'Exports designed for the app, not for your manuscript.',
-]
-
-const VS_FIELDNOTE: string[] = [
-  'Web-based, autosaved, locally recoverable, and backed up when you want a copy in your own hands.',
-  'Six modes in a sane order: organize, code, refine, classify, analyze, report.',
-  'Exports that leave cleanly: PDF, Word, CSV, and XLSX.',
-  'AI assist is there when useful: suggestions, summaries, drafts, and BYOK.',
-]
-
-const ARTIFACTS: Array<{ step: string; title: string; kind: 'source' | 'code' | 'matrix' | 'report' }> = [
-  { step: 'Source', title: 'Interview excerpt', kind: 'source' },
-  { step: 'Code', title: 'Close reading', kind: 'code' },
-  { step: 'Analyze', title: 'Pattern check', kind: 'matrix' },
-  { step: 'Report', title: 'Evidence page', kind: 'report' },
-]
-
-const CAPABILITIES: Array<{ group: string; body: string; items: string[] }> = [
+const FLOW_ROWS: {
+  step: string
+  title: string
+  titleEm: string
+  body: string
+  mode: FlowMode
+  accent: string
+}[] = [
   {
-    group: 'Close reading',
-    body: 'Bring the interview materials into one place and keep the context from wandering off.',
-    items: ['TXT/MD/CSV import', 'DOCX interviews', 'PDF page coding', 'Folders, memos, and archive'],
+    step: '01 / organize.',
+    title: 'Drop everything in,',
+    titleEm: 'stop renaming files.',
+    body: 'Drop in transcripts, notes, PDFs, and spreadsheets. Keep the project from becoming a desktop folder named final_final_2.',
+    mode: 'organize',
+    accent: 'teal',
   },
   {
-    group: 'Codebook work',
-    body: 'Code the passage, then admit the codebook needs changing and change it.',
-    items: ['Overlapping codes', 'Nested code tree', 'Drag to nest/root', 'Merge, split, and duplicate review'],
+    step: '02 / code.',
+    title: 'Mark the passage,',
+    titleEm: 'add what it means.',
+    body: 'Mark the passage, add one code or several, and keep line numbers visible while you read.',
+    mode: 'code',
+    accent: 'rose',
   },
   {
-    group: 'Comparison',
-    body: 'Move from marked passages to patterns across people, groups, and attributes.',
-    items: ['Cases and attributes', 'Filtered excerpts', 'Matrix coding', 'Crosstabs and co-occurrence'],
+    step: '03 / refine.',
+    title: 'Your first pass was a first pass.',
+    titleEm: 'Fix it.',
+    body: 'Rename, merge, split, nest, and document codes when your first pass turns out to be only a first pass.',
+    mode: 'refine',
+    accent: 'amber',
   },
   {
-    group: 'Outputs and safety',
-    body: 'Get the work out again. Reports, tables, backups, the whole escape hatch.',
-    items: ['PDF and Word reports', 'CSV/XLSX exports', 'Project backups', 'AI consent and BYOK'],
-  },
-]
-
-const TRUST_CONTROLS: Array<{ title: string; body: string }> = [
-  {
-    title: 'Private by default',
-    body: 'Projects are scoped to your signed-in account in Supabase, with database policies limiting which rows the browser can read.',
+    step: '04 / classify.',
+    title: 'Make cases for everyone.',
+    titleEm: 'Add what you will need later.',
+    body: 'Make cases for people, sites, or groups. Add the attributes you will want later, because later always arrives.',
+    mode: 'classify',
+    accent: 'indigo',
   },
   {
-    title: 'Autosave plus local recovery',
-    body: 'Changes save to the cloud, and Fieldnote writes a browser recovery snapshot before the network save starts.',
+    step: '05 / analyze.',
+    title: 'Find the pattern',
+    titleEm: 'across every case.',
+    body: 'Filter excerpts, run matrices and crosstabs, and check word frequency or code co-occurrence without opening three other apps.',
+    mode: 'analyze',
+    accent: 'cyan',
   },
   {
-    title: 'Portable backups and exports',
-    body: 'Download a .fieldnote.json project backup, or export reports and raw data as PDF, Word, CSV, and XLSX.',
-  },
-  {
-    title: 'AI stays optional',
-    body: 'Hosted AI asks for consent first. BYOK keys are encrypted, used server-side, and never returned to the browser.',
-  },
-  {
-    title: 'No tracking stack',
-    body: 'No Google Analytics, Segment, Mixpanel, ad pixels, or behavioral tracking scripts on the product.',
-  },
-  {
-    title: 'Delete and leave cleanly',
-    body: 'Delete projects or your account from inside the app. Account deletion removes related project rows server-side.',
+    step: '06 / report.',
+    title: 'Pull it together.',
+    titleEm: 'Get it out.',
+    body: 'Gather findings, excerpts, memos, and charts. Export PDF, Word, CSV, or XLSX.',
+    mode: 'report',
+    accent: 'moss',
   },
 ]
 
-const ROADMAP: Array<{ horizon: string; title: string; body: string; items: string[] }> = [
-  {
-    horizon: 'Media depth',
-    title: 'Audio, video, images, and linked transcripts.',
-    body: 'Add common field materials to the same coding and memoing space.',
-    items: ['Speaker-labeled transcription', 'Transcript-linked playback', 'Image region coding'],
-  },
-  {
-    horizon: 'Team research',
-    title: 'Collaboration without losing analytic control.',
-    body: 'Support shared projects, reviewer roles, and careful comparison between coders.',
-    items: ['Shared projects', 'Inter-coder reliability', 'Conflict review'],
-  },
-  {
-    horizon: 'Visual analysis',
-    title: 'Maps and charts that explain the evidence.',
-    body: 'Turn query results into charts and maps that can travel into reports.',
-    items: ['Hierarchy charts', 'Concept maps', 'Relationship maps'],
-  },
-  {
-    horizon: 'Research intelligence',
-    title: 'Ask questions across the corpus.',
-    body: 'Use source-grounded AI to find passages, summarize patterns, and keep citations attached.',
-    items: ['Ask your data', 'Citation-first answers', 'Cross-project search'],
-  },
+/* The hero product mock — a faithful slice of the real Code view:
+   dark top nav with mode tabs, Sources rail, transcript with line
+   numbers + a coded passage, and the Active Codes inspector. */
+function HeroMock() {
+  return (
+    <div className="landing-hero-shot" role="img" aria-label="Fieldnote Code view: a coded interview transcript with the Active Codes inspector.">
+      <header className="ln-mtop">
+        <div className="ln-mbrand-nm">Fieldnote</div>
+        <nav className="ln-mtabs">
+          <span className="ln-mtab">Overview</span>
+          <span className="ln-mtab">Organize</span>
+          <span className="ln-mtab active">Code</span>
+          <span className="ln-mtab">Refine</span>
+          <span className="ln-mtab">Classify</span>
+          <span className="ln-mtab">Analyze</span>
+          <span className="ln-mtab">Report</span>
+        </nav>
+        <span />
+      </header>
+      <div className="ln-mbody3">
+        <aside className="ln-mrail">
+          <div className="ln-mrail-head">Sources</div>
+          <div className="ln-mrail-item">
+            <span className="ln-ic" />
+            <span>Internals</span>
+            <span className="ln-mrail-meta">2</span>
+          </div>
+          <div className="ln-mrail-leaf">
+            <span className="ln-dot" />
+            <span>Interview 07</span>
+            <span className="ln-mrail-meta">0</span>
+          </div>
+          <div className="ln-mrail-leaf active">
+            <span className="ln-dot" />
+            <span>Interview 03</span>
+            <span className="ln-mrail-meta">1</span>
+          </div>
+        </aside>
+
+        <main className="ln-mcenter">
+          <div className="ln-meb">Detail view</div>
+          <h3 className="ln-mtitle">Interview 03</h3>
+          <div className="ln-mmeta">
+            Interview 03<span className="ln-sep">·</span>137 words
+            <span className="ln-sep">·</span>1 code applied
+          </div>
+          <div className="ln-mcodecard">
+            <div className="ln-mcc-head">
+              <div className="ln-mcc-head-l">
+                <span className="ln-mcc-dot" />
+                <span className="ln-mcc-name">Access barriers</span>
+              </div>
+              <span className="ln-mcc-btn">⌖ Code selection</span>
+            </div>
+            <div className="ln-mreader">
+              <div className="ln-mline">
+                <span className="ln-mnum">3</span>
+                <span className="ln-mtext">
+                  <span className="ln-speaker">Participant:</span>It was not just one thing. The
+                  form asked for documents I did
+                </span>
+              </div>
+              <div className="ln-mline">
+                <span className="ln-mnum">4</span>
+                <span className="ln-mtext">
+                  not have anymore, and every office told me to call someone else.
+                </span>
+              </div>
+              <div className="ln-mline">
+                <span className="ln-mnum">5</span>
+                <span className="ln-mtext">
+                  After a while it felt like the system was testing whether I would give up.
+                </span>
+              </div>
+              <div className="ln-mline">
+                <span className="ln-mnum">6</span>
+                <span className="ln-mtext" />
+              </div>
+              <div className="ln-mline">
+                <span className="ln-mnum">7</span>
+                <span className="ln-mtext">
+                  <span className="ln-speaker">Interviewer:</span>What helped you keep going?
+                </span>
+              </div>
+              <div className="ln-mline">
+                <span className="ln-mnum">8</span>
+                <span className="ln-mtext" />
+              </div>
+              <div className="ln-mline">
+                <span className="ln-mnum">9</span>
+                <span className="ln-mtext">
+                  <span className="ln-speaker">Participant:</span>
+                  <span className="ln-mmark">She explained the steps in plain language</span>
+                </span>
+              </div>
+              <div className="ln-mline">
+                <span className="ln-mnum">10</span>
+                <span className="ln-mtext">
+                  <span className="ln-mmark">and wrote down what to bring next time.</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <aside className="ln-minspect">
+          <div className="ln-minsp-head">Active Codes</div>
+          <div className="ln-mcode-row active">
+            <span className="ln-mcode-row-dot" style={{ background: 'var(--c-rose)' }} />
+            <span>Access barriers</span>
+            <span className="ln-mcode-row-refs">3</span>
+          </div>
+          <div className="ln-mcode-row">
+            <span className="ln-mcode-row-dot" style={{ background: 'var(--c-cyan)' }} />
+            <span>Application challenges</span>
+            <span className="ln-mcode-row-refs">0</span>
+          </div>
+          <div className="ln-mcode-row">
+            <span className="ln-mcode-row-dot" style={{ background: 'var(--c-amber)' }} />
+            <span>Gathering feedback</span>
+            <span className="ln-mcode-row-refs">1</span>
+          </div>
+          <div className="ln-mcode-row">
+            <span className="ln-mcode-row-dot" style={{ background: 'var(--c-indigo)' }} />
+            <span>Identifying pain points</span>
+            <span className="ln-mcode-row-refs">0</span>
+          </div>
+          <div className="ln-mcode-row">
+            <span className="ln-mcode-row-dot" style={{ background: 'var(--c-moss)' }} />
+            <span>Process obstacles</span>
+            <span className="ln-mcode-row-refs">0</span>
+          </div>
+          <div className="ln-mcode-row">
+            <span className="ln-mcode-row-dot" style={{ background: 'var(--c-teal)' }} />
+            <span>Trust and safety</span>
+            <span className="ln-mcode-row-refs">0</span>
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+function FlowMock({ mode }: { mode: FlowMode }) {
+  if (mode === 'organize') {
+    return (
+      <div className="ln-mm">
+        <div className="ln-mm-top">
+          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Organize</span>
+        </div>
+        <div className="ln-mm-body">
+          <div className="ln-mm-h">Sources</div>
+          <div className="ln-mm-trow"><span className="ln-ic" /><span>Internals</span><span className="ln-ct">14</span></div>
+          <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Interview 01.txt</span><span className="ln-ct">3</span></div>
+          <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Interview 02.docx</span><span className="ln-ct">7</span></div>
+          <div className="ln-mm-tleaf active"><span className="ln-dot" /><span>Interview 03.docx</span><span className="ln-ct">11</span></div>
+          <div className="ln-mm-tleaf"><span className="ln-dot" /><span>fieldnotes_2025-09.md</span><span className="ln-ct">2</span></div>
+          <div className="ln-mm-h" style={{ marginTop: 6 }}>PDFs</div>
+          <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Background.pdf</span><span className="ln-ct">0</span></div>
+          <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Final_report_v3.pdf</span><span className="ln-ct">5</span></div>
+        </div>
+      </div>
+    )
+  }
+  if (mode === 'code') {
+    return (
+      <div className="ln-mm">
+        <div className="ln-mm-top">
+          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Code</span>
+        </div>
+        <div className="ln-mm-body">
+          <div className="ln-mm-h">Interview 03 · lines 7–11</div>
+          <div className="ln-mm-reader">
+            <div className="ln-ln"><span className="ln-ln-num">7</span><span className="ln-ln-txt"><span className="ln-sp">I:</span>What helped you keep going?</span></div>
+            <div className="ln-ln"><span className="ln-ln-num">8</span><span className="ln-ln-txt" /></div>
+            <div className="ln-ln"><span className="ln-ln-num">9</span><span className="ln-ln-txt"><span className="ln-sp">P:</span><span className="ln-mm-mark">She explained the steps in plain language</span></span></div>
+            <div className="ln-ln"><span className="ln-ln-num">10</span><span className="ln-ln-txt"><span className="ln-mm-mark">and wrote down what to bring next time.</span></span></div>
+            <div className="ln-ln"><span className="ln-ln-num">11</span><span className="ln-ln-txt">After that I knew what to expect.</span></div>
+          </div>
+          <span className="ln-mm-codepill"><span className="ln-dot" />Plain-language support</span>
+        </div>
+      </div>
+    )
+  }
+  if (mode === 'refine') {
+    return (
+      <div className="ln-mm">
+        <div className="ln-mm-top">
+          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Refine</span>
+        </div>
+        <div className="ln-mm-body">
+          <div className="ln-mm-h">Codebook</div>
+          <div className="ln-mm-tree">
+            <div className="ln-mm-tnode active"><span className="ln-caret">▾</span><span className="ln-sw" style={{ background: 'var(--c-rose)' }} /><span>Access barriers</span><span className="ln-ct">24</span></div>
+            <div className="ln-mm-tchild"><span className="ln-sw" style={{ background: 'var(--c-rose)' }} /><span>Documentation</span><span className="ln-ct">8</span></div>
+            <div className="ln-mm-tchild"><span className="ln-sw" style={{ background: 'var(--c-rose)' }} /><span>Eligibility</span><span className="ln-ct">6</span></div>
+            <div className="ln-mm-tchild"><span className="ln-sw" style={{ background: 'var(--c-rose)' }} /><span>Wait times</span><span className="ln-ct">5</span></div>
+            <div className="ln-mm-tnode"><span className="ln-caret">▸</span><span className="ln-sw" style={{ background: 'var(--c-moss)' }} /><span>Plain-language support</span><span className="ln-ct">12</span></div>
+            <div className="ln-mm-tnode"><span className="ln-caret">▸</span><span className="ln-sw" style={{ background: 'var(--c-indigo)' }} /><span>Identity work</span><span className="ln-ct">7</span></div>
+            <div className="ln-mm-tnode"><span className="ln-caret">▸</span><span className="ln-sw" style={{ background: 'var(--c-teal)' }} /><span>Trust &amp; safety</span><span className="ln-ct">9</span></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  if (mode === 'classify') {
+    return (
+      <div className="ln-mm">
+        <div className="ln-mm-top">
+          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Classify</span>
+        </div>
+        <div className="ln-mm-body">
+          <div className="ln-mm-h">Cases · 5 of 12</div>
+          <div className="ln-mm-tbl">
+            <div className="ln-h">CASE</div><div className="ln-h">ROLE</div><div className="ln-h">COHORT</div><div className="ln-h">QUOTES</div>
+            <div className="ln-id">P01</div><div>Researcher</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-teal) 22%, white)', color: 'var(--c-teal)' }}>A</span></div><div className="ln-num">12</div>
+            <div className="ln-id">P02</div><div>Student</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-rose) 22%, white)', color: 'var(--c-rose)' }}>B</span></div><div className="ln-num">9</div>
+            <div className="ln-id">P03</div><div>Customer</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-amber) 30%, white)', color: 'var(--ink-2)' }}>A</span></div><div className="ln-num">14</div>
+            <div className="ln-id">P04</div><div>Researcher</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-teal) 22%, white)', color: 'var(--c-teal)' }}>A</span></div><div className="ln-num">7</div>
+            <div className="ln-id">P05</div><div>Student</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-rose) 22%, white)', color: 'var(--c-rose)' }}>B</span></div><div className="ln-num">11</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  if (mode === 'analyze') {
+    return (
+      <div className="ln-mm">
+        <div className="ln-mm-top">
+          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Analyze</span>
+        </div>
+        <div className="ln-mm-body">
+          <div className="ln-mm-h">Crosstab · code × cohort</div>
+          <div className="ln-mm-matrix">
+            <div className="ln-h">CODE</div><div className="ln-h">CUST.</div><div className="ln-h">STUD.</div><div className="ln-h">RES.</div>
+            <div>Access</div><div className="ln-num ln-hot">12</div><div className="ln-num">7</div><div className="ln-num">2</div>
+            <div>Support</div><div className="ln-num">4</div><div className="ln-num ln-hot">9</div><div className="ln-num">3</div>
+            <div>Trust</div><div className="ln-num">6</div><div className="ln-num">3</div><div className="ln-num">5</div>
+            <div>Identity</div><div className="ln-num">2</div><div className="ln-num ln-hot">8</div><div className="ln-num">1</div>
+          </div>
+          <div className="ln-mm-h" style={{ marginTop: 4 }}>n = 41 excerpts · 12 cases</div>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="ln-mm">
+      <div className="ln-mm-top">
+        <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Report</span>
+      </div>
+      <div className="ln-mm-body">
+        <div className="ln-mm-report">
+          <div className="ln-h">Theme · 1 of 4</div>
+          <div className="ln-title">Access barriers</div>
+          <div className="ln-quote">
+            "The form asked for documents I did not have anymore, and every office told me to call
+            someone else."
+          </div>
+          <div className="ln-quote">
+            "After a while it felt like the system was testing whether I would give up."
+          </div>
+          <div className="ln-meta">P03 · LINES 3–5 · CROSSTAB ON P. 12</div>
+        </div>
+        <div className="ln-mm-h" style={{ marginTop: 6 }}>Export · PDF · WORD · CSV · XLSX</div>
+      </div>
+    </div>
+  )
+}
+
+const SAFETY_ITEMS = [
+  ['i.', 'teal', 'Private by default', 'Each project is scoped to your account. Other users can’t read your work.'],
+  ['ii.', 'cyan', 'Autosave plus local recovery', 'Changes save to the cloud, and Fieldnote writes a browser recovery snapshot before the network save starts.'],
+  ['iii.', 'moss', 'Portable backups and exports', 'Download a .fieldnote.json project backup, or export reports and raw data as PDF, Word, CSV, and XLSX.'],
+  ['iv.', 'indigo', 'AI stays optional', 'Hosted AI asks for consent first. BYOK keys are encrypted, used server-side, and never returned to the browser.'],
+  ['v.', 'rose', 'No tracking stack', 'No Google Analytics, Segment, Mixpanel, ad pixels, or behavioral tracking scripts on the product.'],
+  ['vi.', 'amber', 'Delete and leave cleanly', 'Delete projects or your account from inside the app. Your data goes with it.'],
+]
+
+const FEATURES = [
+  ['Close reading', 'TXT/MD/CSV import, DOCX interviews, PDF page coding, folders, memos, archive.'],
+  ['Codebook work', 'Overlapping codes, nested code tree, drag to nest/root, merge, split, duplicate review.'],
+  ['Comparison', 'Cases and attributes, filtered excerpts, matrix coding, crosstabs and co-occurrence.'],
+  ['Outputs', 'PDF and Word reports, CSV/XLSX exports, project backups.'],
+]
+
+const ROADMAP = [
+  ['Audio, video, images, and linked transcripts', 'Speaker-labeled transcription, transcript-linked playback, image region coding.'],
+  ['Collaboration without losing analytic control', 'Shared projects, inter-coder reliability, conflict review.'],
+  ['Maps and charts that explain the evidence', 'Hierarchy charts, concept maps, relationship maps.'],
+  ['Ask questions across the corpus', 'Citation-first answers, cross-project search.'],
 ]
 
 export function Landing() {
@@ -137,339 +368,307 @@ export function Landing() {
 
   return (
     <div className="landing-root">
-      <header className="landing-nav" aria-label="Site navigation">
-        <div className="landing-brand" aria-label="Fieldnote">
-          <span className="landing-brand-eyebrow">Qualitative research workspace</span>
-          <span className="landing-brand-name">Fieldnote</span>
+      <header className="landing-nav">
+        <div className="landing-wrap landing-nav-inner">
+          <button
+            type="button"
+            className="landing-brand"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <span className="landing-brand-dot" aria-hidden="true" />
+            <span>Fieldnote</span>
+          </button>
+          <nav className="landing-nav-links" aria-label="Landing navigation">
+            <a href="#workflow">Workflow</a>
+            <a href="#capabilities">Capabilities</a>
+            <a href="#roadmap">Roadmap</a>
+            <button type="button" onClick={() => openAuth('sign-in')}>Sign in</button>
+            <button type="button" className="landing-nav-cta" onClick={() => openAuth('sign-up')}>
+              Request access
+            </button>
+          </nav>
         </div>
-        <nav className="landing-nav-links">
-          <a className="landing-nav-link" href="#workflow">Workflow</a>
-          <a className="landing-nav-link" href="#capabilities">Capabilities</a>
-          <a className="landing-nav-link" href="#roadmap">Roadmap</a>
-          <button type="button" className="landing-nav-link" onClick={() => openAuth('sign-in')}>Sign in</button>
-        </nav>
       </header>
 
-      <section className="landing-hero" aria-labelledby="hero-h1">
-        <div className="landing-hero-inner">
-          <div className="landing-hero-copy">
-            <h1 id="hero-h1" className="landing-hero-h1">
-              <span className="landing-hero-lead">
-                QDA for researchers,<br />not procurement departments.
-              </span>
-              <span className="landing-hero-cont">
-                A web workspace for transcripts, PDFs, codes, cases, queries, and reports.
+      <main>
+        <section className="landing-hero">
+          <div className="landing-wrap landing-hero-inner">
+            <h1>
+              QDA for researchers, not{' '}
+              <span className="landing-circled">
+                procurement departments.
+                <svg
+                  className="landing-doodle"
+                  viewBox="0 0 440 110"
+                  aria-hidden="true"
+                  preserveAspectRatio="none"
+                >
+                  <path d="M 24 60 C 18 30, 90 14, 220 14 C 350 14, 420 32, 418 62 C 416 90, 330 98, 210 96 C 90 94, 26 78, 30 58 C 32 48, 40 40, 52 34" />
+                </svg>
               </span>
             </h1>
+
             <p className="landing-hero-sub">
-              Bring in the material, mark what matters, compare the patterns, and get the evidence back out. No license-key ceremony. No desktop-app archaeology.
+              The full workflow — organize, code, refine, classify, analyze, report — in a browser.
             </p>
-            <div className="landing-cta-row">
-              <button type="button" className="landing-btn landing-btn-primary" onClick={() => openAuth('sign-up')}>
-                Request early access
-                <ArrowRight size={17} aria-hidden="true" />
+
+            <div className="landing-actions">
+              <button
+                type="button"
+                className="landing-btn landing-btn-primary"
+                onClick={() => openAuth('sign-up')}
+              >
+                Request early access <ArrowRight size={16} aria-hidden="true" />
               </button>
-              <button type="button" className="landing-btn landing-btn-ghost" onClick={() => openAuth('sign-in')}>
+              <button
+                type="button"
+                className="landing-btn landing-btn-ghost"
+                onClick={() => openAuth('sign-in')}
+              >
                 Sign in
               </button>
             </div>
-          </div>
 
-          <div className="landing-product-frame" aria-label="Fieldnote product preview">
-            <div className="landing-product-shell landing-product-demo">
-              {/* Top nav — dark band, single-line wordmark + the seven
-                  horizontal mode tabs + a single status dot. Tighter
-                  than the live shell because the hero column gives
-                  the mock about half the room a real top nav has. */}
-              <header className="landing-mock-nav">
-                <span className="landing-mock-brand">Fieldnote</span>
-                <nav className="landing-mock-tabs" aria-hidden="true">
-                  <span className="landing-mock-tab">Overview</span>
-                  <span className="landing-mock-tab">Organize</span>
-                  <span className="landing-mock-tab is-active">Code</span>
-                  <span className="landing-mock-tab">Refine</span>
-                  <span className="landing-mock-tab">Classify</span>
-                  <span className="landing-mock-tab">Analyze</span>
-                  <span className="landing-mock-tab">Report</span>
-                </nav>
-                <div className="landing-mock-status" aria-hidden="true" title="Saved">
-                  <span className="landing-mock-dot" />
-                </div>
-              </header>
-
-              {/* Detail toolbar — eyebrow + source title (Newsreader
-                  T1) on the left; the live app puts the search box
-                  on the right but we omit it here for visual quiet. */}
-              <div className="landing-mock-toolbar">
-                <span className="landing-mock-eyebrow">Detail View</span>
-                <h3 className="landing-mock-title">Interview 03</h3>
+            <div className="landing-mock-stage">
+              <HeroMock />
+              <div className="landing-margin-note" aria-hidden="true">
+                <svg
+                  className="landing-margin-arrow"
+                  viewBox="0 0 80 60"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M 70 8 C 50 14, 28 26, 14 50" />
+                  <path d="M 8 44 L 14 50 L 22 46" />
+                </svg>
+                <div className="landing-margin-text">a coded passage, plain as that</div>
               </div>
+            </div>
+          </div>
+        </section>
 
-              {/* Active-codes bar — second row of the document panel.
-                  T3 active-code title + Quick menu toggle + the
-                  Code selection primary button. This is where the
-                  Code-selection button moved to in the live app. */}
-              <div className="landing-mock-active-codes">
-                <div className="landing-mock-active-codes-text">
-                  <strong>Access barriers</strong>
-                  <span>Drag across a phrase to apply.</span>
-                </div>
-                <span className="landing-mock-active-codes-actions">
-                  <span className="landing-mock-quick-toggle">
-                    <span className="landing-mock-checkbox is-on" />
-                    Quick menu
+        <section className="landing-flow" id="workflow">
+          <div className="landing-wrap">
+            <div className="landing-flow-top">
+              <h2>
+                The usual research mess,{' '}
+                <em>
+                  <span className="landing-scribble">
+                    in a sane order.
+                    <svg
+                      viewBox="0 0 240 18"
+                      preserveAspectRatio="none"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M 4 12 C 30 4, 60 14, 100 8 C 140 2, 180 14, 236 6" />
+                    </svg>
                   </span>
-                  <span className="landing-mock-code-button">Code selection</span>
-                </span>
-              </div>
+                </em>
+              </h2>
+              <p>
+                Six modes, one workspace. Organize sources, code passages, clean up the codebook,
+                compare patterns, and make the thing you can actually share.
+              </p>
+            </div>
 
-              {/* Line-numbered transcript reader — same 32px gutter,
-                  Newsreader 16.5/1.75 body, --ink-4 mono line numbers,
-                  one teal mark to show how a coded passage renders. */}
-              <div className="landing-mock-reader">
-                <p>
-                  <span className="landing-mock-line">12</span>
-                  <span>It was not just one thing. The form asked for documents I did not have anymore, and every office told me to call someone else.</span>
-                </p>
-                <p>
-                  <span className="landing-mock-line">13</span>
-                  <span>After a while it felt like the system was testing whether I would give up.</span>
-                </p>
-                <p>
-                  <span className="landing-mock-line">14</span>
-                  <span><mark className="landing-mock-mark">She explained the steps in plain language and wrote down what to bring next time.</mark></span>
-                </p>
-                <div className="landing-mock-selection-menu" aria-hidden="true">
-                  <span className="landing-mock-menu-label">Code selection</span>
-                  <span className="landing-mock-menu-code">Access barriers</span>
-                  <span className="landing-mock-menu-code is-alt">Service navigation</span>
-                  <span className="landing-mock-menu-add">+ New code</span>
-                </div>
-              </div>
+            <div className="landing-flow-list">
+              {FLOW_ROWS.map((row, index) => (
+                <article
+                  key={row.step}
+                  className={`landing-flow-row ${index % 2 === 1 ? 'is-flipped' : ''}`}
+                  data-accent={row.accent}
+                >
+                  <div className="landing-flow-copy">
+                    <span className="landing-flow-step">{row.step}</span>
+                    <h3>
+                      {row.title} <em>{row.titleEm}</em>
+                    </h3>
+                    <p>{row.body}</p>
+                  </div>
+                  <div className="landing-flow-shot">
+                    <FlowMock mode={row.mode} />
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="landing-evidence" aria-labelledby="evidence-h2">
-        <div className="landing-evidence-inner">
-          <div className="landing-evidence-head">
-            <h2 id="evidence-h2" className="landing-evidence-h2">
-              One quote can become<br /><em>a whole thread.</em>
-            </h2>
-            <p>
-              The excerpt, the code, the comparison, and the report page stay close enough that you can remember why any of it mattered.
-            </p>
-          </div>
+        <section className="landing-proof" id="capabilities">
+          <div className="landing-wrap">
+            <div className="landing-proof-head">
+              <h2>
+                <span className="landing-roman">A price you don’t have</span> to justify.
+              </h2>
+            </div>
 
-          <div className="landing-artifact-track" aria-label="Evidence path from source to report">
-            {ARTIFACTS.map((artifact) => (
-              <article key={artifact.step} className={`landing-artifact landing-artifact-${artifact.kind}`}>
-                <p className="landing-artifact-step">{artifact.step}</p>
-                <h3>{artifact.title}</h3>
-                {artifact.kind === 'source' && (
-                  <div className="landing-artifact-source-body">
-                    <p><span>12</span> The form asked for documents I did not have anymore.</p>
-                    <p><span>13</span> The system was testing whether I would give up.</p>
-                    <p><span>14</span><mark>She explained the steps in plain language.</mark></p>
-                  </div>
-                )}
-                {artifact.kind === 'code' && (
-                  <div className="landing-artifact-code-body">
-                    <span>Access barriers</span>
-                    <span>Service navigation</span>
-                    <span>Plain-language support</span>
-                    <small>memo: participant names the paperwork as the barrier</small>
-                  </div>
-                )}
-                {artifact.kind === 'matrix' && (
-                  <div className="landing-artifact-matrix-body">
-                    <span />
-                    <strong>Caregiver</strong>
-                    <strong>Student</strong>
-                    <b>Access</b>
-                    <em>8</em>
-                    <em>3</em>
-                    <b>Support</b>
-                    <em>5</em>
-                    <em>6</em>
-                  </div>
-                )}
-                {artifact.kind === 'report' && (
-                  <div className="landing-artifact-report-body">
-                    <span />
-                    <strong>Theme: access barriers</strong>
-                    <p>“The form asked for documents I did not have anymore...”</p>
-                    <small>PDF · Word · CSV · XLSX</small>
-                  </div>
-                )}
+            <div className="landing-price-list">
+              <article>
+                <p className="landing-price-when">today.</p>
+                <h3 className="landing-price-num">
+                  $0<span>/ seat</span>
+                </h3>
+                <p className="landing-price-desc">
+                  <strong>Free during the alpha.</strong> Sign up, bring a project, code as much as
+                  you want. We’re trading polish for your time and feedback.
+                </p>
               </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-loop" id="workflow" aria-labelledby="loop-h2">
-        <div className="landing-loop-grid">
-          <div className="landing-loop-intro">
-            <h2 id="loop-h2" className="landing-loop-h2">
-              The usual research mess,<br /><em>in a sane order.</em>
-            </h2>
-            <p className="landing-loop-sub">
-              Organize sources, code passages, clean up the codebook, compare patterns, and make the thing you can actually share.
-            </p>
-          </div>
-          <ol className="landing-loop-stages">
-            {STAGES.map((stage) => (
-              <li key={stage.num} className="landing-stage">
-                <span className="landing-stage-num">{stage.num}</span>
-                <div>
-                  <h3 className="landing-stage-name">{stage.name}</h3>
-                  <p className="landing-stage-desc">{stage.desc}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section className="landing-vs" aria-labelledby="vs-h2">
-        <div className="landing-vs-inner">
-          <h2 id="vs-h2" className="landing-vs-h2">
-            Made for people doing the work, <em>not people approving the purchase order.</em>
-          </h2>
-          <div className="landing-vs-card">
-            <div className="landing-vs-col">
-              <p className="landing-vs-col-eyebrow">Enterprise QDA</p>
-              <h3 className="landing-vs-col-name">NVivo, ATLAS.ti, MAXQDA</h3>
-              <ul className="landing-vs-list">
-                {VS_ENTERPRISE.map((item) => <li key={item}>{item}</li>)}
-              </ul>
+              <article>
+                <p className="landing-price-when">at launch.</p>
+                <h3 className="landing-price-num">
+                  <em>low</em>
+                  <span>/ month</span>
+                </h3>
+                <p className="landing-price-desc">
+                  <strong>A single, low monthly price.</strong> Aimed at individuals and small
+                  teams. No seats, no quotes, no annual sales cycle.
+                </p>
+              </article>
+              <article className="is-elsewhere">
+                <p className="landing-price-when">elsewhere.</p>
+                <h3 className="landing-price-num landing-price-strike">
+                  $1,000+<span>/ seat / yr</span>
+                </h3>
+                <p className="landing-price-desc">
+                  <strong>NVivo, ATLAS.ti, MAXQDA.</strong> Locked behind sales calls and license
+                  keys, with desktop apps that lock your files to one machine.
+                </p>
+              </article>
             </div>
-            <div className="landing-vs-col is-fn">
-              <p className="landing-vs-col-eyebrow">Fieldnote</p>
-              <h3 className="landing-vs-col-name is-fn">Browser-based QDA</h3>
-              <ul className="landing-vs-list">
-                {VS_FIELDNOTE.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section className="landing-capabilities" id="capabilities" aria-labelledby="capabilities-h2">
-        <div className="landing-capabilities-inner">
-          <div className="landing-capabilities-head">
-            <h2 id="capabilities-h2" className="landing-capabilities-h2">
-              The unglamorous parts, handled.
-            </h2>
-            <p>
-              Import, code, refine, classify, analyze, export. The core interview-work stack is here, with AI assist and backups where they belong: useful, visible, and optional.
-            </p>
+            <p className="landing-proof-foot">No procurement · no sales calls · no license keys</p>
           </div>
-          <div className="landing-capability-grid">
-            {CAPABILITIES.map((capability) => (
-              <article key={capability.group} className="landing-capability-card">
-                <div>
-                  <h3>{capability.group}</h3>
-                  <p>{capability.body}</p>
-                </div>
-                <ul>
-                  {capability.items.map((item) => (
-                    <li key={item}>
-                      <CheckCircle2 size={14} aria-hidden="true" />
-                      <span>{item}</span>
-                    </li>
+        </section>
+
+        <section className="landing-safety">
+          <div className="landing-wrap">
+            <div className="landing-section-top">
+              <h2>
+                Your research is <em>safe with us.</em>
+              </h2>
+              <p>
+                Autosave, local recovery, backups, AI controls, and deletion paths are visible
+                because panic is not a feature.
+              </p>
+            </div>
+            <div className="landing-safety-grid">
+              {SAFETY_ITEMS.map(([num, accent, title, body]) => (
+                <article key={title} data-accent={accent}>
+                  <p>{num}</p>
+                  <div>
+                    <h3>{title}</h3>
+                    <span>{body}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <a
+              href="/privacy-policy.md"
+              target="_blank"
+              rel="noreferrer"
+              className="landing-inline-link"
+            >
+              Read the full Privacy Policy →
+            </a>
+          </div>
+        </section>
+
+        <section className="landing-brief">
+          <div className="landing-wrap">
+            <div className="landing-brief-head">
+              <h2>Everything else, briefly.</h2>
+            </div>
+            <div className="landing-brief-block">
+              <h3>Features.</h3>
+              <p>Already in the app.</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>What’s included</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURES.map(([feature, body]) => (
+                    <tr key={feature}>
+                      <td className="landing-brief-area">{feature}</td>
+                      <td>{body}</td>
+                    </tr>
                   ))}
-                </ul>
-              </article>
-            ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="landing-brief-block" id="roadmap">
+              <h3>Roadmap.</h3>
+              <p>Coming up.</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Coming up</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ROADMAP.map(([feature, body]) => (
+                    <tr key={feature}>
+                      <td className="landing-brief-area">{feature}</td>
+                      <td>{body}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="landing-trust" aria-labelledby="trust-h2">
-        <div className="landing-trust-inner">
-          <div className="landing-trust-head">
-            <h2 id="trust-h2" className="landing-trust-h2">
-              Your work should not feel fragile.
+        <section className="landing-cta">
+          <div className="landing-wrap landing-cta-inner">
+            <h2>
+              Bring a transcript. <em>Get unstuck.</em>
             </h2>
-            <p>
-              Autosave, local recovery, backups, AI controls, and deletion paths are visible because panic is not a feature.
-            </p>
+            <div className="landing-actions">
+              <button
+                type="button"
+                className="landing-btn landing-btn-primary"
+                onClick={() => openAuth('sign-up')}
+              >
+                Request early access <ArrowRight size={16} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="landing-btn landing-btn-dark-ghost"
+                onClick={() => openAuth('sign-in')}
+              >
+                Read the docs
+              </button>
+            </div>
           </div>
-          <div className="landing-trust-grid">
-            {TRUST_CONTROLS.map((item) => (
-              <article key={item.title} className="landing-trust-card">
-                <CheckCircle2 size={16} aria-hidden="true" />
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-          <a className="landing-trust-link" href="/privacy-policy.md" target="_blank" rel="noreferrer">
-            Read the full Privacy Policy
-            <ArrowRight size={15} aria-hidden="true" />
-          </a>
-        </div>
-      </section>
-
-      <section className="landing-roadmap" id="roadmap" aria-labelledby="roadmap-h2">
-        <div className="landing-roadmap-inner">
-          <div className="landing-roadmap-head">
-            <h2 id="roadmap-h2" className="landing-roadmap-h2">
-              More materials, same idea.
-            </h2>
-            <p>
-              Next up: media, teams, maps, and source-grounded AI, without turning the app into a cockpit.
-            </p>
-          </div>
-          <div className="landing-roadmap-grid">
-            {ROADMAP.map((item) => (
-              <article key={item.horizon} className="landing-roadmap-card">
-                <p className="landing-roadmap-horizon">{item.horizon}</p>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-                <ul>
-                  {item.items.map((detail) => <li key={detail}>{detail}</li>)}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-cta">
-        <div className="landing-cta-inner">
-          <h2 className="landing-cta-h2">
-            Bring a transcript.<br /><em>Get unstuck.</em>
-          </h2>
-          <div className="landing-cta-actions">
-            <button type="button" className="landing-btn landing-btn-primary on-dark" onClick={() => openAuth('sign-up')}>
-              Request early access
-              <ArrowRight size={17} aria-hidden="true" />
-            </button>
-            <button type="button" className="landing-btn landing-btn-ghost on-dark" onClick={() => openAuth('sign-in')}>
-              Sign in
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       <footer className="landing-footer">
-        <div className="landing-footer-text">
-          <span className="landing-footer-line">Fieldnote — QDA for close reading, coding, analysis, and reports.</span>
-          <span className="landing-footer-dedication">Made in California. Dedicated to Dr. S Robbins and Birdie Robbins.</span>
+        <div className="landing-wrap">
+          <div className="landing-footer-meta">
+            <p>Fieldnote — QDA for close reading, coding, analysis, and reports.</p>
+            <span>Made in California. Dedicated to Dr. S Robbins and Birdie Robbins.</span>
+          </div>
+          <nav aria-label="Footer navigation">
+            <a href="/terms-of-service.md" target="_blank" rel="noreferrer">
+              Terms of Service
+            </a>
+            <a href="/privacy-policy.md" target="_blank" rel="noreferrer">
+              Privacy Policy
+            </a>
+            <a href="mailto:studio.ops@behemothagency.com">Contact</a>
+          </nav>
         </div>
-        <nav className="landing-footer-links" aria-label="Site footer">
-          <a href="/terms-of-service.md" target="_blank" rel="noreferrer">Terms of Service</a>
-          <span aria-hidden="true">·</span>
-          <a href="/privacy-policy.md" target="_blank" rel="noreferrer">Privacy Policy</a>
-          <span aria-hidden="true">·</span>
-          <a href="mailto:studio.ops@behemothagency.com">Contact</a>
-        </nav>
       </footer>
 
       <AuthModal key={authMode} open={authOpen} initialMode={authMode} onClose={() => setAuthOpen(false)} />
