@@ -116,6 +116,13 @@ spacing:
 > hero type, dark rounded artifact bands, transcript/code/matrix/report objects,
 > and plain copy that avoids generic SaaS seriousness.
 
+> **Landing note, 2026-05-18.** The public homepage has moved further toward a
+> warm, new-school product brand: rounder surfaces, lighter section rhythm,
+> dark moments used as punctuation, and more color from the Fieldnote palette.
+> Avoid decorative section eyebrows on the public page. Let headlines, body
+> copy, and product artifacts orient the reader. Current hero positioning is:
+> "QDA for researchers, not procurement departments."
+
 > **Signed-in app polish note, 2026-05-16.** The signed-in shell now borrows
 > more of the homepage's confidence without becoming decorative: dark shell
 > with a thin multicolor accent rail, light work area, serif detail titles,

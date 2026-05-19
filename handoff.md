@@ -82,10 +82,14 @@ Still open from the audit: `App.tsx` remains the orchestration bottleneck, the C
 
 The public homepage moved away from a generic SaaS posture and toward a more editorial, artifact-led product story. Current direction:
 
-- Centered serif hero with direct, plain copy: "Read the material. Code what matters. Find the pattern."
+- Centered serif hero with direct category positioning: "QDA for researchers, not procurement departments."
 - More visible product object in the first screen, with a lightweight animated coding moment.
 - New dark rounded "Source to report" artifact band showing excerpt -> code chips -> matrix snippet -> report page.
-- Lower page rhythm favors dark rounded bands, editorial section heads, artifact objects, and row/ledger layouts over uniform capability-card grids.
+- Lower page rhythm favors artifact objects, row/ledger layouts, and a few dark rounded moments over uniform capability-card grids.
+- Decorative all-caps section eyebrows were removed from the public homepage. Keep functional labels where they help explain an artifact, but do not add generic section labels just for atmosphere.
+- The old separate "What you get" band was removed because it repeated the Research loop and Capabilities sections. Capabilities now carries that job.
+- The random dotted background arcs were removed. Keep the "thread" metaphor tied to actual product artifacts and the source-to-report connector.
+- Top navigation now points to Workflow / Capabilities / Roadmap, not Features.
 - Copy tone should stay clear and human, but not become obtuse or overly cute. Avoid literal "indie" labels on the public page.
 
 The review artifact lives at:

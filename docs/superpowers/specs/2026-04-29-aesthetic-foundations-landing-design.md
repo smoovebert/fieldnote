@@ -1,6 +1,6 @@
 # Aesthetic Foundations + Landing Page — Design
 
-Status: shipped 2026-04-29; refreshed 2026-05-16.
+Status: shipped 2026-04-29; refreshed 2026-05-16 and 2026-05-18.
 
 2026-05-16 note: this spec began as the aesthetic-foundations landing plan, but the shipped public homepage is now a fuller product-positioning page. It also now records the first signed-in app polish pass so the homepage and app do not drift apart. Treat the "Current landing implementation" and "Current signed-in app polish" sections below as the current source of truth; the original phase details are kept for provenance.
 
@@ -68,25 +68,23 @@ Visible homepage copy intentionally avoids "alpha" language. Alpha status, teste
 
 `src/Landing.tsx` and `src/Landing.css` now render a multi-section page:
 
-1. **Top nav** — two-line Fieldnote wordmark, links to Workflow / Features / Roadmap, Sign in.
-2. **Hero** — centered serif headline, direct category positioning, primary "Request early access" CTA, secondary sign-in CTA, and an animated Fieldnote UI mock inside a dark product stage.
+1. **Top nav** — two-line Fieldnote wordmark, links to Workflow / Capabilities / Roadmap, Sign in.
+2. **Hero** — centered serif headline, direct category positioning ("QDA for researchers, not procurement departments."), primary "Request early access" CTA, secondary sign-in CTA, and an animated Fieldnote UI mock inside a dark product stage.
 3. **Source to report** — dark rounded artifact band showing how an excerpt becomes code chips, a matrix snippet, and a report page.
-4. **Research loop** — dark rounded band with the six app modes: Organize, Code, Refine, Classify, Analyze, Report.
+4. **Research loop** — light workflow section with the six app modes: Organize, Code, Refine, Classify, Analyze, Report.
 5. **Why Fieldnote** — light comparison card contrasting old enterprise QDA patterns with Fieldnote's web-native workflow.
-6. **What you get** — dark rounded feature band for interview work, comparison work, and evidence export.
-7. **Current capabilities** — light editorial ledger of working product areas across close reading, codebook work, comparison, outputs, and safety.
-8. **Data safety** — dark rounded trust band that explains account-scoped projects, autosave plus browser recovery snapshots, portable backups/exports, optional AI, no tracking stack, and account/project deletion.
-9. **Roadmap** — light section for future tracks: media depth, team research, visual analysis, and research intelligence.
-10. **Closing CTA + footer** — dark CTA and footer links to Terms of Service, Privacy Policy, and contact email.
+6. **Current capabilities** — light editorial ledger of working product areas across close reading, codebook work, comparison, outputs, and safety. This section now carries the old "What you get" job, so the page does not repeat itself.
+7. **Data safety** — dark rounded trust band that explains account-scoped projects, autosave plus browser recovery snapshots, portable backups/exports, optional AI, no tracking stack, and account/project deletion.
+8. **Roadmap** — light section for future tracks: media depth, team research, visual analysis, and research intelligence.
+9. **Closing CTA + footer** — dark CTA and footer links to Terms of Service, Privacy Policy, and contact email.
 
 The page alternates light and dark bands after the hero so the lower half has a deliberate rhythm:
 
 ```text
 light hero
 dark source-to-report artifact band
-dark research loop
+light research loop
 light comparison
-dark feature band
 light current-capabilities ledger
 dark data safety
 light roadmap
@@ -100,7 +98,10 @@ dark CTA/footer
 - The page uses artifact storytelling where possible: transcript excerpt, code chips, matrix/crosstab-like table, and report page preview.
 - The mock uses motion, but `prefers-reduced-motion` disables the animation.
 - Section color uses the same shell / paper tokens as the app UI, with accent colors pulled from the product palette.
-- The feature, source-to-report, research-loop, and trust bands use dark shell backgrounds with rounded section containers and subtle accent tints, not card-heavy SaaS decoration.
+- Dark sections are punctuation, not the default: source-to-report, data safety, and the closing CTA/footer.
+- Decorative section eyebrows are intentionally removed from the public homepage. Use functional labels only where they help make an artifact readable.
+- The random dotted background arcs were removed; the remaining path metaphor should come from actual product artifacts and the source-to-report connector.
+- The source-to-report and trust bands use dark shell backgrounds with rounded section containers and subtle accent tints, not card-heavy SaaS decoration.
 - Mobile collapses grids to one column and preserves horizontal overflow safety.
 
 ### Current messaging rules
@@ -108,6 +109,7 @@ dark CTA/footer
 - Do say: interview-centered, close reading, coding, cases, attributes, analysis, AI assist, exportable evidence, data safety, roadmap.
 - Tone should feel like a useful human-built research tool, not enterprise SaaS. Prefer plain, specific, slightly lively copy over institutional seriousness.
 - Avoid copy that is clever but unclear. The hero should make the product category and workflow legible immediately.
+- Avoid generic SaaS or AI-slop scaffolding, especially decorative all-caps section eyebrows that do not add meaning.
 - Do not say in homepage body copy: alpha, free, open source, self-host, GitHub, or "serious enough for alpha."
 - Do not literally call the product "indie" in the public hero; that reads too plain and self-descriptive.
 - Roadmap belongs on the page so people understand trajectory without mistaking future capabilities for shipped features.
