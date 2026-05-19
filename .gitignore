@@ -35,3 +35,6 @@ supabase/.temp
 
 # Serena MCP local project memory (auto-generated)
 .serena/
+
+# Local-only marketing copy working dir (not part of the repo)
+/UGC_BEHEMOTH AGENCY/
