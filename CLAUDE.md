@@ -19,7 +19,7 @@ Two top-level surfaces:
 - `src/Landing.tsx` — public marketing page (unauthenticated visitors).
 - `src/App.tsx` — the authenticated workspace shell. `src/AuthModal.tsx` handles Supabase email/password auth.
 
-The workspace is **project-first and mode-based**: six modes in `src/modes/` — overview, organize, code, refine, classify, analyze, report — sharing a persistent dark app shell with a light work area. The mode set, nav, and IA are deliberate product decisions; don't restructure them casually. `product-workflow-plan.md` is the source of truth for the mode workflow.
+The workspace is **project-first and mode-based**: seven modes sharing a persistent dark app shell with a light work area. Six have their own component directory under `src/modes/` — overview, organize, code, refine, classify, report (each wired into `App.tsx` via a `*Detail.tsx`/`*Mode.tsx` component). **Analyze is the exception**: it has no `src/modes/` folder — its pipeline lives in `src/analyze/` and it is rendered inline in `App.tsx` through `analyzeView`/`analyzePanel`/`analyzeResults` state, with its snapshots feeding Report. The mode set, nav, and IA are deliberate product decisions; don't restructure them casually. `product-workflow-plan.md` is the source of truth for the mode workflow.
 
 Data flow: a single project object is loaded/saved through `src/persistence/io.ts` with debounced autosave (`src/persistence/useAutosave.ts`); `src/lib/localRecovery.ts` writes a browser-storage snapshot *before* each network save. The serialized shape lives in `src/persistence/shape.ts` + `src/lib/types.ts`; users can also export/import a portable `.fieldnote.json` backup.
 
