@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { AuthModal } from './AuthModal'
 import './Landing.css'
@@ -11,7 +11,6 @@ const FLOW_ROWS: {
   step: string
   title: string
   titleEm: string
-  body: string
   mode: FlowMode
   accent: string
 }[] = [
@@ -19,7 +18,6 @@ const FLOW_ROWS: {
     step: '01 / organize.',
     title: 'Drop everything in,',
     titleEm: 'stop renaming files.',
-    body: 'Drop in transcripts, notes, PDFs, and spreadsheets. Keep the project from becoming a desktop folder named final_final_2.',
     mode: 'organize',
     accent: 'teal',
   },
@@ -27,7 +25,6 @@ const FLOW_ROWS: {
     step: '02 / code.',
     title: 'Mark the passage,',
     titleEm: 'add what it means.',
-    body: 'Mark the passage, add one code or several, and keep line numbers visible while you read.',
     mode: 'code',
     accent: 'rose',
   },
@@ -35,7 +32,6 @@ const FLOW_ROWS: {
     step: '03 / refine.',
     title: 'Your first pass was a first pass.',
     titleEm: 'Fix it.',
-    body: 'Rename, merge, split, nest, and document codes when your first pass turns out to be only a first pass.',
     mode: 'refine',
     accent: 'amber',
   },
@@ -43,7 +39,6 @@ const FLOW_ROWS: {
     step: '04 / classify.',
     title: 'Make cases for everyone.',
     titleEm: 'Add what you will need later.',
-    body: 'Make cases for people, sites, or groups. Add the attributes you will want later, because later always arrives.',
     mode: 'classify',
     accent: 'indigo',
   },
@@ -51,7 +46,6 @@ const FLOW_ROWS: {
     step: '05 / analyze.',
     title: 'Find the pattern',
     titleEm: 'across every case.',
-    body: 'Filter excerpts, run matrices and crosstabs, and check word frequency or code co-occurrence without opening three other apps.',
     mode: 'analyze',
     accent: 'cyan',
   },
@@ -59,7 +53,6 @@ const FLOW_ROWS: {
     step: '06 / report.',
     title: 'Pull it together.',
     titleEm: 'Get it out.',
-    body: 'Gather findings, excerpts, memos, and charts. Export PDF, Word, CSV, or XLSX.',
     mode: 'report',
     accent: 'moss',
   },
@@ -107,13 +100,31 @@ function HeroMock() {
             <span>Interview 03</span>
             <span className="ln-mrail-meta">1</span>
           </div>
+          <div className="ln-mrail-head" style={{ marginTop: 14 }}>
+            Codes
+          </div>
+          <div className="ln-mrail-leaf">
+            <span className="ln-dot" />
+            <span>Access barriers</span>
+            <span className="ln-mrail-meta">14</span>
+          </div>
+          <div className="ln-mrail-leaf">
+            <span className="ln-dot" />
+            <span>Trust and safety</span>
+            <span className="ln-mrail-meta">9</span>
+          </div>
+          <div className="ln-mrail-leaf">
+            <span className="ln-dot" />
+            <span>Identity work</span>
+            <span className="ln-mrail-meta">7</span>
+          </div>
         </aside>
 
         <main className="ln-mcenter">
           <div className="ln-meb">Detail view</div>
           <h3 className="ln-mtitle">Interview 03</h3>
           <div className="ln-mmeta">
-            Interview 03<span className="ln-sep">·</span>137 words
+            Transcript<span className="ln-sep">·</span>Internals<span className="ln-sep">·</span>137 words
             <span className="ln-sep">·</span>1 code applied
           </div>
           <div className="ln-mcodecard">
@@ -213,24 +224,43 @@ function HeroMock() {
   )
 }
 
+const TAB_LABELS = ['Overview', 'Organize', 'Code', 'Refine', 'Classify', 'Analyze', 'Report']
+
+/* The full app mode-tab row shared by every mini-mock, active mode lit. */
+function MockTabs({ active }: { active: string }) {
+  return (
+    <span className="ln-mm-tabs">
+      {TAB_LABELS.map((label) => (
+        <span key={label} className={label === active ? 'on' : undefined}>
+          {label}
+        </span>
+      ))}
+    </span>
+  )
+}
+
 function FlowMock({ mode }: { mode: FlowMode }) {
   if (mode === 'organize') {
     return (
       <div className="ln-mm">
         <div className="ln-mm-top">
-          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Organize</span>
+          <span className="ln-mt-dot" />Fieldnote
+          <MockTabs active="Organize" />
         </div>
         <div className="ln-mm-body">
           <div className="ln-mm-h">Sources</div>
-          <div className="ln-mm-trow"><span className="ln-ic" /><span>Internals</span><span className="ln-ct">14</span></div>
+          <div className="ln-mm-trow"><span className="ln-ic" /><span>Interviews</span><span className="ln-ct">12</span></div>
           <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Interview 01.txt</span><span className="ln-ct">3</span></div>
           <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Interview 02.docx</span><span className="ln-ct">7</span></div>
           <div className="ln-mm-tleaf active"><span className="ln-dot" /><span>Interview 03.docx</span><span className="ln-ct">11</span></div>
+          <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Interview 04.docx</span><span className="ln-ct">5</span></div>
+          <div className="ln-mm-trow" style={{ marginTop: 6 }}><span className="ln-ic" /><span>Field notes</span><span className="ln-ct">2</span></div>
           <div className="ln-mm-tleaf"><span className="ln-dot" /><span>fieldnotes_2025-09.md</span><span className="ln-ct">2</span></div>
-          <div className="ln-mm-h" style={{ marginTop: 6 }}>PDFs</div>
+          <div className="ln-mm-trow" style={{ marginTop: 6 }}><span className="ln-ic" /><span>PDFs</span><span className="ln-ct">2</span></div>
           <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Background.pdf</span><span className="ln-ct">0</span></div>
           <div className="ln-mm-tleaf"><span className="ln-dot" /><span>Final_report_v3.pdf</span><span className="ln-ct">5</span></div>
         </div>
+        <div className="ln-mm-foot"><span>16 sources · 3 folders</span><span>autosaved just now</span></div>
       </div>
     )
   }
@@ -238,30 +268,40 @@ function FlowMock({ mode }: { mode: FlowMode }) {
     return (
       <div className="ln-mm">
         <div className="ln-mm-top">
-          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Code</span>
+          <span className="ln-mt-dot" />Fieldnote
+          <MockTabs active="Code" />
         </div>
         <div className="ln-mm-body">
-          <div className="ln-mm-h">Interview 03 · lines 7–11</div>
+          <div className="ln-mm-h">Interview 03 · transcript</div>
           <div className="ln-mm-reader">
+            <div className="ln-ln"><span className="ln-ln-num">3</span><span className="ln-ln-txt"><span className="ln-sp">P:</span>It was not just one thing. <span className="ln-mm-mark" style={{ background: 'var(--hl-rose)' }}>The form asked for documents</span></span></div>
+            <div className="ln-ln"><span className="ln-ln-num">4</span><span className="ln-ln-txt"><span className="ln-mm-mark" style={{ background: 'var(--hl-rose)' }}>I did not have anymore,</span> and every office told me to call</span></div>
+            <div className="ln-ln"><span className="ln-ln-num">5</span><span className="ln-ln-txt">someone else.</span></div>
+            <div className="ln-ln"><span className="ln-ln-num">6</span><span className="ln-ln-txt" /></div>
             <div className="ln-ln"><span className="ln-ln-num">7</span><span className="ln-ln-txt"><span className="ln-sp">I:</span>What helped you keep going?</span></div>
             <div className="ln-ln"><span className="ln-ln-num">8</span><span className="ln-ln-txt" /></div>
             <div className="ln-ln"><span className="ln-ln-num">9</span><span className="ln-ln-txt"><span className="ln-sp">P:</span><span className="ln-mm-mark">She explained the steps in plain language</span></span></div>
             <div className="ln-ln"><span className="ln-ln-num">10</span><span className="ln-ln-txt"><span className="ln-mm-mark">and wrote down what to bring next time.</span></span></div>
             <div className="ln-ln"><span className="ln-ln-num">11</span><span className="ln-ln-txt">After that I knew what to expect.</span></div>
           </div>
-          <span className="ln-mm-codepill"><span className="ln-dot" />Plain-language support</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 2px' }}>
+            <span className="ln-mm-codepill" style={{ '--swatch': 'var(--c-rose)' } as CSSProperties}><span className="ln-dot" />Access barriers</span>
+            <span className="ln-mm-codepill" style={{ '--swatch': 'var(--c-moss)' } as CSSProperties}><span className="ln-dot" />Plain-language support</span>
+          </div>
         </div>
+        <div className="ln-mm-foot"><span>2 codes on selection</span><span>lines 9–10</span></div>
       </div>
     )
   }
   if (mode === 'refine') {
     return (
-      <div className="ln-mm">
+      <div className="ln-mm ln-mm-wrap">
         <div className="ln-mm-top">
-          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Refine</span>
+          <span className="ln-mt-dot" />Fieldnote
+          <MockTabs active="Refine" />
         </div>
         <div className="ln-mm-body">
-          <div className="ln-mm-h">Codebook</div>
+          <div className="ln-mm-h">Codebook · 47 codes</div>
           <div className="ln-mm-tree">
             <div className="ln-mm-tnode active"><span className="ln-caret">▾</span><span className="ln-sw" style={{ background: 'var(--c-rose)' }} /><span>Access barriers</span><span className="ln-ct">24</span></div>
             <div className="ln-mm-tchild"><span className="ln-sw" style={{ background: 'var(--c-rose)' }} /><span>Documentation</span><span className="ln-ct">8</span></div>
@@ -270,8 +310,16 @@ function FlowMock({ mode }: { mode: FlowMode }) {
             <div className="ln-mm-tnode"><span className="ln-caret">▸</span><span className="ln-sw" style={{ background: 'var(--c-moss)' }} /><span>Plain-language support</span><span className="ln-ct">12</span></div>
             <div className="ln-mm-tnode"><span className="ln-caret">▸</span><span className="ln-sw" style={{ background: 'var(--c-indigo)' }} /><span>Identity work</span><span className="ln-ct">7</span></div>
             <div className="ln-mm-tnode"><span className="ln-caret">▸</span><span className="ln-sw" style={{ background: 'var(--c-teal)' }} /><span>Trust &amp; safety</span><span className="ln-ct">9</span></div>
+            <div className="ln-mm-tnode"><span className="ln-caret">▸</span><span className="ln-sw" style={{ background: 'var(--c-cyan)' }} /><span>Application process</span><span className="ln-ct">4</span></div>
           </div>
         </div>
+        <div className="ln-mm-pop">
+          <span className="dim">Rename…</span>
+          <span className="sel">Merge into…</span>
+          <span className="dim">Split code…</span>
+          <span className="dim">Change color</span>
+        </div>
+        <div className="ln-mm-foot"><span>47 codes · 4 roots</span><span>last edit 2m ago</span></div>
       </div>
     )
   }
@@ -279,19 +327,22 @@ function FlowMock({ mode }: { mode: FlowMode }) {
     return (
       <div className="ln-mm">
         <div className="ln-mm-top">
-          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Classify</span>
+          <span className="ln-mt-dot" />Fieldnote
+          <MockTabs active="Classify" />
         </div>
         <div className="ln-mm-body">
-          <div className="ln-mm-h">Cases · 5 of 12</div>
+          <div className="ln-mm-h">Cases · participants</div>
           <div className="ln-mm-tbl">
             <div className="ln-h">CASE</div><div className="ln-h">ROLE</div><div className="ln-h">COHORT</div><div className="ln-h">QUOTES</div>
             <div className="ln-id">P01</div><div>Researcher</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-teal) 22%, white)', color: 'var(--c-teal)' }}>A</span></div><div className="ln-num">12</div>
             <div className="ln-id">P02</div><div>Student</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-rose) 22%, white)', color: 'var(--c-rose)' }}>B</span></div><div className="ln-num">9</div>
-            <div className="ln-id">P03</div><div>Customer</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-amber) 30%, white)', color: 'var(--ink-2)' }}>A</span></div><div className="ln-num">14</div>
+            <div className="ln-id">P03</div><div>Customer</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-teal) 22%, white)', color: 'var(--c-teal)' }}>A</span></div><div className="ln-num">14</div>
             <div className="ln-id">P04</div><div>Researcher</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-teal) 22%, white)', color: 'var(--c-teal)' }}>A</span></div><div className="ln-num">7</div>
             <div className="ln-id">P05</div><div>Student</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-rose) 22%, white)', color: 'var(--c-rose)' }}>B</span></div><div className="ln-num">11</div>
+            <div className="ln-id">P06</div><div>Caseworker</div><div><span className="ln-chip" style={{ background: 'color-mix(in oklch, var(--c-rose) 22%, white)', color: 'var(--c-rose)' }}>B</span></div><div className="ln-num">8</div>
           </div>
         </div>
+        <div className="ln-mm-foot"><span>12 cases · 3 attributes</span><span>role, cohort, site</span></div>
       </div>
     )
   }
@@ -299,26 +350,32 @@ function FlowMock({ mode }: { mode: FlowMode }) {
     return (
       <div className="ln-mm">
         <div className="ln-mm-top">
-          <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Analyze</span>
+          <span className="ln-mt-dot" />Fieldnote
+          <MockTabs active="Analyze" />
         </div>
         <div className="ln-mm-body">
-          <div className="ln-mm-h">Crosstab · code × cohort</div>
+          <div className="ln-mm-filter">
+            <span className="ln-k">code:</span><span>Access barriers</span><span className="ln-k">×</span>
+            <span className="ln-k">cohort:</span><span>all</span><span className="ln-cursor" />
+          </div>
           <div className="ln-mm-matrix">
             <div className="ln-h">CODE</div><div className="ln-h">CUST.</div><div className="ln-h">STUD.</div><div className="ln-h">RES.</div>
             <div>Access</div><div className="ln-num ln-hot">12</div><div className="ln-num">7</div><div className="ln-num">2</div>
             <div>Support</div><div className="ln-num">4</div><div className="ln-num ln-hot">9</div><div className="ln-num">3</div>
             <div>Trust</div><div className="ln-num">6</div><div className="ln-num">3</div><div className="ln-num">5</div>
             <div>Identity</div><div className="ln-num">2</div><div className="ln-num ln-hot">8</div><div className="ln-num">1</div>
+            <div>Documentation</div><div className="ln-num ln-hot">7</div><div className="ln-num">2</div><div className="ln-num">1</div>
           </div>
-          <div className="ln-mm-h" style={{ marginTop: 4 }}>n = 41 excerpts · 12 cases</div>
         </div>
+        <div className="ln-mm-foot"><span>41 excerpts · 12 cases</span><span>crosstab</span></div>
       </div>
     )
   }
   return (
     <div className="ln-mm">
       <div className="ln-mm-top">
-        <span className="ln-mt-dot" />Fieldnote<span className="ln-mt-tab">Report</span>
+        <span className="ln-mt-dot" />Fieldnote
+        <MockTabs active="Report" />
       </div>
       <div className="ln-mm-body">
         <div className="ln-mm-report">
@@ -333,8 +390,11 @@ function FlowMock({ mode }: { mode: FlowMode }) {
           </div>
           <div className="ln-meta">P03 · LINES 3–5 · CROSSTAB ON P. 12</div>
         </div>
-        <div className="ln-mm-h" style={{ marginTop: 6 }}>Export · PDF · WORD · CSV · XLSX</div>
+        <div className="ln-mm-export">
+          <span className="go">Export PDF</span><span>Word</span><span>CSV</span><span>XLSX</span>
+        </div>
       </div>
+      <div className="ln-mm-foot"><span>4 themes · 18 excerpts</span><span>draft</span></div>
     </div>
   )
 }
@@ -548,7 +608,6 @@ export function Landing() {
                     <h3>
                       {row.title} <em>{row.titleEm}</em>
                     </h3>
-                    <p>{row.body}</p>
                   </div>
                   <div className="landing-flow-shot">
                     <FlowMock mode={row.mode} />
@@ -585,8 +644,8 @@ export function Landing() {
                   <span>/ month</span>
                 </h3>
                 <p className="landing-price-desc">
-                  <strong>A single, low monthly price.</strong> Aimed at individuals and small
-                  teams. No seats, no quotes, no annual sales cycle.
+                  <strong>One plan, one low price.</strong> Priced so an individual researcher can
+                  pay it and move on with their work.
                 </p>
               </article>
               <article className="is-elsewhere">
@@ -595,8 +654,8 @@ export function Landing() {
                   $1,000+<span>/ seat / yr</span>
                 </h3>
                 <p className="landing-price-desc">
-                  <strong>NVivo, ATLAS.ti, MAXQDA.</strong> Locked behind sales calls and license
-                  keys, with desktop apps that lock your files to one machine.
+                  <strong>NVivo, ATLAS.ti, MAXQDA.</strong> Sold through sales calls and license
+                  keys, with desktop apps that tie your files to one machine.
                 </p>
               </article>
             </div>
@@ -643,8 +702,10 @@ export function Landing() {
               <h2>Everything else, briefly.</h2>
             </div>
             <div className="landing-brief-block" data-reveal>
-              <h3>Features.</h3>
-              <p>Already in the app.</p>
+              <div className="landing-brief-side">
+                <h3>Features.</h3>
+                <p>Already in the app.</p>
+              </div>
               <table>
                 <thead>
                   <tr>
@@ -663,8 +724,10 @@ export function Landing() {
               </table>
             </div>
             <div className="landing-brief-block" id="roadmap" data-reveal>
-              <h3>Roadmap.</h3>
-              <p>Coming up.</p>
+              <div className="landing-brief-side">
+                <h3>Roadmap.</h3>
+                <p>Coming up.</p>
+              </div>
               <table>
                 <thead>
                   <tr>
