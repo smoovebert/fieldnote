@@ -32,7 +32,7 @@ Visual / design direction lives in:
 docs/design-system.md
 ```
 
-That spec ("Modern QDA System") is the source of truth for the creative direction pass: color tokens, typography (Manrope / Newsreader / Inter), spacing, components, and the three-pane layout. Rollout is phased — read the Rollout Plan section before touching styling code.
+That spec ("Modern QDA System") is the source of truth for the creative direction pass: color tokens, typography (Newsreader / Inter Tight / JetBrains Mono via the 8-tier `--t-t1`..`--t-t8` scale; an older token block in the doc still mentions Manrope — the tier table is current), spacing, components, and the three-pane layout. Rollout is phased — read the Rollout Plan section before touching styling code.
 
 ### 2026-05-10 Alpha Orientation Pass
 
@@ -265,10 +265,10 @@ Workspace layout is now three columns:
 Use the production URL for normal testing:
 
 ```text
-https://fieldnote-seven.vercel.app
+https://fieldnoteqda.com
 ```
 
-Primary production domain is `https://fieldnoteqda.com`; keep the Vercel URL as a fallback while DNS and auth settings settle.
+`https://fieldnote-seven.vercel.app` remains as a fallback.
 
 Vercel has the required `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` variables in Production and Development. Preview deployments from the production branch do not automatically receive those variables, so ad hoc preview links may show the missing-env message unless deployed with explicit build env values or created from a non-production preview branch.
 
@@ -283,8 +283,10 @@ Vercel has the required `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` variabl
 - React
 - TypeScript
 - Vite
+- Vitest (unit tests under `src/**/__tests__/`)
 - Supabase Auth
 - Supabase Postgres
+- Supabase Edge Functions (`ai-call`, `save-key`, `delete-account`, `early-access-signup`)
 - Vercel
 - `lucide-react` icons
 
@@ -306,16 +308,24 @@ Run checks:
 
 ```bash
 npm run lint
+npm run test        # Vitest, run once (npm run test:watch for watch mode)
 npm run build
+```
+
+Typecheck only (faster than a full build):
+
+```bash
+npx tsc -p tsconfig.app.json --noEmit
 ```
 
 ## Environment Variables
 
-The app uses Vite public Supabase variables:
+The app uses Vite public variables (see `.env.example`):
 
 ```bash
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
+VITE_FIELDNOTE_ACCESS_FORM_URL
 ```
 
 These are already set in:
@@ -331,7 +341,6 @@ Do not commit `.env.local`.
 Supabase tables currently used:
 
 - `fieldnote_projects`
-- `fieldnote_project_members`
 - `fieldnote_sources`
 - `fieldnote_folders`
 - `fieldnote_codes`
@@ -343,6 +352,12 @@ Supabase tables currently used:
 - `fieldnote_attributes`
 - `fieldnote_attribute_values`
 - `fieldnote_queries`
+- `fieldnote_query_results` (analysis snapshots)
+- `fieldnote_user_settings` (+ `fieldnote_user_settings_safe` view; AI provider/consent/keys)
+- `fieldnote_ai_calls`, `fieldnote_ai_usage` (+ safe view), `fieldnote_ai_cost_log`
+- `fieldnote_access_invites` (early-access allowlist + auth triggers)
+
+`fieldnote_project_members` exists in the schema as parked sharing groundwork; the app does not use it.
 
 Schema:
 
@@ -350,20 +365,11 @@ Schema:
 supabase/schema.sql
 ```
 
-Migrations:
+Migrations (the directory is the canonical list — 23 applied as of 2026-06-11, `20260427202944_fieldnote_auth_schema.sql` through `20260515143000_add_early_access_gate.sql`):
 
 ```bash
 supabase/migrations/
 ```
-
-Applied migrations:
-
-- `20260427202944_fieldnote_auth_schema.sql`
-- `20260427203844_add_sources_and_memos_to_projects.sql`
-- `20260428000000_fix_fieldnote_rls_recursion.sql`
-- `20260428010000_normalize_core_objects.sql`
-- `20260428020000_add_cases_and_attributes.sql`
-- `20260429010000_add_saved_queries.sql`
 
 Current project data is now dual-written:
 
@@ -497,18 +503,16 @@ Typing in a missing context memo creates it automatically.
 
 - Current UI is still provisional, but the landing and signed-in shell now share a clearer visual direction: dark shell, light work area, serif detail titles, stable mode preface/orientation bands, and flatter research-ledger surfaces. Continue polishing mode surfaces and right rails within that system instead of adding one-off panels.
 - Right rail still contains too many unrelated concepts.
-- Relationships view is only a placeholder.
-- AI draft panel is only a placeholder.
+- Relationship *maps* (concept/relationship visualizations) remain unbuilt; code co-occurrence ships under Analyze's "Relationships" group, but the map surfaces are roadmap items.
 - Analyze is now framed as a research-question workbench: sidebar grouped by Evidence / Compare / Language / Relationships rather than panel types; right rail leads with a natural-language "current question" sentence; every count opens evidence (matrix/crosstab/cooccurrence cells and word-frequency words all jump to Find-excerpts with merged filters); snapshots cover all five panel kinds (coded_excerpt + matrix + frequency + cooccurrence + crosstab) with point-in-time fidelity; Send-to-Report works from every panel with a per-snapshot interpretation memo and explicit include flag. Remaining gap: a true multi-code AND filter on the query schema (today co-occurrence drill-down lands on the first code only).
 - Report mode has a real preview, section toggles, formatted Word/PDF outputs, CSV/XLSX raw-data exports, and embedded snapshot visualizations (matrix/crosstab heatmaps with proportional cell shading, freq/cooccur inline bars). Remaining gap is full archive export.
 - Classify mode has real cases, source assignments, editable text attributes, attribute CSV import, and attribute-based grouping. Remaining gap: persistent case sets.
 - Code hierarchy supports parent assignment, tree display, drag-to-nest, drag-to-root, split code, exact duplicate-name review, and orphan reference review. Remaining gaps are bulk recode multi-select and fuzzy duplicate detection.
 - Project sharing has database groundwork but no invite UI.
-- Supabase email signup hit a temporary rate limit during automated testing.
 
 ## Mode Shell Status
 
-Milestone 1 has been started.
+The mode shell is built and shipped; the list below is the running implementation record (chronological — later bullets supersede earlier ones, e.g. the left-rail mode switcher described early in the list was later replaced by the top horizontal nav).
 
 Implemented:
 
@@ -590,6 +594,7 @@ Implemented:
 - Auth modal route-decoupling fix (2026-05-19): the sign-in/request-access modal opened from the public landing page rendered **unstyled, in normal flow under the footer** instead of as an overlay. Two compounding causes: (1) `.auth-overlay` (the modal's positioning/scrim wrapper) was referenced in `AuthModal.tsx` but **defined in no stylesheet at all** — no `position: fixed`, no z-index, no backdrop; (2) `.auth-card` + field/button styles lived only in `src/styles/app-frame.css`, which is imported solely by `App.tsx` (the signed-in shell), so the `Landing` route never loaded them. Fix: moved all `.auth-*` rules into a new self-contained `src/styles/auth-modal.css` that `AuthModal.tsx` imports itself (so the modal is fully styled on every route), added the missing `.auth-overlay` (`position: fixed; inset: 0; z-index: 1000; flex-centered; scrim + backdrop-blur; overflow-y:auto with `.auth-card { margin:auto }` so tall modals scroll), and trimmed the orphaned `.auth-*` block from `app-frame.css` while preserving the shared `.project-home-*` / `.empty-project-state` text rule. The new sheet uses global tokens (`--surface`/`--line`/`--muted`/`--accent` from index.css, `--ink` from tokens.css) with literal fallbacks so it can never render unstyled again. DOM-verified: overlay `position:fixed` z-index 1000 inset 0, card centered exactly at viewport center. Also relabeled the closing-CTA ghost button from "Read the docs" (which wrongly opened the auth modal, and there is no docs site) to "Sign in", consistent with the hero's secondary action; it keeps its existing `openAuth('sign-in')` handler. Hero mock cleanup same day: removed the Caveat hand-note "a coded passage, plain as that" + its arrow (felt out of place), so `.landing-mock-stage` collapsed from a 3-col annotation grid to a simple `max-width:880px; margin:0 auto` centered block; added a restrained one-shot entrance animation on `.landing-hero-shot` (`landing-hero-rise`: 16px rise + 0.985→1 scale + fade, 0.7s/0.15s delay, disabled under reduced-motion; parallax stays on the parent stage so the two transforms don't fight). Caveat is now fully unused — dropped `--font-hand` and the Caveat family from the `index.html` Google Fonts URL (one fewer webfont).
 - In-UI mock animations (2026-05-19, play-once-on-view): the hero Code mock and the six FLOW mini-mocks now perform a one-shot scripted intro instead of sitting static. Hero: a `data-play` element gets `.is-playing` (added by the same rAF rect check that drives reveals, threshold `innerHeight*0.85`); CSS keyframes then run after the `landing-hero-rise` entrance — the two transcript `.ln-mmark` spans `clip-path` wipe in (`lm-wipe`, staggered 0.95s/1.15s), the "⌖ Code selection" button pops (`lm-pop`), the active code row settles in (`lm-rise`). Flow mocks reuse the row's existing `.landing-flow-row.is-in` reveal class (no new JS, and the row is `opacity:0` until then so there is no first-frame flash): `.ln-mm-body > *` stagger up via `:nth-child` delays, plus a per-mode signal — `.ln-mm-mark` wipes, `.ln-mm-codepill` pops, `.ln-mm-matrix .ln-num.ln-hot` cells heat (`lm-heat`, white→amber, `fill-mode: none` so they settle to each cell's own resting style). Resting state is the finished UI, so `prefers-reduced-motion` just sets these to `animation: none` and the mock is already complete (explicit overrides added in the reduced-motion block). DOM-verified: hero `.is-playing` + `lm-wipe`, flow `lm-rise`/`lm-wipe`/`lm-pop` fire on scroll-in, zero horizontal overflow.
 - Landing fidelity pass to final design bundle (2026-06-11): re-synced `src/Landing.tsx` + `src/Landing.css` against the final Claude Design handoff `Fieldnote Landing.html` (chat transcripts through 2026-05-18; the live React had been ported from an earlier checkpoint and drifted). Five changes, all toward the final HTML, with the local scroll-effect enhancements (reveal/progress/parallax/play-once, AuthModal wiring, `.landing-root` scoping) preserved: (1) **FLOW mini-mocks upgraded to the polished version** — each `ln-mm` now has `grid-template-rows: 32px 1fr auto` with a full 7-mode tab row (`.ln-mm-tabs`, active = `.on`, replacing the old single `.ln-mt-tab`) and a status footer (`.ln-mm-foot`, e.g. "16 sources · 3 folders / autosaved just now"); content thickened to match the deck — organize: 3 folder groups; code: two highlight colors (rose marks lines 3–4 + amber 9–10) and two code pills (rose Access barriers, moss Plain-language support, each setting `--swatch` inline); refine: context-menu `.ln-mm-pop` popover (Rename/Merge/Split/Change color) on `.ln-mm-wrap`; classify: 6 case rows; analyze: `.ln-mm-filter` query bar with blinking `.ln-cursor` + 5-row crosstab; report: `.ln-mm-export` buttons (Export PDF/Word/CSV/XLSX). New cursor blink is disabled under `prefers-reduced-motion`. (2) Hero mock rail gained the **Codes** group (Access barriers 14 / Trust and safety 9 / Identity work 7) and its meta strip is now "Transcript · Internals · 137 words · 1 code applied" per the design. (3) **FLOW row copy reduced to step + two-line headline only** — body paragraphs removed (the user explicitly killed per-row body copy in the transcript), `body` field dropped from `FLOW_ROWS`. (4) PROOF copy synced: "One plan, one low price. Priced so an individual researcher can pay it and move on with their work." and "Sold through sales calls and license keys, with desktop apps that tie your files to one machine." (5) **BRIEF moved to the final side-rail layout** — `.landing-brief-block` is now a `minmax(180px,4fr) 8fr` grid with the Features./Roadmap. group label + caption in a left `.landing-brief-side` rail and the table filling the right; stacks to one column below 1080px. Design-tool-only artifacts (the React `proofVariant` "Tweaks" postMessage portal) stay omitted. Verified in-browser at 1280px and 600px (all six flow mocks, proof, brief desktop + mobile) with zero console errors; clean `tsc -p tsconfig.app.json` + `eslint` + `vite build`.
+- Handoff doc accuracy audit (2026-06-11): reference sections re-verified against the codebase and corrected — Database section now lists all tables in active use (added `fieldnote_query_results`, `fieldnote_user_settings` + safe view, AI tables, `fieldnote_access_invites`; noted `fieldnote_project_members` as parked-unused) and points at `supabase/migrations/` as the canonical migration list (23 applied) instead of a stale 6-item enumeration; Environment Variables gained `VITE_FIELDNOTE_ACCESS_FORM_URL`; Local Development gained `npm run test` + typecheck-only command; Tech Stack gained Vitest + Edge Functions; Deployment rewritten to auto-deploy-from-main (manual command kept as fallback) with the Vercel-MCP-403 verification note; Testing Rule now names `fieldnoteqda.com` as the testing URL; design-system.md description corrected to Newsreader/Inter Tight/JetBrains Mono 8-tier scale (was "Manrope/Newsreader/Inter"); Known Issues dropped two bullets contradicted by shipped work ("AI draft panel is only a placeholder", the stale signup-rate-limit note) and reframed "Relationships view is only a placeholder" as relationship-*maps*-unbuilt; Mode Shell Status intro no longer claims "Milestone 1 has been started" and now flags the list as chronological/superseding. Dated changelog entries were spot-checked and left untouched — they are the historical record. Deliberately not changed (owner's call): the 2026-05-03 development-pause banner (substantial work shipped after that date; the banner should either carry a fresher date or state the pause's actual scope) and Current Status's "provisional UI / next major pass" framing (that pass has largely shipped).
 - CLAUDE.md added (2026-05-19): root `CLAUDE.md` for Claude Code — commands (incl. single-test + typecheck-only), the no-server / Supabase-Edge-Function architecture, project-first mode workspace, where domain logic lives (`src/lib/` pure modules), and the project-specific constraints (handoff.md as decision log, `.landing-root`-scoped styling, DB-enforced early-access gate, linear-history direct-to-main, Vercel auto-deploy). Does not duplicate this changelog; `handoff.md` remains the decision log of record.
 - Early-access signup gate (2026-05-15): public landing CTAs now say "Request early access" while Sign in remains available for existing testers. New account creation routes through `supabase/functions/early-access-signup` (deployed with `--no-verify-jwt`) and checks `public.fieldnote_access_invites` before calling Supabase Auth. Migration `20260515143000_add_early_access_gate.sql` adds the allowlist table plus auth triggers: `fieldnote_enforce_access_invite_before_user_insert` blocks any `auth.users` insert without an invited/accepted normalized email, and `fieldnote_mark_access_invite_after_user_insert` marks the invite accepted after account creation. This means the gate is not just frontend copy; direct Supabase signups are blocked too. To invite a tester: `insert into public.fieldnote_access_invites (email, notes) values ('researcher@example.edu', 'May 2026 tester cohort');`. Request form URL is `VITE_FIELDNOTE_ACCESS_FORM_URL=https://forms.gle/YfspoVA8Gz6nBUAc9`; missing value falls back to the contact email. Verified remote behavior: uninvited Edge Function call returns 403 `early-access-required`; direct uninvited `supabase.auth.signUp` returns "Database error saving new user" from the auth trigger.
 - Privacy policy + landing-footer link bar (2026-05-03): `docs/privacy-policy.md` + `public/privacy-policy.md` (dual-file sync pattern, same caveat as TOS). Doc covers what we collect, where it lives (Supabase us-west-2, Vercel, Google Gemini for free-tier AI), who else touches the data, the absence of any third-party analytics or trackers, researcher control levers (export, delete project, in-app account delete, withdraw AI consent), retention, security posture, and contact. Landing footer now reads "Terms of Service · Privacy Policy · Contact" with the contact mailto pointing at studio.ops@behemothagency.com.
@@ -690,17 +695,15 @@ Do not treat NVivo as a visual skin. Treat it as a research workflow reference.
 
 ## Deployment
 
-Deploy production manually:
+Vercel auto-deploys production from pushes to `main` (repo history is linear — commit and push directly to `main`). Manual deploy, if ever needed:
 
 ```bash
 npx vercel deploy --prod -y
 ```
 
-Current production alias:
+Production: `https://fieldnoteqda.com` (Vercel fallback: `https://fieldnote-seven.vercel.app`).
 
-```bash
-https://fieldnote-seven.vercel.app
-```
+Note: the Vercel MCP token connected to Claude sessions is not authorized for the `behemoth-agency` team scope (403) — verify deploys by loading the production site, not via the MCP tools.
 
 ## Data safety / "do not lose Stacey's work"
 
