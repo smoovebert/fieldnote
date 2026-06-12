@@ -48,43 +48,58 @@ colors:
   background: '#f8f9fa'
   on-background: '#191c1d'
   surface-variant: '#e1e3e4'
+# typography: superseded by the 8-tier scale in src/styles/tokens.css
+# (--t-t1..--t-t8 — Newsreader / Inter Tight / JetBrains Mono).
+# See the Typography section below; tokens.css is the canonical source.
 typography:
-  display-lg:
-    fontFamily: Manrope
+  t1-detail-title:
+    fontFamily: Newsreader
     fontSize: 32px
-    fontWeight: '700'
+    fontWeight: '500'
+    lineHeight: '1.15'
+    letterSpacing: -0.018em
+  t2-page-title:
+    fontFamily: Inter Tight
+    fontSize: 22px
+    fontWeight: '500'
     lineHeight: '1.2'
-  headline-md:
-    fontFamily: Manrope
-    fontSize: 24px
-    fontWeight: '600'
-    lineHeight: '1.3'
-  title-sm:
-    fontFamily: Manrope
-    fontSize: 18px
-    fontWeight: '600'
+    letterSpacing: -0.012em
+  t3-section-head:
+    fontFamily: Inter Tight
+    fontSize: 16px
+    fontWeight: '500'
+    lineHeight: '1.35'
+  t4-subhead:
+    fontFamily: Inter Tight
+    fontSize: 14px
+    fontWeight: '500'
     lineHeight: '1.4'
-  body-main:
-    fontFamily: Manrope
-    fontSize: 15px
+  t5-body:
+    fontFamily: Inter Tight
+    fontSize: 13.5px
     fontWeight: '400'
-    lineHeight: '1.6'
+    lineHeight: '1.5'
+  t6-body-small:
+    fontFamily: Inter Tight
+    fontSize: 12.5px
+    fontWeight: '400'
+    lineHeight: '1.45'
+  t7-eyebrow:
+    fontFamily: Inter Tight
+    fontSize: 10.5px
+    fontWeight: '600'
+    lineHeight: '1.2'
+    letterSpacing: 0.10em
+  t8-mono-meta:
+    fontFamily: JetBrains Mono
+    fontSize: 11px
+    fontWeight: '400'
+    lineHeight: '1.3'
   reader-text:
     fontFamily: Newsreader
     fontSize: 18px
     fontWeight: '400'
-    lineHeight: '1.8'
-  label-caps:
-    fontFamily: Inter
-    fontSize: 12px
-    fontWeight: '600'
-    lineHeight: '1'
-    letterSpacing: 0.05em
-  code-inline:
-    fontFamily: Inter
-    fontSize: 13px
-    fontWeight: '500'
-    lineHeight: '1.4'
+    lineHeight: '1.7'
 rounded:
   sm: 0.125rem
   DEFAULT: 0.25rem
@@ -104,11 +119,16 @@ spacing:
   inspector-width: 320px
 ---
 
-> **Superseded as of 2026-04-29.** The aesthetic direction now lives in
+> **Partially superseded as of 2026-04-29.** The *aesthetic direction* (palette
+> mood, brand affect) now lives in
 > `docs/superpowers/specs/2026-04-29-aesthetic-foundations-landing-design.md`
 > and the design bundle exported from claude.ai/design (Variant A — "Quiet").
-> The body of this file is kept for historical reference only and should not
-> drive new styling work.
+> The original "Modern QDA System" prose below (Brand & Style, Colors,
+> Elevation, Shapes, Components) is historical reference and should not drive
+> new styling work. **Still current and authoritative:** the Typography
+> section (8-tier scale, canonical in `src/styles/tokens.css`), Responsive
+> Shell Rules, Signed-In App Rhythm, and the dated landing/polish notes below
+> — those were added after this banner and reflect the live product.
 
 > **Landing note, 2026-05-16.** The public homepage now intentionally departs
 > from the older "quiet corporate lab" affect. Keep the product UI calm and
@@ -231,14 +251,14 @@ The shape language is **Soft**. A 0.25rem (4px) corner radius is the standard fo
 - **Source Reader:** The central component. It must support text selection highlights. Highlights use a 20% opacity of the Indigo or Teal color to ensure the Newsreader serif font remains perfectly legible underneath.
 - **Data Tables:** Border-less design. Use subtle zebra-striping only on hover to help the eye track across long rows of metadata.
 - **Input Fields:** Minimalist style—only a bottom border in the default state, moving to a full teal outline on focus to minimize the "boxiness" of the forms.
-- **Collapsible Panels:** Used for "Folders" and "Code Books." Use a chevron icon that rotates 90 degrees; labels should use `label-caps` for clear categorization.
+- **Collapsible Panels:** Used for "Folders" and "Code Books." Use a chevron icon that rotates 90 degrees; labels should use the T7 eyebrow style (`--t-t7` + uppercase tracking) for clear categorization.
 - **Error Recovery Screens:** Full-screen fallback surfaces should be calm, plain, and actionable: Fieldnote label, one short title, one reassuring paragraph about cloud/browser recovery, and a single primary reload action. Do not show a blank page or stack trace to end users.
 
 ---
 
 ## Implementation Notes
 
-These are reconciliations and accessibility considerations identified when adopting the spec. The frontmatter above is the canonical source of tokens; this section captures decisions that aren't expressible in the token block.
+These are reconciliations and accessibility considerations identified when adopting the spec. The frontmatter above is the canonical source for *color / radius / spacing* tokens; **typography's canonical source is `src/styles/tokens.css`** (`--t-t1`..`--t-t8` — the frontmatter typography block mirrors it for reference only). This section captures decisions that aren't expressible in the token block.
 
 - **Border color reconciliation:** The "Elevation & Depth" prose references `#E1E3E6` for 1px container borders. The closest token is `outline-variant: #bfc8c9` (more visible) or `surface-container-highest: #e1e3e4` (closer hex match, but it is a *fill* token by intent). **Decision pending** — flag this when starting Phase 3 (primitive components).
 - **Coding chip "remove" affordance:** Spec says the remove icon appears only on hover. Hover-only reveals are inaccessible to keyboard and touch users. Implementation must also reveal the icon on `:focus-within` and on touch devices (e.g. via `@media (hover: none)`).
@@ -248,10 +268,10 @@ These are reconciliations and accessibility considerations identified when adopt
 
 Phased so each phase is independently shippable and reviewable:
 
-1. **Design tokens** — CSS variables for color / type / spacing / radius driven from this spec's frontmatter.
-2. **Typography setup** — Load Manrope, Newsreader, Inter; apply `body-main`, `reader-text`, `label-caps` to the right surfaces.
-3. **Primitive components** — Buttons, chips, inputs, collapsible panels.
-4. **Layout shell** — Three-pane architecture (sidebar / reader / inspector).
-5. **Mode-by-mode polish** — Organize → Code → Refine → Classify → Analyze → Report.
+1. **Design tokens** — CSS variables for color / type / spacing / radius. ✓ shipped (`src/styles/tokens.css`).
+2. **Typography setup** — Load Newsreader, Inter Tight, JetBrains Mono; apply the `--t-t1`..`--t-t8` tiers to the right surfaces. ✓ shipped (eight-tier pass, 2026-05-03; recalibrated by the 2026-05-16 polish pass).
+3. **Primitive components** — Buttons, chips, inputs, collapsible panels. Largely shipped through the mode-shell work; no separate primitive library exists.
+4. **Layout shell** — Three-pane architecture (sidebar / reader / inspector). ✓ shipped (plus top horizontal mode nav).
+5. **Mode-by-mode polish** — Organize → Code → Refine → Classify → Analyze → Report. ✓ first full pass shipped (2026-05-16 signed-in polish); ongoing refinement per `handoff.md`.
 
-Status: spec saved, no code changes yet.
+Status: phases 1–5 are live in production. This file remains the reference for the rules above; `handoff.md` carries the running implementation record.
