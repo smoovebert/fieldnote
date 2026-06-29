@@ -706,6 +706,18 @@ Production: `https://fieldnoteqda.com` (Vercel fallback: `https://fieldnote-seve
 
 Note: the Vercel MCP token connected to Claude sessions is not authorized for the `behemoth-agency` team scope (403) — verify deploys by loading the production site, not via the MCP tools.
 
+### Supabase Free Plan Keepalive
+
+Supabase reported the `Fieldnote` project (`ofvxesweiilycuakduff`) as `INACTIVE` on 2026-06-15 while the Vercel frontend was still live. Supabase can pause Free Plan projects after low activity in a 7-day window.
+
+The working keepalive path is now GitHub Actions direct to Supabase: `.github/workflows/supabase-keepalive.yml` calls the no-data Supabase RPC `public.fieldnote_keepalive()` every 3 days. This is intentionally tiny: it does not read tester data or write rows; it only creates a real Supabase/Postgres interaction often enough to keep the project warm.
+
+The RPC lives in migration `supabase/migrations/20260615203000_add_keepalive_rpc.sql`. It was applied directly to production and marked applied in Supabase migration history on 2026-06-29 because normal `supabase db push --dry-run` is still blocked by two older duplicate local migration files (`20260427202944... 2.sql`, `20260501190400... 2.sql`) that are not part of this keepalive fix.
+
+GitHub repository secrets `FIELDNOTE_SUPABASE_URL` and `FIELDNOTE_SUPABASE_ANON_KEY` were added on 2026-06-29. Direct live verification returned `200 OK` with `{ "ok": true, "checked_at": ... }`.
+
+- GitHub Action keepalive backup (2026-06-29): added `.github/workflows/supabase-keepalive.yml`, scheduled at `17 15 */3 * *`, to POST directly to `${FIELDNOTE_SUPABASE_URL}/rest/v1/rpc/fieldnote_keepalive` with the anon key. Live verification before installing the RPC returned `PGRST202` / function not found; after applying the RPC it returned `200 OK`.
+
 ## Data safety / "do not lose Stacey's work"
 
 Real research data deserves boring, redundant, recoverable storage. Layers
