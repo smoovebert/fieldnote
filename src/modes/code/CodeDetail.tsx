@@ -215,7 +215,7 @@ export function CodeDetail(props: Props) {
         dismissKey="code"
         kicker="Coding pass"
         title="Close-read and mark evidence"
-        body="Highlight a passage, then apply one or more codes. The quick menu is best for exploratory coding; the right rail is best when you already know which codes should stay active."
+        body="This is the reading-and-marking pass: highlight a passage, then apply one or more codes. The quick menu is best for exploratory coding; the right rail is best when you already know which codes should stay active. To reshape the codebook itself — merge, split, rename, or nest codes — switch to Refine."
         points={[
           { label: 'Multiple codes', detail: 'A passage can carry several codes when themes overlap.' },
           { label: 'New codes', detail: 'Create a code directly from the quick menu when a theme appears mid-read.' },
