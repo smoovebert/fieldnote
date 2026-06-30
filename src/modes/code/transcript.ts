@@ -125,27 +125,81 @@ export function selectionPageInfo(container: HTMLElement | null): SelectionPageI
   return { kind: 'page', pageNumber, charOffset: charOffsetWithinPage(startPage, range) }
 }
 
+// Overlay every excerpt's codes onto `body`, supporting OVERLAPPING and
+// NESTED spans — coding a sub-portion of an already-coded passage, or two
+// partially-overlapping excerpts, both render correctly with their codes
+// merged in the shared region. (The prior per-excerpt flatMap let the
+// first excerpt to claim a region own it exclusively, so any later
+// overlapping excerpt was silently dropped from the render.)
+//
+// Algorithm: resolve each excerpt to an absolute [start, end) span in
+// `body`, cut the body at every span boundary, then for each resulting
+// segment collect the union of codes from every span covering it. A
+// segment with no covering span is plain text.
+export function buildHighlightPieces(
+  body: string,
+  excerpts: Array<{ text: string; codeIds: string[] }>,
+  codes: Array<{ id: string; name: string; color: string }>,
+): TranscriptPiece[] {
+  type Span = { start: number; end: number; codes: NonNullable<TranscriptPiece['codes']> }
+  const spans: Span[] = []
+  for (const excerpt of excerpts) {
+    const excerptCodes = codes.filter((c) => excerpt.codeIds.includes(c.id))
+    if (!excerptCodes.length || !excerpt.text.trim()) continue
+    const span = findExcerptInBody(body, excerpt.text)
+    if (!span) continue
+    spans.push({
+      start: span.start,
+      end: span.end,
+      codes: excerptCodes.map((c) => ({ id: c.id, color: c.color, name: c.name })),
+    })
+  }
+
+  if (spans.length === 0) return body ? [{ text: body }] : []
+
+  // Every span boundary becomes a cut point; segments between adjacent
+  // cuts are uniform in their covering set.
+  const cuts = new Set<number>([0, body.length])
+  for (const s of spans) {
+    cuts.add(s.start)
+    cuts.add(s.end)
+  }
+  const ordered = [...cuts].sort((a, b) => a - b)
+
+  const pieces: TranscriptPiece[] = []
+  for (let i = 0; i < ordered.length - 1; i += 1) {
+    const segStart = ordered[i]
+    const segEnd = ordered[i + 1]
+    const text = body.slice(segStart, segEnd)
+    if (!text) continue
+
+    // Union the codes of every span that fully covers this segment,
+    // de-duped by id and kept in first-seen order for stable striping.
+    const seen = new Set<string>()
+    const merged: NonNullable<TranscriptPiece['codes']> = []
+    for (const s of spans) {
+      if (s.start <= segStart && s.end >= segEnd) {
+        for (const c of s.codes) {
+          if (!seen.has(c.id)) {
+            seen.add(c.id)
+            merged.push(c)
+          }
+        }
+      }
+    }
+    pieces.push(merged.length ? { text, codes: merged } : { text })
+  }
+  return pieces
+}
+
+// Per-page highlight builder for PDF sources — thin wrapper over
+// buildHighlightPieces scoped to a single page's body.
 export function buildPageHighlights(
   pageBody: string,
   excerpts: Array<{ text: string; codeIds: string[] }>,
   codes: Array<{ id: string; name: string; color: string }>,
 ): TranscriptPiece[] {
-  let pieces: TranscriptPiece[] = [{ text: pageBody }]
-  for (const excerpt of excerpts) {
-    const excerptCodes = codes.filter((c) => excerpt.codeIds.includes(c.id))
-    if (!excerptCodes.length || !excerpt.text.trim()) continue
-    pieces = pieces.flatMap((piece) => {
-      if (piece.codes) return [piece]
-      const span = findExcerptInBody(piece.text, excerpt.text)
-      if (!span) return [piece]
-      return [
-        { text: piece.text.slice(0, span.start) },
-        { text: piece.text.slice(span.start, span.end), codes: excerptCodes },
-        { text: piece.text.slice(span.end) },
-      ].filter((p) => p.text)
-    })
-  }
-  return pieces
+  return buildHighlightPieces(pageBody, excerpts, codes)
 }
 
 export function wrapHighlightedTranscript(

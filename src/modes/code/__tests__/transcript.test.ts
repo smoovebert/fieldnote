@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildHighlightPieces,
   findExcerptInBody,
   markBackground,
   wrapHighlightedTranscript,
@@ -125,5 +126,61 @@ describe('findExcerptInBody', () => {
 
   it('does not regex-explode on excerpt text containing special characters', () => {
     expect(findExcerptInBody('a (b) c', '(b)')).toEqual({ start: 2, end: 5 })
+  })
+})
+
+describe('buildHighlightPieces', () => {
+  const codes = [
+    { id: 'a', name: 'Alpha', color: '#f00' },
+    { id: 'b', name: 'Beta', color: '#0f0' },
+  ]
+
+  it('returns the whole body as one plain piece when nothing is coded', () => {
+    expect(buildHighlightPieces('hello world', [], codes)).toEqual([{ text: 'hello world' }])
+  })
+
+  it('marks a single excerpt span and leaves the rest plain', () => {
+    const pieces = buildHighlightPieces('the quick brown fox', [{ text: 'quick brown', codeIds: ['a'] }], codes)
+    expect(pieces).toEqual([
+      { text: 'the ' },
+      { text: 'quick brown', codes: [{ id: 'a', color: '#f00', name: 'Alpha' }] },
+      { text: ' fox' },
+    ])
+  })
+
+  it('merges codes when a sub-portion of a coded passage is coded again (nested)', () => {
+    // 'a b c d e' fully coded Alpha; then 'c' coded Beta inside it.
+    const pieces = buildHighlightPieces(
+      'a b c d e',
+      [
+        { text: 'a b c d e', codeIds: ['a'] },
+        { text: 'c', codeIds: ['b'] },
+      ],
+      codes,
+    )
+    // The 'c' segment carries BOTH codes; the flanks carry only Alpha.
+    const cPiece = pieces.find((p) => p.text === 'c')
+    expect(cPiece?.codes?.map((x) => x.id).sort()).toEqual(['a', 'b'])
+    // Every non-empty segment is still attributed to Alpha at minimum.
+    expect(pieces.filter((p) => p.text.trim()).every((p) => p.codes?.some((x) => x.id === 'a'))).toBe(true)
+    // Round-trips back to the original text with no characters lost.
+    expect(pieces.map((p) => p.text).join('')).toBe('a b c d e')
+  })
+
+  it('handles partially-overlapping excerpts, merging codes only in the intersection', () => {
+    // body indices: 'ABCDEF' — Alpha covers ABCD (0-4), Beta covers CDEF (2-6).
+    const pieces = buildHighlightPieces(
+      'ABCDEF',
+      [
+        { text: 'ABCD', codeIds: ['a'] },
+        { text: 'CDEF', codeIds: ['b'] },
+      ],
+      codes,
+    )
+    expect(pieces).toEqual([
+      { text: 'AB', codes: [{ id: 'a', color: '#f00', name: 'Alpha' }] },
+      { text: 'CD', codes: [{ id: 'a', color: '#f00', name: 'Alpha' }, { id: 'b', color: '#0f0', name: 'Beta' }] },
+      { text: 'EF', codes: [{ id: 'b', color: '#0f0', name: 'Beta' }] },
+    ])
   })
 })

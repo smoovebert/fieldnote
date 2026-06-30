@@ -64,7 +64,7 @@ import { RefineDetail } from './modes/refine/RefineDetail'
 import { buildCodeTree } from './lib/codeTree'
 import { ClassifyDetail } from './modes/classify/ClassifyDetail'
 import { OrganizeDetail } from './modes/organize/OrganizeDetail'
-import { buildPageHighlights, findExcerptInBody, wrapHighlightedTranscript } from './modes/code/transcript'
+import { buildHighlightPieces, buildPageHighlights, wrapHighlightedTranscript } from './modes/code/transcript'
 import { isPdfSource, parseSourcePages } from './lib/sourcePages'
 import { CodeDetail } from './modes/code/CodeDetail'
 import { Landing } from './Landing'
@@ -1004,32 +1004,11 @@ function App() {
   ].filter(Boolean)
 
   const highlightedTranscript = useMemo(() => {
-    let pieces: Array<{ text: string; codes?: Code[] }> = [{ text: activeSource.content }]
-
-    sourceExcerpts.forEach((excerpt) => {
-      const excerptCodes = codes.filter((item) => excerpt.codeIds.includes(item.id))
-      if (!excerptCodes.length || !excerpt.text.trim()) return
-
-      pieces = pieces.flatMap((piece) => {
-        if (piece.codes) return [piece]
-        // Whitespace-flexible match: a multi-line selection brings DOM
-        // line-wrap '\n' characters along that the source body doesn't
-        // have, so a strict indexOf misses. The shared helper does an
-        // exact-first / regex-fallback match and returns the slice
-        // bounds in the actual body so the displayed mark covers
-        // exactly what's in the source.
-        const span = findExcerptInBody(piece.text, excerpt.text)
-        if (!span) return [piece]
-
-        return [
-          { text: piece.text.slice(0, span.start) },
-          { text: piece.text.slice(span.start, span.end), codes: excerptCodes },
-          { text: piece.text.slice(span.end) },
-        ].filter((item) => item.text)
-      })
-    })
-
-    return pieces
+    // Shared overlay builder: supports overlapping/nested excerpts (e.g.
+    // coding a sub-portion of an already-coded passage) by merging codes
+    // per segment, and tolerates DOM line-wrap whitespace via
+    // findExcerptInBody's regex fallback.
+    return buildHighlightPieces(activeSource.content, sourceExcerpts, codes)
   }, [activeSource.content, codes, sourceExcerpts])
   const readerWordCount = useMemo(() => {
     const text = activeSource.content || ''
