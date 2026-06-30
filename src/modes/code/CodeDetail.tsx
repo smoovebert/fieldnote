@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Highlighter, Plus, Sparkles } from 'lucide-react'
+import { Highlighter, Plus, Sparkles, Undo2 } from 'lucide-react'
 import type { Code, Source } from '../../lib/types'
 import { markBackground, selectionPageInfo } from './transcript'
 import type { LineNumberingMode } from './transcript'
@@ -51,6 +51,8 @@ type Props = {
   toggleSelectedCode: (codeId: string) => void
   codeSelection: (selectedTextOverride?: string, pageInfo?: { pageNumber: number; charOffset: number }) => void
   applyCodesToText: (selectedText: string, codeIds?: string[], label?: string, pageInfo?: { pageNumber: number; charOffset: number }) => void
+  canUndoCoding: boolean
+  onUndoCoding: () => void
   buildNewCode: (name: string, parentCodeId?: string) => Code
   onSuggestCodes: (selectedText: string) => Promise<{ ok: true; suggestions: Array<{ name: string; description: string }> } | { ok: false; message: string }>
   isHostedAi: boolean
@@ -146,6 +148,17 @@ export function CodeDetail(props: Props) {
           <p className="active-codes-hint">{props.selectionHint} Active codes can be combined.</p>
         </div>
         <div className="active-codes-bar-actions">
+          {props.canUndoCoding && (
+            <button
+              type="button"
+              className="undo-code-button"
+              title="Undo the passage you just coded (⌘Z / Ctrl+Z)"
+              onClick={props.onUndoCoding}
+            >
+              <Undo2 size={15} aria-hidden="true" />
+              Undo
+            </button>
+          )}
           <label className="quick-toggle">
             <input
               type="checkbox"
@@ -199,6 +212,7 @@ export function CodeDetail(props: Props) {
       </div>
 
       <ModeOrientation
+        dismissKey="code"
         kicker="Coding pass"
         title="Close-read and mark evidence"
         body="Highlight a passage, then apply one or more codes. The quick menu is best for exploratory coding; the right rail is best when you already know which codes should stay active."

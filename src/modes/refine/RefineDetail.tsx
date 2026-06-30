@@ -85,6 +85,7 @@ export function RefineDetail(props: Props) {
       </div>
 
       <ModeOrientation
+        dismissKey="refine"
         kicker="Refinement pass"
         title="Turn first-pass codes into a codebook"
         body="Use Refine after coding to clean up names, write definitions, review excerpts, split broad codes, merge duplicates, and drag codes into a hierarchy."

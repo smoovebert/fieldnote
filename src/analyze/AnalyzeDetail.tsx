@@ -152,6 +152,7 @@ export function AnalyzeDetail({
       </div>
 
       <ModeOrientation
+        dismissKey="analyze"
         kicker="Analysis pass"
         title="Ask structured questions of the coded evidence"
         body="Use the filters to narrow the slice of data, then switch views depending on the kind of question. Send useful results to Report so they become part of the audit trail."

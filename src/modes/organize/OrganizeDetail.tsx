@@ -30,6 +30,7 @@ export function OrganizeDetail(props: Props) {
         </label>
       </div>
       <ModeOrientation
+        dismissKey="organize"
         kicker="What happens here"
         title="Organize the material before analysis"
         body="Bring in transcripts, notes, PDFs, and spreadsheets. Use folders, source memos, and case assignments to keep context attached before close-reading in Code."

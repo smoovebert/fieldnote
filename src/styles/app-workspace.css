@@ -913,6 +913,7 @@
 }
 
 .mode-orientation {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(240px, 0.95fr) minmax(320px, 1.35fr);
   gap: 24px;
@@ -923,6 +924,43 @@
   background:
     linear-gradient(90deg, color-mix(in oklch, var(--c-amber) 10%, transparent), transparent 42%),
     linear-gradient(180deg, color-mix(in oklch, var(--c-teal) 5%, transparent), transparent);
+}
+
+.mode-orientation-dismiss {
+  position: absolute;
+  top: 10px;
+  /* Aligned to the content's right edge; per-context overrides below
+     account for each layout's horizontal padding. */
+  right: 0;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-3, #6b7280);
+  cursor: pointer;
+}
+
+.document-panel > .mode-orientation > .mode-orientation-dismiss {
+  right: 28px;
+}
+
+.detail-card > .mode-orientation > .mode-orientation-dismiss {
+  right: var(--detail-card-pad-x, 28px);
+}
+
+.mode-orientation-dismiss:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink, #111827);
+}
+
+/* Reserve a right-hand gutter so the dismiss button never overlaps the
+   last point's text. */
+.mode-orientation:has(.mode-orientation-dismiss) .mode-orientation-points {
+  padding-right: 30px;
 }
 
 .document-panel > .mode-orientation {

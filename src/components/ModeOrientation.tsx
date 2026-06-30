@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { X } from 'lucide-react'
+
 type OrientationPoint = {
   label: string
   detail: string
@@ -8,9 +11,39 @@ type Props = {
   title: string
   body: string
   points?: OrientationPoint[]
+  // When set, the band renders a dismiss control and stays hidden once
+  // dismissed. Dismissal is keyed by this value and persists across
+  // sessions in localStorage, so each mode's band is remembered
+  // independently. Omit to keep the band permanent (no close button).
+  dismissKey?: string
 }
 
-export function ModeOrientation({ kicker, title, body, points = [] }: Props) {
+const STORAGE_PREFIX = 'fieldnote.orientation-dismissed:'
+
+function isDismissed(key: string | undefined): boolean {
+  if (!key) return false
+  try {
+    return window.localStorage.getItem(`${STORAGE_PREFIX}${key}`) === '1'
+  } catch {
+    return false
+  }
+}
+
+function persistDismissal(key: string | undefined) {
+  if (!key) return
+  try {
+    window.localStorage.setItem(`${STORAGE_PREFIX}${key}`, '1')
+  } catch {
+    // localStorage may be unavailable (private mode etc.) — fall back
+    // to in-memory dismissal only.
+  }
+}
+
+export function ModeOrientation({ kicker, title, body, points = [], dismissKey }: Props) {
+  const [dismissed, setDismissed] = useState(() => isDismissed(dismissKey))
+
+  if (dismissed) return null
+
   return (
     <section className="mode-orientation" aria-label={`${title} orientation`}>
       <div className="mode-orientation-copy">
@@ -27,6 +60,20 @@ export function ModeOrientation({ kicker, title, body, points = [] }: Props) {
             </li>
           ))}
         </ul>
+      )}
+      {dismissKey && (
+        <button
+          type="button"
+          className="mode-orientation-dismiss"
+          aria-label="Hide this guidance"
+          title="Hide this guidance"
+          onClick={() => {
+            persistDismissal(dismissKey)
+            setDismissed(true)
+          }}
+        >
+          <X size={14} aria-hidden="true" />
+        </button>
       )}
     </section>
   )

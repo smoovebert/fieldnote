@@ -494,6 +494,25 @@
   flex-shrink: 0;
 }
 
+.app-shell[data-shell="new"] .active-codes-bar .undo-code-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-3);
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font: var(--t-ui-sm);
+  font-weight: 500;
+}
+
+.app-shell[data-shell="new"] .active-codes-bar .undo-code-button:hover {
+  background: var(--surface-2, rgba(0, 0, 0, 0.04));
+  color: var(--ink);
+}
+
 /* ----- Reader column ------------------------------------------------ */
 /* Container-query unit `cqi` (= 1% of inline size) lets the transcript
    font scale to fit the column. With --reader-fit-chars set to the

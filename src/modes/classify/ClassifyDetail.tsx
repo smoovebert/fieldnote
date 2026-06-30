@@ -60,6 +60,7 @@ export function ClassifyDetail(props: Props) {
       </div>
 
       <ModeOrientation
+        dismissKey="classify"
         kicker="Comparison setup"
         title="Define who or what each source represents"
         body="Cases are the participants, sites, organizations, or document groups you want to compare. Attributes are the demographics or categories that make Analyze useful."

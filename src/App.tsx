@@ -316,6 +316,15 @@ function App() {
   const [codes, setCodes] = useState(defaultProject.codes)
   const [memos, setMemos] = useState(defaultProject.memos)
   const [excerpts, setExcerpts] = useState(defaultProject.excerpts)
+  // Records the most recent coding action so the Code mode can offer a
+  // one-step undo right after applying. 'created' tracks a brand-new
+  // excerpt (undo deletes it); 'merged' tracks codes added to an
+  // existing excerpt (undo removes only those, leaving prior codes).
+  const [lastCoding, setLastCoding] = useState<
+    | { kind: 'created'; excerptId: string }
+    | { kind: 'merged'; excerptId: string; addedCodeIds: string[] }
+    | null
+  >(null)
   const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([])
   const [persistActiveCodes, setPersistActiveCodes] = useState(false)
   const [newCodeName, setNewCodeName] = useState('')
@@ -437,6 +446,7 @@ function App() {
     setLineNumberingWidth(project.line_numbering_width ?? DEFAULT_LINE_NUMBERING_WIDTH)
     setActiveView('overview')
     setActiveSourceId(nextProject.activeSourceId)
+    setLastCoding(null)
     setSources(nextProject.sources)
     setExtraFolders([])
     setCases(nextProject.cases)
@@ -1217,6 +1227,9 @@ function App() {
   }
 
   function selectActiveSource(sourceId: string) {
+    // The undo affordance is scoped to the source you just coded; clear
+    // it on source switch so it can't reverse an excerpt no longer in view.
+    if (sourceId !== activeSourceId) setLastCoding(null)
     setActiveSourceId(sourceId)
   }
 
@@ -1230,25 +1243,27 @@ function App() {
     label = selectedCodeNames,
     pageInfo?: { pageNumber: number; charOffset: number },
   ) {
-    let mergedExistingReference = false
+    // Decide created-vs-merged against the current excerpts so the undo
+    // record is captured synchronously (the state updater below runs
+    // later and can't reliably set an outer variable in time).
+    const existingReference = excerpts.find((excerpt) => excerpt.sourceId === activeSource.id && excerpt.text === selectedText)
 
-    setExcerpts((current) => {
-      const existingReference = current.find((excerpt) => excerpt.sourceId === activeSource.id && excerpt.text === selectedText)
-      if (existingReference) {
-        mergedExistingReference = true
-        return current.map((excerpt) =>
+    if (existingReference) {
+      const addedCodeIds = codeIds.filter((id) => !existingReference.codeIds.includes(id))
+      setExcerpts((current) =>
+        current.map((excerpt) =>
           excerpt.id === existingReference.id
-            ? {
-                ...excerpt,
-                codeIds: Array.from(new Set([...excerpt.codeIds, ...codeIds])),
-              }
+            ? { ...excerpt, codeIds: Array.from(new Set([...excerpt.codeIds, ...codeIds])) }
             : excerpt
         )
-      }
-
-      return [
+      )
+      setLastCoding({ kind: 'merged', excerptId: existingReference.id, addedCodeIds })
+      setSelectionHint(`Added codes to existing excerpt as ${label}.`)
+    } else {
+      const newExcerptId = createId('excerpt')
+      setExcerpts((current) => [
         {
-          id: createId('excerpt'),
+          id: newExcerptId,
           codeIds,
           sourceId: activeSource.id,
           sourceTitle: activeSource.title,
@@ -1257,12 +1272,52 @@ function App() {
           ...(pageInfo ? { pageNumber: pageInfo.pageNumber, charOffset: pageInfo.charOffset } : {}),
         },
         ...current,
-      ]
-    })
-    setSelectionHint(`${mergedExistingReference ? 'Added codes to existing excerpt' : 'Coded selection'} as ${label}.`)
+      ])
+      setLastCoding({ kind: 'created', excerptId: newExcerptId })
+      setSelectionHint(`Coded selection as ${label}.`)
+    }
     window.getSelection()?.removeAllRanges()
     if (!persistActiveCodes) setSelectedCodeIds([])
   }
+
+  // Reverses the most recent coding action (see `lastCoding`). A no-op
+  // if the target excerpt has since been edited away elsewhere.
+  const undoLastCoding = useCallback(() => {
+    if (!lastCoding) return
+    const action = lastCoding
+    setExcerpts((current) => {
+      if (action.kind === 'created') {
+        return libDeleteExcerpt(current, action.excerptId)
+      }
+      return current.map((excerpt) =>
+        excerpt.id === action.excerptId
+          ? { ...excerpt, codeIds: excerpt.codeIds.filter((id) => !action.addedCodeIds.includes(id)) }
+          : excerpt
+      )
+    })
+    setLastCoding(null)
+    setSelectionHint(action.kind === 'created' ? 'Removed the last coded passage.' : 'Removed the codes you just added.')
+  }, [lastCoding])
+
+  // Cmd/Ctrl-Z reverses the last coded passage while in Code mode — the
+  // keyboard equivalent of the active-codes-bar Undo button. Ignored
+  // when a text field has focus (so the browser's native text undo still
+  // works in the new-code input, memos, etc.) and when Shift is held
+  // (Shift+Z is the conventional redo, which we don't implement).
+  useEffect(() => {
+    if (activeView !== 'code' || !lastCoding) return
+    function handleUndoKey(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.shiftKey) return
+      if (event.key.toLowerCase() !== 'z') return
+      const target = event.target as HTMLElement | null
+      const tag = target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+      event.preventDefault()
+      undoLastCoding()
+    }
+    window.addEventListener('keydown', handleUndoKey)
+    return () => window.removeEventListener('keydown', handleUndoKey)
+  }, [activeView, lastCoding, undoLastCoding])
 
   // pageInfo comes from the Code-mode reader for PDF sources only. The
   // toolbar button calls codeSelection() with no override; the reader
@@ -2403,6 +2458,8 @@ function App() {
             toggleSelectedCode={toggleSelectedCode}
             codeSelection={codeSelection}
             applyCodesToText={applyCodesToText}
+            canUndoCoding={lastCoding !== null}
+            onUndoCoding={undoLastCoding}
             buildNewCode={buildNewCode}
             onSuggestCodes={handleSuggestCodes}
             isHostedAi={isHostedAi}

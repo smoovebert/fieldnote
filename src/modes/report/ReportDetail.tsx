@@ -9,6 +9,7 @@ export function ReportDetail({ model }: Props) {
   return (
     <article className="document-panel report-document-panel">
       <ModeOrientation
+        dismissKey="report"
         kicker="Output pass"
         title="Assemble a readable audit trail"
         body="Report turns the project into something shareable: project memo, codebook, excerpts, cases, source memos, and pinned analysis snapshots."
