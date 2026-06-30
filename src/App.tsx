@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ChangeEvent, MouseEvent } from 'react'
+import type { ChangeEvent, CSSProperties, MouseEvent } from 'react'
 import {
   BarChart3,
   Download,
@@ -58,6 +58,7 @@ import type { ResearchTemplate } from './lib/researchTemplates'
 import { AccountDeletePanel } from './components/AccountDeletePanel'
 import { AppHeader } from './components/AppHeader'
 import { PropertiesRail } from './components/PropertiesRail'
+import { ResizeHandle } from './components/ResizeHandle'
 import { WorkspaceSidebar } from './components/WorkspaceSidebar'
 import { ReportDetail } from './modes/report/ReportDetail'
 import { RefineDetail } from './modes/refine/RefineDetail'
@@ -147,6 +148,38 @@ const DEFAULT_LINE_NUMBERING_MODE: LineNumberingMode = 'fixed-width'
 const DEFAULT_LINE_NUMBERING_WIDTH = 80
 const LINE_NUMBERING_WIDTH_MIN = 40
 const LINE_NUMBERING_WIDTH_MAX = 160
+
+// Resizable side columns. Defaults + clamps mirror app-frame.css
+// (the responsive 1280px breakpoint narrows the CSS defaults; we mirror
+// that here only so keyboard nudging starts from the right base width).
+const PANEL_LEFT_MIN = 180
+const PANEL_LEFT_MAX = 420
+const PANEL_RIGHT_MIN = 260
+const PANEL_RIGHT_MAX = 560
+const PANEL_LEFT_DEFAULT = () => (window.innerWidth <= 1280 ? 200 : 232)
+const PANEL_RIGHT_DEFAULT = () => (window.innerWidth <= 1280 ? 300 : 340)
+const PANEL_LEFT_KEY = 'fieldnote.panel-width.left'
+const PANEL_RIGHT_KEY = 'fieldnote.panel-width.right'
+
+function readPanelWidth(key: string): number | null {
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (raw === null) return null
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : null
+  } catch {
+    return null
+  }
+}
+
+function writePanelWidth(key: string, value: number | null) {
+  try {
+    if (value === null) window.localStorage.removeItem(key)
+    else window.localStorage.setItem(key, String(value))
+  } catch {
+    // localStorage unavailable (private mode) — width stays in-memory only.
+  }
+}
 
 const sampleTranscript = `Interviewer: Can you tell me what made the application process difficult?
 
@@ -327,6 +360,10 @@ function App() {
   >(null)
   const [selectedCodeIds, setSelectedCodeIds] = useState<string[]>([])
   const [persistActiveCodes, setPersistActiveCodes] = useState(false)
+  // Resizable side-column widths. null = use the CSS default (so the
+  // responsive breakpoint still governs until the user drags a seam).
+  const [leftPanelWidth, setLeftPanelWidth] = useState<number | null>(() => readPanelWidth(PANEL_LEFT_KEY))
+  const [rightPanelWidth, setRightPanelWidth] = useState<number | null>(() => readPanelWidth(PANEL_RIGHT_KEY))
   const [newCodeName, setNewCodeName] = useState('')
   const [newAttributeName, setNewAttributeName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -2269,7 +2306,15 @@ function App() {
         <p>Qualitative coding works best on a laptop or desktop. Open this page in a browser window at least 1024 pixels wide.</p>
       </div>
     </div>
-    <main className="app-shell" data-shell="new" data-view={activeView}>
+    <main
+      className="app-shell"
+      data-shell="new"
+      data-view={activeView}
+      style={{
+        ...(leftPanelWidth !== null ? { '--col-left': `${leftPanelWidth}px` } : {}),
+        ...(rightPanelWidth !== null ? { '--col-right': `${rightPanelWidth}px` } : {}),
+      } as CSSProperties}
+    >
       <AppHeader
         activeView={activeView}
         projectId={projectId}
@@ -2655,6 +2700,28 @@ function App() {
         onDeleteExcerpt={deleteExcerpt}
         onRemoveCodeFromExcerpt={removeCodeFromExcerpt}
       />
+
+      <ResizeHandle
+        side="left"
+        current={leftPanelWidth ?? PANEL_LEFT_DEFAULT()}
+        min={PANEL_LEFT_MIN}
+        max={PANEL_LEFT_MAX}
+        onResize={setLeftPanelWidth}
+        onCommit={(width) => writePanelWidth(PANEL_LEFT_KEY, width)}
+        onReset={() => { setLeftPanelWidth(null); writePanelWidth(PANEL_LEFT_KEY, null) }}
+      />
+      {/* Classify drops the inspector column, so there's no right seam. */}
+      {activeView !== 'classify' && (
+        <ResizeHandle
+          side="right"
+          current={rightPanelWidth ?? PANEL_RIGHT_DEFAULT()}
+          min={PANEL_RIGHT_MIN}
+          max={PANEL_RIGHT_MAX}
+          onResize={setRightPanelWidth}
+          onCommit={(width) => writePanelWidth(PANEL_RIGHT_KEY, width)}
+          onReset={() => { setRightPanelWidth(null); writePanelWidth(PANEL_RIGHT_KEY, null) }}
+        />
+      )}
     </main>
     {settingsOpen && (
       <ProjectSettingsModal
