@@ -37,7 +37,7 @@ _Turn first-pass coding into an analyzable project_
 
 - Use Refine after your first coding pass.
 - Rename vague codes, add descriptions, and review each code reference.
-- Drag codes to nest related themes under broader parent codes.
+- Drag codes to nest related themes under broader parent codes; Shift-drag one code onto another to merge them into one.
 - Use Classify to create cases such as participants, sites, or groups.
 - Add attributes such as Role, Cohort, Site, or First-generation status.
 

@@ -55,6 +55,13 @@ Good times to download a backup:
 
 The backup file can be imported later as a new restored project.
 
+## Adjusting The Layout
+
+The workspace has three columns: the left sidebar, the center work area, and the right inspector.
+
+- **Resize a column** by dragging the thin divider between it and the center work area. Double-click a divider to reset it to its default width. With a divider focused (Tab to it), the left/right arrow keys nudge it. Your chosen widths are remembered in that browser.
+- **Hide a mode's guidance band** - the labelled strip at the top of each mode - with the **×** in its top-right corner. Each mode's band is remembered separately, so hiding it in Code does not hide it in Analyze.
+
 ## Organize Mode
 
 Use Organize to bring material into the project and keep sources arranged.
@@ -110,15 +117,24 @@ Use Code mode for close reading.
 
 The same passage can have multiple codes. This is important for qualitative analysis because one excerpt may express several themes.
 
-### Quick Coding
+You can also code **part of an already-coded passage**: select a smaller span inside an existing highlight and apply a different code. Overlapping codes appear with a blended highlight, and each code is listed when you hover the passage.
 
-The quick coding menu helps you code faster while reading. When enabled, selecting text can open contextual coding controls near the passage.
+### Active Codes And The Two Toggles
+
+The bar above the source shows your **active codes** - the codes that will be applied when you click **Code selection**. Two toggles control how coding behaves:
+
+- **Quick menu** - when on, highlighting text pops a small menu at the selection where you can apply or create a code on the spot. When off, you code only via the codes on the right plus the **Code selection** button.
+- **Keep codes active** - when on, the codes you picked stay active after you code a passage, so you can apply the same set to the next passage without reselecting. When off (the default), the active set clears after each apply.
 
 Use quick coding when you are doing a first pass through interviews and want to stay in the text.
 
 ### Instant Add Code
 
 If you notice a new theme while coding, add a new code without leaving the coding flow. New codes can be refined later in Refine mode.
+
+### Undo Coding
+
+Made a mistake? Click **Undo** in the active-codes bar to reverse the passage you just coded, or press **Cmd+Z** (Mac) / **Ctrl+Z** (Windows). Undo covers the most recent coding action in the source you are viewing.
 
 ### Coding PDFs
 
@@ -145,6 +161,12 @@ In Refine, you can:
 Codes can be nested under parent codes. Drag a code onto another code to nest it. Drag it back to the root level to make it top-level again.
 
 Use hierarchy when several codes belong to a broader theme.
+
+### Merge Codes
+
+To combine two codes into one, hold **Shift** while dragging one code onto another in the codebook. Fieldnote confirms the merge and lets you name the surviving code; every excerpt moves to that code, the dragged code is removed, and its child codes re-parent under the survivor. You can also merge from the inspector's **Merge into…** panel, which suggests likely targets.
+
+Merging cannot be undone, so Fieldnote downloads a `.fieldnote.json` backup automatically before it runs.
 
 Example:
 
