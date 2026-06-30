@@ -1147,6 +1147,51 @@ function App() {
     setSelectionHint(`Merged "${activeCode.name}" into "${targetCode.name}".`)
   }
 
+  // Shift-drag-to-merge from the Refine codebook: merge `fromCodeId` into
+  // `intoCodeId`. A single prompt doubles as confirmation and the
+  // rename field (editing the name is the "merge and rename" the tester
+  // asked for); Cancel aborts. One dialog only — no confirm→prompt chain,
+  // which Chromium's anti-spam suppression can silently swallow. The
+  // pre-merge backup runs inline since we bypass offerBackupBeforeRisky.
+  function mergeCodeDragInto(fromCodeId: string, intoCodeId: string) {
+    const fromCode = codes.find((code) => code.id === fromCodeId)
+    const targetCode = codes.find((code) => code.id === intoCodeId)
+    if (!fromCode || !targetCode || fromCode.id === targetCode.id) return
+    if (descendantCodeIds(codes, fromCode.id).includes(targetCode.id)) {
+      setSelectionHint(`Can't merge "${fromCode.name}" into its own subcode.`)
+      return
+    }
+
+    const references = excerpts.filter((excerpt) => excerpt.codeIds.includes(fromCode.id)).length
+    const newName = window.prompt(
+      `Merge "${fromCode.name}" into "${targetCode.name}"? ${references} excerpt${references === 1 ? '' : 's'} move over and "${fromCode.name}" is removed.\n\nName the merged code:`,
+      targetCode.name,
+    )
+    if (newName === null) return
+    const finalName = newName.trim() || targetCode.name
+
+    if (projectId) {
+      try {
+        exportProjectBackup()
+      } catch (err) {
+        console.warn('Pre-merge backup failed:', err)
+      }
+    }
+
+    const merged = libMergeCodeInto({ codes, excerpts, memos, fromCodeId: fromCode.id, intoCodeId: targetCode.id })
+    const nextCodes = finalName === targetCode.name
+      ? merged.codes
+      : merged.codes.map((code) => (code.id === targetCode.id ? { ...code, name: finalName } : code))
+    setCodes(nextCodes)
+    setExcerpts(merged.excerpts)
+    setMemos(merged.memos)
+    setSelectedCodeIds((current) =>
+      Array.from(new Set(current.map((codeId) => (codeId === fromCode.id ? targetCode.id : codeId)))),
+    )
+    setActiveCodeId(targetCode.id)
+    setSelectionHint(`Merged "${fromCode.name}" into "${finalName}".`)
+  }
+
   // Toggle a code in/out of the active-coding set. Empty is allowed —
   // when zero codes are selected, the Code-selection action no-ops with
   // a hint so the user can clear the active set without losing the
@@ -2298,6 +2343,7 @@ function App() {
         onOpenCoOccurrence={() => setAnalyzePanel('cooccurrence')}
         onOpenCrosstab={() => setAnalyzePanel('crosstab')}
         onReparentCode={updateCodeParent}
+        onMergeCode={mergeCodeDragInto}
         newCodeName={newCodeName}
         onNewCodeNameChange={setNewCodeName}
         onAddCode={addCode}

@@ -14,6 +14,7 @@ type Props = {
   activeCodeId: string
   onSelectCode: (id: string) => void
   onReparentCode: (codeId: string, parentCodeId: string) => void
+  onMergeCode: (fromCodeId: string, intoCodeId: string) => void
   newCodeName: string
   onNewCodeNameChange: (next: string) => void
   onAddCode: () => void
@@ -25,6 +26,11 @@ export function RefineSidebar(props: Props) {
   const [draggingCodeId, setDraggingCodeId] = useState<string | null>(null)
   const [dropTargetCodeId, setDropTargetCodeId] = useState<string | null>(null)
   const [rootDropActive, setRootDropActive] = useState(false)
+  // True while the pointer is over a drop target with Shift held — the
+  // drop will merge (combine the two codes) instead of nest. Tracked
+  // from dragOver's live shiftKey so the target's affordance updates as
+  // the user presses/releases Shift mid-hover.
+  const [mergeIntent, setMergeIntent] = useState(false)
   // Bulk-selection set for multi-delete. Cmd/Ctrl-click toggles a code
   // in/out without changing the active code; plain click selects the
   // active code and clears the bulk set so the two interactions don't
@@ -81,7 +87,7 @@ export function RefineSidebar(props: Props) {
           <Plus size={18} aria-hidden="true" />
         </button>
       </div>
-      <p className="code-tree-hint">Drag a code onto another to nest it. Drop above to unparent. {navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}-click to multi-select for bulk delete.</p>
+      <p className="code-tree-hint">Drag a code onto another to nest it, or <strong>Shift-drag</strong> to merge them into one. Drop above to unparent. {navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}-click to multi-select for bulk delete.</p>
       <div
         className={`code-tree-root-drop${rootDropActive ? ' is-drop-target' : ''}`}
         onDragOver={(event) => {
@@ -130,11 +136,13 @@ export function RefineSidebar(props: Props) {
         const isActive = code.id === props.activeCodeId
         const isDragging = draggingCodeId === code.id
         const isDropTarget = dropTargetCodeId === code.id && isValidDrop(code.id)
+        const isMergeTarget = isDropTarget && mergeIntent
         const isBulkSelected = bulkSelected.has(code.id)
         const classes = ['list-item']
         if (isActive) classes.push('active')
         if (isDragging) classes.push('is-dragging')
         if (isDropTarget) classes.push('is-drop-target')
+        if (isMergeTarget) classes.push('is-merge-target')
         if (isBulkSelected) classes.push('is-bulk-selected')
         return (
           <button
@@ -165,24 +173,32 @@ export function RefineSidebar(props: Props) {
               setDraggingCodeId(null)
               setDropTargetCodeId(null)
               setRootDropActive(false)
+              setMergeIntent(false)
             }}
             onDragOver={(event) => {
               if (!isValidDrop(code.id)) return
               event.preventDefault()
               event.dataTransfer.dropEffect = 'move'
               setDropTargetCodeId(code.id)
+              setMergeIntent(event.shiftKey)
             }}
             onDragLeave={() => {
-              if (dropTargetCodeId === code.id) setDropTargetCodeId(null)
+              if (dropTargetCodeId === code.id) {
+                setDropTargetCodeId(null)
+                setMergeIntent(false)
+              }
             }}
             onDrop={(event) => {
               event.preventDefault()
               if (draggingCodeId && isValidDrop(code.id)) {
-                props.onReparentCode(draggingCodeId, code.id)
+                // Shift-drop merges the two codes; a plain drop nests.
+                if (event.shiftKey) props.onMergeCode(draggingCodeId, code.id)
+                else props.onReparentCode(draggingCodeId, code.id)
               }
               setDraggingCodeId(null)
               setDropTargetCodeId(null)
               setRootDropActive(false)
+              setMergeIntent(false)
             }}
           >
             <span className="code-dot" style={{ background: code.color }} />
@@ -190,6 +206,9 @@ export function RefineSidebar(props: Props) {
               <strong>{code.name}</strong>
               <span>{refCounts.get(code.id) ?? 0} direct excerpt{refCounts.get(code.id) === 1 ? '' : 's'}</span>
             </div>
+            {isDropTarget && (
+              <span className="code-drop-flag">{isMergeTarget ? 'Merge here' : 'Nest here'}</span>
+            )}
           </button>
         )
       })}

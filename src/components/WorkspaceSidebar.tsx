@@ -57,6 +57,7 @@ type Props = {
   onOpenCoOccurrence: () => void
   onOpenCrosstab: () => void
   onReparentCode: (codeId: string, parentCodeId: string) => void
+  onMergeCode: (fromCodeId: string, intoCodeId: string) => void
   newCodeName: string
   onNewCodeNameChange: (next: string) => void
   onAddCode: () => void
@@ -131,6 +132,7 @@ export function WorkspaceSidebar(props: Props) {
               onOpenCoOccurrence={props.onOpenCoOccurrence}
               onOpenCrosstab={props.onOpenCrosstab}
               onReparentCode={props.onReparentCode}
+              onMergeCode={props.onMergeCode}
               newCodeName={props.newCodeName}
               onNewCodeNameChange={props.onNewCodeNameChange}
               onAddCode={props.onAddCode}
@@ -164,6 +166,7 @@ function ObjectList({
   onOpenCoOccurrence,
   onOpenCrosstab,
   onReparentCode,
+  onMergeCode,
   newCodeName,
   onNewCodeNameChange,
   onAddCode,
@@ -188,6 +191,7 @@ function ObjectList({
   onOpenCoOccurrence: () => void
   onOpenCrosstab: () => void
   onReparentCode: (codeId: string, parentCodeId: string) => void
+  onMergeCode: (fromCodeId: string, intoCodeId: string) => void
   newCodeName: string
   onNewCodeNameChange: (next: string) => void
   onDeleteCodes: (codeIds: string[]) => void
@@ -213,6 +217,7 @@ function ObjectList({
           activeCodeId={activeCodeId}
           onSelectCode={onSelectCode}
           onReparentCode={onReparentCode}
+          onMergeCode={onMergeCode}
           newCodeName={newCodeName}
           onNewCodeNameChange={onNewCodeNameChange}
           onAddCode={onAddCode}

@@ -235,6 +235,31 @@
   box-shadow: inset 2px 0 0 rgba(99, 102, 241, 0.9);
 }
 
+/* Shift-drag merge target — amber to distinguish "combine these two
+   codes" (which removes one) from the indigo nest affordance. */
+.list-item.is-merge-target {
+  background: rgba(217, 119, 6, 0.2);
+  box-shadow: inset 2px 0 0 rgba(217, 119, 6, 0.95);
+}
+
+.code-drop-flag {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.95);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.list-item.is-merge-target .code-drop-flag {
+  background: rgba(217, 119, 6, 0.95);
+}
+
 .list-item.is-bulk-selected {
   background: rgba(244, 114, 182, 0.16);
   box-shadow: inset 3px 0 0 rgba(244, 114, 182, 0.85);

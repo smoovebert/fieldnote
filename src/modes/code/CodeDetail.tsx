@@ -144,8 +144,15 @@ export function CodeDetail(props: Props) {
     <article className="document-panel code-document-panel">
       <div className="active-codes-bar">
         <div className="active-codes-bar-text">
-          <strong className="active-codes-title">{props.selectedCodeNames}</strong>
-          <p className="active-codes-hint">{props.selectionHint} Active codes can be combined.</p>
+          <strong className="active-codes-title">
+            {props.selectedCodeIds.length === 0 ? 'No active codes' : `Active codes: ${props.selectedCodeNames}`}
+          </strong>
+          <p className="active-codes-hint">
+            {props.selectionHint}{' '}
+            {props.selectedCodeIds.length === 0
+              ? 'Pick codes from the list on the right to apply them to a selection, or turn on the Quick menu to choose codes per selection.'
+              : 'Highlight a passage and click Code selection — these all apply together. A passage can carry several codes.'}
+          </p>
         </div>
         <div className="active-codes-bar-actions">
           {props.canUndoCoding && (
@@ -159,7 +166,7 @@ export function CodeDetail(props: Props) {
               Undo
             </button>
           )}
-          <label className="quick-toggle">
+          <label className="quick-toggle" title="When on, highlighting text pops a small menu at the selection where you can apply or create a code on the spot. When off, code only via the codes on the right plus the Code selection button.">
             <input
               type="checkbox"
               checked={quickCodingEnabled}
@@ -170,13 +177,13 @@ export function CodeDetail(props: Props) {
             />
             Quick menu
           </label>
-          <label className="quick-toggle" title="When on, active codes stay selected after coding a passage so you can apply them again. When off (default), the active set clears after each apply.">
+          <label className="quick-toggle" title="When on, the codes you picked stay active after you code a passage, so you can apply the same set to the next passage without re-selecting. When off (default), the active set clears after each apply.">
             <input
               type="checkbox"
               checked={props.persistActiveCodes}
               onChange={(event) => props.setPersistActiveCodes(event.target.checked)}
             />
-            Persist active codes
+            Keep codes active
           </label>
           <button
             type="button"
